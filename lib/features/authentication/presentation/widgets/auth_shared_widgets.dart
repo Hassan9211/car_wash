@@ -1,0 +1,314 @@
+import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
+import 'package:flutter/material.dart';
+
+class AuthScreenShell extends StatelessWidget {
+  const AuthScreenShell({
+    super.key,
+    required this.title,
+    required this.onBack,
+    required this.child,
+    this.footer,
+    this.backgroundColor = Colors.white,
+  });
+
+  final String title;
+  final VoidCallback onBack;
+  final Widget child;
+  final Widget? footer;
+  final Color backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      backgroundColor: backgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            SizedBox(
+              height: 54,
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 8,
+                    top: 0,
+                    bottom: 0,
+                    child: IconButton(
+                      onPressed: onBack,
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: AppButtonColors.actionForeground,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 56),
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 24 / 1.4,
+                            fontWeight: FontWeight.w500,
+                            color: AppButtonColors.actionForeground,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(
+              height: 1,
+              thickness: 0.8,
+              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+            ),
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.fromLTRB(
+                        18,
+                        18,
+                        18,
+                        footer != null ? 92 : 20,
+                      ),
+                      child: child,
+                    ),
+                  ),
+                  if (footer != null)
+                    Positioned(
+                      left: 18,
+                      right: 18,
+                      bottom: 18,
+                      child: footer!,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AuthBottomPrompt extends StatelessWidget {
+  const AuthBottomPrompt({
+    super.key,
+    required this.prefixText,
+    required this.actionText,
+    required this.onTap,
+    this.actionKey,
+  });
+
+  final String prefixText;
+  final String actionText;
+  final VoidCallback onTap;
+  final Key? actionKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            prefixText,
+            style: const TextStyle(
+              fontSize: 14.5,
+              color: Color(0xFFA29B97),
+            ),
+          ),
+          GestureDetector(
+            key: actionKey,
+            onTap: onTap,
+            child: Text(
+              actionText,
+              style: const TextStyle(
+                fontSize: 14.5,
+                color: AppButtonColors.actionForeground,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AuthBrandBadge extends StatelessWidget {
+  const AuthBrandBadge({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.local_car_wash_rounded,
+          size: 22,
+          color: AppColors.brandGreen,
+        ),
+        SizedBox(height: 2),
+        Text(
+          'Lavego',
+          style: TextStyle(
+            fontSize: 9,
+            height: 1,
+            fontWeight: FontWeight.w700,
+            color: AppColors.deepInk,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class AuthInputField extends StatefulWidget {
+  const AuthInputField({
+    super.key,
+    required this.controller,
+    required this.label,
+    required this.hintText,
+    this.isFocusedStyle = false,
+    this.obscureText = false,
+    this.keyboardType,
+    this.suffix,
+    this.validator,
+    this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final String hintText;
+  final bool isFocusedStyle;
+  final bool obscureText;
+  final TextInputType? keyboardType;
+  final Widget? suffix;
+  final String? Function(String?)? validator;
+  final ValueChanged<String>? onChanged;
+
+  @override
+  State<AuthInputField> createState() => _AuthInputFieldState();
+}
+
+class _AuthInputFieldState extends State<AuthInputField> {
+  late final FocusNode _focusNode = FocusNode()
+    ..addListener(() {
+      setState(() {});
+    });
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isHighlighted = widget.isFocusedStyle && _focusNode.hasFocus;
+
+    final borderColor = isHighlighted
+        ? AppColors.brandGreen
+        : const Color(0xFFE3E0DD);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.isFocusedStyle && isHighlighted)
+          Padding(
+            padding: const EdgeInsets.only(left: 10, bottom: 2),
+            child: Text(
+              widget.label,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.brandGreen,
+              ),
+            ),
+          ),
+        TextFormField(
+          controller: widget.controller,
+          focusNode: _focusNode,
+          obscureText: widget.obscureText,
+          keyboardType: widget.keyboardType,
+          validator: widget.validator,
+          onChanged: widget.onChanged,
+          cursorColor: AppColors.brandGreen,
+          autocorrect: false,
+          enableSuggestions: false,
+          autofillHints: const <String>[],
+          decoration: InputDecoration(
+            hintText: widget.isFocusedStyle && !isHighlighted
+                ? widget.label
+                : widget.hintText,
+            labelText: widget.isFocusedStyle ? null : widget.label,
+            labelStyle: const TextStyle(
+              color: Color(0xFFACA7A2),
+              fontSize: 14.5,
+            ),
+            hintStyle: const TextStyle(
+              color: Color(0xFFACA7A2),
+              fontSize: 14.5,
+            ),
+            errorStyle: const TextStyle(
+              fontSize: 11.5,
+              height: 1.2,
+            ),
+            floatingLabelBehavior: widget.isFocusedStyle
+                ? FloatingLabelBehavior.never
+                : FloatingLabelBehavior.auto,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 16,
+            ),
+            suffixIcon: widget.suffix,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(
+                color: borderColor,
+                width: isHighlighted ? 1 : 0.9,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(
+                color: borderColor,
+                width: isHighlighted ? 1 : 0.9,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(
+                color: AppColors.brandGreen,
+                width: 1,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(
+                color: AppButtonColors.destructiveForeground,
+                width: 1,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(
+                color: AppButtonColors.destructiveForeground,
+                width: 1,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
