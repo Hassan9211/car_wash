@@ -1,5 +1,6 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:car_wash/features/home/presentation/widgets/home_bottom_navigation_bar.dart';
@@ -16,7 +17,7 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -51,7 +52,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -63,7 +64,7 @@ class _WalletScreenState extends State<WalletScreen> {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: AnimatedBuilder(
@@ -86,7 +87,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     padding: const EdgeInsets.fromLTRB(14, 18, 14, 16),
                     itemCount: paymentOrders.length,
                     separatorBuilder: (_, _) =>
-                        const Divider(height: 1, color: Color(0xFFEAEAEA)),
+                        const Divider(height: 1, color: AppColors.border),
                     itemBuilder: (context, index) {
                       return _WalletPaymentTile(order: paymentOrders[index]);
                     },
@@ -115,54 +116,62 @@ class _WalletPaymentTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F3F3),
-              borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.arrow_downward_rounded,
+                color: AppButtonColors.primaryBackground,
+                size: 24,
+              ),
             ),
-            child: const Icon(
-              Icons.arrow_downward_rounded,
-              color: AppButtonColors.primaryBackground,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _formatWalletTime(order.paymentDate),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF8B8B8B),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _formatWalletTime(order.paymentDate),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textMuted,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  order.serviceProviderName,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF202020),
+                  const SizedBox(height: 4),
+                  Text(
+                    order.serviceProviderName,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Text(
-            order.totalPayment,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppButtonColors.primaryBackground,
+            Text(
+              order.totalPayment,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppButtonColors.primaryBackground,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -181,7 +190,7 @@ class _WalletEmptyState extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 13,
-            color: Color(0xFF888888),
+            color: AppColors.textSecondary,
           ),
         ),
       ),

@@ -22,6 +22,11 @@ class BookingOrdersStore {
       serviceType: 'Basic wash',
       customerName: 'Olivia Rhye',
       customerEmail: 'olivia@example.com',
+      address: '145 W 46th St, New York, USA',
+      customerLatitude: 40.7589,
+      customerLongitude: -73.9844,
+      providerLatitude: 40.7581,
+      providerLongitude: -73.9856,
       paymentStatus: BookingPaymentStatus.paid,
       bookingTime: '07:00 PM',
       showInWallet: true,
@@ -38,6 +43,11 @@ class BookingOrdersStore {
       serviceType: 'Foam wash',
       customerName: 'Olivia Rhye',
       customerEmail: 'olivia@example.com',
+      address: '277 Bedford Ave, Brooklyn, USA',
+      customerLatitude: 40.7171,
+      customerLongitude: -73.9580,
+      providerLatitude: 40.7178,
+      providerLongitude: -73.9560,
       paymentStatus: BookingPaymentStatus.paid,
       bookingTime: '08:00 PM',
       showInWallet: true,
@@ -54,6 +64,11 @@ class BookingOrdersStore {
       serviceType: 'Interior',
       customerName: 'Olivia Rhye',
       customerEmail: 'olivia@example.com',
+      address: '31-57 Steinway St, Queens, USA',
+      customerLatitude: 40.7618,
+      customerLongitude: -73.9174,
+      providerLatitude: 40.7644,
+      providerLongitude: -73.9235,
       paymentStatus: BookingPaymentStatus.paid,
       bookingTime: '06:00 PM',
       showInWallet: true,
@@ -70,6 +85,11 @@ class BookingOrdersStore {
       serviceType: 'Wax',
       customerName: 'Olivia Rhye',
       customerEmail: 'olivia@example.com',
+      address: '80 John St, New York, USA',
+      customerLatitude: 40.7078,
+      customerLongitude: -74.0054,
+      providerLatitude: 40.7075,
+      providerLongitude: -74.0113,
       paymentStatus: BookingPaymentStatus.paid,
       bookingTime: '05:00 PM',
       showInWallet: true,
@@ -86,6 +106,11 @@ class BookingOrdersStore {
       serviceType: 'Premium wash',
       customerName: 'Olivia Rhye',
       customerEmail: 'olivia@example.com',
+      address: '510 W 42nd St, New York, USA',
+      customerLatitude: 40.7602,
+      customerLongitude: -73.9961,
+      providerLatitude: 40.7581,
+      providerLongitude: -73.9856,
       paymentStatus: BookingPaymentStatus.paid,
       bookingTime: '04:00 PM',
       showInWallet: true,
@@ -102,6 +127,11 @@ class BookingOrdersStore {
       serviceType: 'Basic wash',
       customerName: 'Olivia Rhye',
       customerEmail: 'olivia@example.com',
+      address: '25-35 36th Ave, Queens, USA',
+      customerLatitude: 40.7582,
+      customerLongitude: -73.9334,
+      providerLatitude: 40.7644,
+      providerLongitude: -73.9235,
       bookingTime: '09:00 PM',
     ),
   ];
@@ -148,7 +178,13 @@ class BookingOrdersStore {
   }
 
   Future<void> updateStatus(String orderId, BookingOrderStatus status) async {
-    _updateOrder(orderId, (order) => order.copyWith(status: status));
+    _updateOrder(
+      orderId,
+      (order) => order.copyWith(
+        status: status,
+        statusUpdatedAt: DateTime.now(),
+      ),
+    );
   }
 
   Future<void> updateReview(
@@ -168,7 +204,10 @@ class BookingOrdersStore {
   Future<void> cancelOrder(String orderId) async {
     _updateOrder(
       orderId,
-      (order) => order.copyWith(status: BookingOrderStatus.cancelled),
+      (order) => order.copyWith(
+        status: BookingOrderStatus.cancelled,
+        statusUpdatedAt: DateTime.now(),
+      ),
     );
   }
 
@@ -180,8 +219,10 @@ class BookingOrdersStore {
     _updateOrder(
       orderId,
       (order) => order.copyWith(
+        status: BookingOrderStatus.pending,
         orderDate: bookingDate,
         bookingTime: bookingTime,
+        statusUpdatedAt: DateTime.now(),
       ),
     );
   }

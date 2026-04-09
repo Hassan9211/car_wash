@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
@@ -45,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: Column(
         children: [
           _HomeHeader(
@@ -163,7 +165,11 @@ class _HomeHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.brandGreen,
+        gradient: LinearGradient(
+          colors: [Color(0xFF0E5F2D), AppColors.brandGreen, AppColors.deepInk],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.vertical(
           bottom: Radius.circular(20),
         ),
@@ -230,14 +236,14 @@ class _HomeHeader extends StatelessWidget {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surface,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: const Color(0xFFE8ECEA),
+                            color: AppColors.border,
                           ),
-                          boxShadow: const [
+                          boxShadow: [
                             BoxShadow(
-                              color: Color(0x14000000),
+                              color: Colors.black.withValues(alpha: 0.24),
                               blurRadius: 8,
                               offset: Offset(0, 3),
                             ),
@@ -248,7 +254,7 @@ class _HomeHeader extends StatelessWidget {
                           children: const [
                             Icon(
                               Icons.notifications_active_outlined,
-                              color: AppColors.deepInk,
+                              color: AppColors.textPrimary,
                               size: 23,
                             ),
                             Positioned(
@@ -277,8 +283,9 @@ class _HomeHeader extends StatelessWidget {
                 key: const Key('home_search_bar'),
                 height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
                 ),
                 alignment: Alignment.center,
                 child: TextField(
@@ -286,15 +293,19 @@ class _HomeHeader extends StatelessWidget {
                   controller: searchController,
                   onChanged: onSearchChanged,
                   cursorColor: AppColors.brandGreen,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13.5,
+                  ),
                   decoration: const InputDecoration(
                     hintText: 'Search',
                     hintStyle: TextStyle(
                       fontSize: 13.5,
-                      color: Color(0xFF9D9D9D),
+                      color: AppColors.textMuted,
                     ),
                     prefixIcon: Icon(
                       Icons.search_rounded,
-                      color: AppColors.brandGreen,
+                      color: AppColors.brandGreenLight,
                       size: 22,
                     ),
                     suffixIcon: SizedBox.shrink(),
@@ -350,7 +361,7 @@ class _SectionHeader extends StatelessWidget {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w500,
-              color: Colors.black,
+              color: AppColors.textPrimary,
             ),
           ),
         ),
@@ -385,11 +396,18 @@ class _ProviderCard extends StatelessWidget {
 
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: const Color(0xFFE6E6E6),
+              color: AppColors.border,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.14),
+                blurRadius: 14,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           padding: const EdgeInsets.all(6),
           child: Column(
@@ -397,13 +415,42 @@ class _ProviderCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: imageHeight,
-                  child: Image.asset(
-                    provider.imagePath,
-                    fit: BoxFit.cover,
-                  ),
+                child: Stack(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: imageHeight,
+                      child: _ProviderPreviewImage(
+                        imagePath: provider.imagePath,
+                      ),
+                    ),
+                    if (provider.showNewBadge)
+                      Positioned(
+                        left: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.62),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: AppColors.brandGreenLight,
+                            ),
+                          ),
+                          child: const Text(
+                            'New Provider',
+                            style: TextStyle(
+                              fontSize: 9.6,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.brandGreenLight,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
@@ -415,7 +462,7 @@ class _ProviderCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w500,
-                        color: Colors.black,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -423,7 +470,7 @@ class _ProviderCard extends StatelessWidget {
                     provider.price,
                     style: const TextStyle(
                       fontSize: 11.5,
-                      color: Color(0xFF3A3A3A),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -434,9 +481,9 @@ class _ProviderCard extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 10.2,
-                  height: 1.25,
-                  color: Color(0xFF707070),
+                  fontSize: 10.9,
+                  height: 1.32,
+                  color: AppColors.textMuted,
                 ),
               ),
               const SizedBox(height: 6),
@@ -444,7 +491,7 @@ class _ProviderCard extends StatelessWidget {
                 'Show more >',
                 style: TextStyle(
                   fontSize: 10.4,
-                  color: Color(0xFF3B3B3B),
+                  color: AppColors.brandGreenLight,
                 ),
               ),
               const Spacer(),
@@ -460,7 +507,7 @@ class _ProviderCard extends StatelessWidget {
                     provider.rating,
                     style: const TextStyle(
                       fontSize: 10.5,
-                      color: Colors.black,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(width: 6),
@@ -468,7 +515,7 @@ class _ProviderCard extends StatelessWidget {
                     provider.reviews,
                     style: const TextStyle(
                       fontSize: 10.5,
-                      color: Color(0xFF5B5B5B),
+                      color: AppColors.textMuted,
                     ),
                   ),
                 ],
@@ -483,8 +530,9 @@ class _ProviderCard extends StatelessWidget {
                   child: Ink(
                     height: 28,
                     decoration: BoxDecoration(
-                      color: AppColors.brandGreen,
+                      color: AppColors.surfaceHighlight,
                       borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: AppColors.brandGreen),
                     ),
                     child: const Center(
                       child: FittedBox(
@@ -521,6 +569,45 @@ class _ProviderCard extends StatelessWidget {
   }
 }
 
+class _ProviderPreviewImage extends StatelessWidget {
+  const _ProviderPreviewImage({required this.imagePath});
+
+  final String imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedPath = imagePath.trim();
+
+    if (normalizedPath.startsWith('assets/')) {
+      return Image.asset(normalizedPath, fit: BoxFit.cover);
+    }
+
+    if (normalizedPath.startsWith('http')) {
+      return Image.network(
+        normalizedPath,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Image.asset(
+            'assets/images/onboarding/pexels-bulat843-1243575272-28995187.jpg',
+            fit: BoxFit.cover,
+          );
+        },
+      );
+    }
+
+    return Image.file(
+      File(normalizedPath),
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Image.asset(
+          'assets/images/onboarding/pexels-bulat843-1243575272-28995187.jpg',
+          fit: BoxFit.cover,
+        );
+      },
+    );
+  }
+}
+
 class _EmptyResults extends StatelessWidget {
   const _EmptyResults({
     required this.message,
@@ -534,15 +621,16 @@ class _EmptyResults extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8F8),
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
       ),
       child: Text(
         message,
         textAlign: TextAlign.center,
         style: const TextStyle(
           fontSize: 13,
-          color: Color(0xFF7A7A7A),
+          color: AppColors.textSecondary,
         ),
       ),
     );

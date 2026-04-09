@@ -1,4 +1,5 @@
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/home/booking/model/booking_payment_method.dart';
 import 'package:flutter/material.dart';
@@ -138,7 +139,7 @@ class _BookingCardDetailsScreenState extends State<BookingCardDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -173,7 +174,7 @@ class _BookingCardDetailsScreenState extends State<BookingCardDetailsScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -185,7 +186,7 @@ class _BookingCardDetailsScreenState extends State<BookingCardDetailsScreen> {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: Padding(
@@ -217,10 +218,10 @@ class _BookingCardDetailsScreenState extends State<BookingCardDetailsScreen> {
                                 width: double.infinity,
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: AppColors.surfaceElevated,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: const Color(0xFFE6E6E6),
+                                    color: AppColors.border,
                                   ),
                                 ),
                                 child: Column(
@@ -231,7 +232,7 @@ class _BookingCardDetailsScreenState extends State<BookingCardDetailsScreen> {
                                     const Divider(
                                       height: 1,
                                       thickness: 1,
-                                      color: Color(0xFFECECEC),
+                                      color: AppColors.border,
                                     ),
                                     const SizedBox(height: 12),
                                     const _CardDetailsFieldLabel(
@@ -581,7 +582,7 @@ class _CardDetailsHeader extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF2E2E2E),
+                  color: AppColors.textPrimary,
                 ),
               ),
               SizedBox(height: 2),
@@ -589,7 +590,7 @@ class _CardDetailsHeader extends StatelessWidget {
                 'Update your card details.',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Color(0xFF9A9A9A),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -612,7 +613,7 @@ class _CardDetailsFieldLabel extends StatelessWidget {
       style: const TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w500,
-        color: Color(0xFF414141),
+        color: AppColors.textPrimary,
       ),
     );
   }
@@ -647,6 +648,11 @@ class _CardDetailsTextField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       cursorColor: AppButtonColors.primaryBackground,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimary,
+      ),
       validator: validator,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
@@ -658,14 +664,14 @@ class _CardDetailsTextField extends StatelessWidget {
         hintText: hintText,
         hintStyle: const TextStyle(
           fontSize: 14,
-          color: Color(0xFFB1B1B1),
+          color: AppColors.textMuted,
         ),
         contentPadding: EdgeInsets.symmetric(
           horizontal: prefix == null ? 12 : 10,
           vertical: 13,
         ),
         filled: true,
-        fillColor: const Color(0xFFF8F8F8),
+        fillColor: AppColors.inputFill,
         prefixIcon: prefix == null
             ? null
             : Padding(
@@ -678,7 +684,7 @@ class _CardDetailsTextField extends StatelessWidget {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFE5E5E5)),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),

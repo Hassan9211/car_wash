@@ -1,13 +1,19 @@
 import 'dart:io';
 
+import 'package:car_wash/core/location/app_location_details.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/services/app_permission_service.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
+import 'package:car_wash/core/widgets/themed_google_map.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
+import 'package:car_wash/features/home/data/provider_catalog.dart';
+import 'package:car_wash/features/home/model/service_provider_profile.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class ServiceProviderSetupScreen extends StatefulWidget {
   const ServiceProviderSetupScreen({super.key});
@@ -19,6 +25,8 @@ class ServiceProviderSetupScreen extends StatefulWidget {
 
 class _ServiceProviderSetupScreenState
     extends State<ServiceProviderSetupScreen> {
+  static const _defaultProviderImagePath =
+      'assets/images/onboarding/pexels-bulat843-1243575272-28995187.jpg';
   static const _experienceOptions = <String>[
     'Less than 1 year',
     '1-2 years',
@@ -37,6 +45,8 @@ class _ServiceProviderSetupScreenState
   late final TextEditingController _addressController = TextEditingController(
     text: AuthSession.displayLocationLabel,
   );
+  late final TextEditingController _serviceChargeController =
+      TextEditingController(text: '24');
 
   late final Map<_WeekDay, _DayAvailability> _weeklyAvailability = {
     for (final day in _WeekDay.values)
@@ -63,6 +73,7 @@ class _ServiceProviderSetupScreenState
   @override
   void dispose() {
     _addressController.dispose();
+    _serviceChargeController.dispose();
     super.dispose();
   }
 
@@ -92,7 +103,15 @@ class _ServiceProviderSetupScreenState
       });
 
       try {
-        AuthSession.setCurrentLocationLabel(_addressController.text.trim());
+        final currentLocation = AuthSession.currentLocationDetails;
+        if (currentLocation != null) {
+          AuthSession.setCurrentLocationDetails(
+            currentLocation.copyWith(label: _addressController.text.trim()),
+          );
+        } else {
+          AuthSession.setCurrentLocationLabel(_addressController.text.trim());
+        }
+        await ProviderCatalog.saveOrUpdateProvider(_buildProviderProfile());
         AuthSession.setAuthenticated(true);
 
         if (!mounted) {
@@ -124,6 +143,9 @@ class _ServiceProviderSetupScreenState
       case _SetupStep.experience:
         if (_selectedExperience.trim().isEmpty) {
           return 'Please select your experience.';
+        }
+        if (_parseServiceCharge() == null) {
+          return 'Please enter valid service charges.';
         }
         return null;
       case _SetupStep.location:
@@ -352,6 +374,122 @@ class _ServiceProviderSetupScreenState
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
+  double? _parseServiceCharge() {
+    final normalizedValue = _serviceChargeController.text
+        .replaceAll(RegExp(r'[^0-9.]'), '')
+        .trim();
+    if (normalizedValue.isEmpty) {
+      return null;
+    }
+
+    final amount = double.tryParse(normalizedValue);
+    if (amount == null || amount <= 0) {
+      return null;
+    }
+
+    return amount;
+  }
+
+  ServiceProviderProfile _buildProviderProfile() {
+    final joinedAt = DateTime.now();
+    final providerImagePath = _galleryImagePaths.isNotEmpty
+        ? _galleryImagePaths.first
+        : _defaultProviderImagePath;
+    final availabilityLabel = _buildAvailabilityLabel();
+    final serviceCharge = _parseServiceCharge() ?? 24;
+
+    return ServiceProviderProfile(
+      id: ProviderCatalog.currentSessionProviderId,
+      name: AuthSession.displayName,
+      price: _formatServiceChargeLabel(serviceCharge),
+      rating: '5.0',
+      reviews: 'New',
+      imagePath: providerImagePath,
+      mainImageUrl: providerImagePath,
+      galleryImageUrls: _galleryImagePaths.isNotEmpty
+          ? List<String>.from(_galleryImagePaths)
+          : const [_defaultProviderImagePath],
+      description: _buildProviderDescription(),
+      searchTerms: _buildSearchTerms(),
+      location: _addressController.text.trim(),
+      availability: availabilityLabel,
+      latitude: AuthSession.currentLatitude,
+      longitude: AuthSession.currentLongitude,
+      isNewProvider: true,
+      joinedAt: joinedAt,
+    );
+  }
+
+  String _buildProviderDescription() {
+    final displayName = AuthSession.displayName;
+    final area = _addressController.text.trim().isNotEmpty
+        ? _addressController.text.trim()
+        : AuthSession.displayLocationLabel;
+
+    return '$displayName is a newly joined service provider offering careful exterior washing, neat finishing, and doorstep support for customers in $area. ${_selectedExperience.toLowerCase()} experience on record.';
+  }
+
+  List<String> _buildSearchTerms() {
+    final terms = <String>{
+      ...AuthSession.displayName
+          .toLowerCase()
+          .split(RegExp(r'[^a-z0-9]+'))
+          .where((item) => item.isNotEmpty),
+      ..._addressController.text
+          .toLowerCase()
+          .split(RegExp(r'[^a-z0-9]+'))
+          .where((item) => item.isNotEmpty),
+      'car wash',
+      'new provider',
+      'service provider',
+      'detail',
+      'foam',
+    };
+
+    return terms.toList(growable: false);
+  }
+
+  String _buildAvailabilityLabel() {
+    final openDays = _weeklyAvailability.entries
+        .where((entry) => !entry.value.isClosed)
+        .toList(growable: false);
+
+    if (openDays.isEmpty) {
+      return 'Availability updates soon';
+    }
+
+    final firstDay = openDays.first.value;
+    final firstStart = _formatTimeLabel(firstDay.startTime);
+    final firstEnd = _formatTimeLabel(firstDay.endTime);
+    final sameHours = openDays.every(
+      (entry) =>
+          entry.value.startTime.hour == firstDay.startTime.hour &&
+          entry.value.startTime.minute == firstDay.startTime.minute &&
+          entry.value.endTime.hour == firstDay.endTime.hour &&
+          entry.value.endTime.minute == firstDay.endTime.minute,
+    );
+
+    if (sameHours) {
+      return '$firstStart - $firstEnd';
+    }
+
+    return '${openDays.length} days available each week';
+  }
+
+  String _formatServiceChargeLabel(double amount) {
+    final wholeAmount = amount.roundToDouble() == amount;
+    return wholeAmount
+        ? '\$${amount.toStringAsFixed(0)}'
+        : '\$${amount.toStringAsFixed(2)}';
+  }
+
+  String _formatTimeLabel(TimeOfDay time) {
+    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+    return '$hour:$minute $period';
+  }
+
   Future<void> _showCompletionDialog() async {
     await showDialog<void>(
       context: context,
@@ -377,7 +515,7 @@ class _ServiceProviderSetupScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -385,11 +523,7 @@ class _ServiceProviderSetupScreenState
               title: _currentStep.topBarTitle,
               onBack: _goBack,
             ),
-            Divider(
-              height: 1,
-              thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
-            ),
+            Divider(height: 1, thickness: 0.8, color: AppColors.border),
             _SetupProgressHeader(
               currentStepIndex: _currentStepIndex,
               totalSteps: _steps.length,
@@ -408,8 +542,7 @@ class _ServiceProviderSetupScreenState
               child: AppPrimaryButton(
                 key: const Key('service_provider_setup_next_button'),
                 label: _isSubmitting ? 'Saving...' : 'Next',
-                onPressed:
-                    _isPickingImage || _isSubmitting ? null : _continue,
+                onPressed: _isPickingImage || _isSubmitting ? null : _continue,
                 textStyle: const TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.w600,
@@ -428,6 +561,7 @@ class _ServiceProviderSetupScreenState
         return _ExperienceStep(
           key: const ValueKey(_SetupStep.experience),
           selectedExperience: _selectedExperience,
+          serviceChargeController: _serviceChargeController,
           options: _experienceOptions,
           onChanged: (value) {
             setState(() {
@@ -439,6 +573,7 @@ class _ServiceProviderSetupScreenState
         return _LocationStep(
           key: const ValueKey(_SetupStep.location),
           addressController: _addressController,
+          currentLocation: AuthSession.currentLocationDetails,
           currentLocationLabel: AuthSession.displayLocationLabel,
         );
       case _SetupStep.idCard:
@@ -561,7 +696,7 @@ class _ProviderSetupTopBar extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -594,9 +729,7 @@ class _SetupProgressHeader extends StatelessWidget {
               height: 3,
               margin: EdgeInsets.only(right: index == totalSteps - 1 ? 0 : 6),
               decoration: BoxDecoration(
-                color: isActive
-                    ? AppColors.brandGreen
-                    : const Color(0xFFE5E7E4),
+                color: isActive ? AppColors.brandGreen : AppColors.border,
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
@@ -626,11 +759,11 @@ class _SetupCompleteDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x22000000),
+            color: Colors.black.withValues(alpha: 0.22),
             blurRadius: 30,
             offset: Offset(0, 18),
           ),
@@ -690,14 +823,14 @@ class _SetupCompleteDialog extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF202720),
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
           const Text(
             'Your Profile has been completed',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12.6, color: Color(0xFF7A867D)),
+            style: TextStyle(fontSize: 12.6, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -709,11 +842,13 @@ class _ExperienceStep extends StatelessWidget {
   const _ExperienceStep({
     super.key,
     required this.selectedExperience,
+    required this.serviceChargeController,
     required this.options,
     required this.onChanged,
   });
 
   final String selectedExperience;
+  final TextEditingController serviceChargeController;
   final List<String> options;
   final ValueChanged<String> onChanged;
 
@@ -727,7 +862,7 @@ class _ExperienceStep extends StatelessWidget {
           style: TextStyle(
             fontSize: 14.5,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF222222),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -735,9 +870,9 @@ class _ExperienceStep extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFE3E5E2)),
+            border: Border.all(color: AppColors.border),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -745,9 +880,13 @@ class _ExperienceStep extends StatelessWidget {
               isExpanded: true,
               icon: const Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: Color(0xFF7B7B7B),
+                color: AppColors.textMuted,
               ),
-              style: const TextStyle(fontSize: 13.5, color: Color(0xFF2B2B2B)),
+              dropdownColor: AppColors.surfaceElevated,
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: AppColors.textPrimary,
+              ),
               items: options
                   .map(
                     (option) => DropdownMenuItem<String>(
@@ -764,6 +903,61 @@ class _ExperienceStep extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 18),
+        const Text(
+          'Set your service charges *',
+          style: TextStyle(
+            fontSize: 14.5,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: TextField(
+            controller: serviceChargeController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+            ],
+            cursorColor: AppColors.brandGreen,
+            style: const TextStyle(
+              fontSize: 13.8,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+            decoration: const InputDecoration(
+              prefixText: '\$ ',
+              prefixStyle: TextStyle(
+                fontSize: 13.8,
+                fontWeight: FontWeight.w700,
+                color: AppColors.brandGreenLight,
+              ),
+              hintText: '24',
+              hintStyle: TextStyle(
+                fontSize: 13.5,
+                color: AppColors.textMuted,
+              ),
+              border: InputBorder.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Customers will see this amount on your profile before booking.',
+          style: TextStyle(
+            fontSize: 12.2,
+            height: 1.35,
+            color: AppColors.textSecondary,
+          ),
+        ),
       ],
     );
   }
@@ -773,10 +967,12 @@ class _LocationStep extends StatelessWidget {
   const _LocationStep({
     super.key,
     required this.addressController,
+    required this.currentLocation,
     required this.currentLocationLabel,
   });
 
   final TextEditingController addressController;
+  final AppLocationDetails? currentLocation;
   final String currentLocationLabel;
 
   @override
@@ -789,27 +985,27 @@ class _LocationStep extends StatelessWidget {
           style: TextStyle(
             fontSize: 14.5,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF222222),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
-        const _LocationPreviewCard(),
+        _LocationPreviewCard(currentLocation: currentLocation),
         const SizedBox(height: 14),
         const Text(
           'Service provider Address',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF222222),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE5E7E4)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -838,13 +1034,13 @@ class _LocationStep extends StatelessWidget {
                         hintText: 'Enter your address',
                         hintStyle: TextStyle(
                           fontSize: 13.5,
-                          color: Color(0xFF97A098),
+                          color: AppColors.textMuted,
                         ),
                       ),
                       style: const TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF29312B),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -855,7 +1051,7 @@ class _LocationStep extends StatelessWidget {
                 'Current detected location: $currentLocationLabel',
                 style: const TextStyle(
                   fontSize: 12.2,
-                  color: Color(0xFF7F8A83),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -890,7 +1086,7 @@ class _IdCardStep extends StatelessWidget {
           style: TextStyle(
             fontSize: 14.5,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF222222),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 16),
@@ -898,9 +1094,9 @@ class _IdCardStep extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFA8C6AF)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             children: [
@@ -940,7 +1136,10 @@ class _IdCardStep extends StatelessWidget {
                 const SizedBox(height: 6),
                 const Text(
                   'Add image of your ID card',
-                  style: TextStyle(fontSize: 12.2, color: Color(0xFF889289)),
+                  style: TextStyle(
+                    fontSize: 12.2,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
               const SizedBox(height: 16),
@@ -990,7 +1189,7 @@ class _GalleryStep extends StatelessWidget {
           style: TextStyle(
             fontSize: 14.5,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF222222),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -998,7 +1197,7 @@ class _GalleryStep extends StatelessWidget {
           width: double.infinity,
           height: 250,
           decoration: BoxDecoration(
-            color: const Color(0xFFF2F4F1),
+            color: AppColors.surfaceMuted,
             borderRadius: BorderRadius.circular(16),
           ),
           child: previewImagePath == null
@@ -1009,7 +1208,7 @@ class _GalleryStep extends StatelessWidget {
                       Icon(
                         Icons.photo_library_outlined,
                         size: 42,
-                        color: Color(0xFF869189),
+                        color: AppColors.textMuted,
                       ),
                       SizedBox(height: 10),
                       Text(
@@ -1017,7 +1216,7 @@ class _GalleryStep extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF4B5A50),
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -1041,13 +1240,13 @@ class _GalleryStep extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF222222),
+                color: AppColors.textPrimary,
               ),
             ),
             const Icon(
               Icons.keyboard_arrow_down_rounded,
               size: 18,
-              color: Color(0xFF6F776F),
+              color: AppColors.textMuted,
             ),
             const Spacer(),
             OutlinedButton.icon(
@@ -1109,7 +1308,7 @@ class _AvailabilityStep extends StatelessWidget {
           style: TextStyle(
             fontSize: 14.5,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF222222),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 14),
@@ -1156,7 +1355,7 @@ class _AvailabilityDayRow extends StatelessWidget {
             style: const TextStyle(
               fontSize: 12.8,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF282828),
+              color: AppColors.textPrimary,
             ),
           ),
         ),
@@ -1179,7 +1378,7 @@ class _AvailabilityDayRow extends StatelessWidget {
                     border: Border.all(
                       color: availability.isClosed
                           ? AppColors.brandGreen
-                          : const Color(0xFFD7DCD8),
+                          : AppColors.border,
                     ),
                   ),
                   child: availability.isClosed
@@ -1189,7 +1388,10 @@ class _AvailabilityDayRow extends StatelessWidget {
                 const SizedBox(width: 8),
                 const Text(
                   'Closed',
-                  style: TextStyle(fontSize: 12.5, color: Color(0xFF4D5B52)),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -1253,16 +1455,19 @@ class _TimeCard extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9FBF8),
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFDDE5DF)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: const TextStyle(fontSize: 9.5, color: Color(0xFF7A8A7F)),
+                style: const TextStyle(
+                  fontSize: 9.5,
+                  color: AppColors.textMuted,
+                ),
               ),
               const SizedBox(height: 4),
               Row(
@@ -1273,7 +1478,7 @@ class _TimeCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF223027),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -1293,103 +1498,89 @@ class _TimeCard extends StatelessWidget {
 }
 
 class _LocationPreviewCard extends StatelessWidget {
-  const _LocationPreviewCard();
+  const _LocationPreviewCard({required this.currentLocation});
+
+  final AppLocationDetails? currentLocation;
 
   @override
   Widget build(BuildContext context) {
+    final previewLocation = currentLocation;
+
     return Container(
       width: double.infinity,
       height: 248,
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F1),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
       ),
-      child: Stack(
-        children: [
-          Positioned.fill(child: CustomPaint(painter: _MapPreviewPainter())),
-          const Center(
-            child: Icon(
-              Icons.location_on_rounded,
-              size: 38,
-              color: Color(0xFFE35B50),
+      clipBehavior: Clip.antiAlias,
+      child: previewLocation == null
+          ? const Center(
+              child: Text(
+                'Current location unavailable',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            )
+          : Stack(
+              children: [
+                Positioned.fill(
+                  child: ThemedGoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: LatLng(
+                        previewLocation.latitude,
+                        previewLocation.longitude,
+                      ),
+                      zoom: 15.3,
+                    ),
+                    scrollGesturesEnabled: false,
+                    zoomGesturesEnabled: false,
+                    rotateGesturesEnabled: false,
+                    tiltGesturesEnabled: false,
+                    markers: {
+                      Marker(
+                        markerId: const MarkerId('provider_setup_location'),
+                        position: LatLng(
+                          previewLocation.latitude,
+                          previewLocation.longitude,
+                        ),
+                        infoWindow: InfoWindow(
+                          title: 'Current provider location',
+                          snippet: previewLocation.displayLabel,
+                        ),
+                      ),
+                    },
+                  ),
+                ),
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  top: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceElevated.withValues(alpha: 0.92),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'This map is using the exact location captured from the device permission flow.',
+                      style: TextStyle(
+                        fontSize: 11.8,
+                        height: 1.3,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
-}
-
-class _MapPreviewPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final backgroundPaint = Paint()..color = const Color(0xFFEEF0EC);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(14)),
-      backgroundPaint,
-    );
-
-    final linePaint = Paint()
-      ..color = const Color(0xFFD9DDD7)
-      ..strokeWidth = 2;
-
-    for (var index = 0; index < 7; index++) {
-      final dx = (size.width / 6) * index;
-      canvas.drawLine(Offset(dx, 0), Offset(dx, size.height), linePaint);
-    }
-
-    for (var index = 0; index < 6; index++) {
-      final dy = (size.height / 5) * index;
-      canvas.drawLine(Offset(0, dy), Offset(size.width, dy), linePaint);
-    }
-
-    final roadPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 18
-      ..strokeCap = StrokeCap.round;
-
-    final roadShadowPaint = Paint()
-      ..color = const Color(0x18000000)
-      ..strokeWidth = 20
-      ..strokeCap = StrokeCap.round;
-
-    final roadPath = Path()
-      ..moveTo(size.width * 0.04, size.height * 0.82)
-      ..quadraticBezierTo(
-        size.width * 0.25,
-        size.height * 0.56,
-        size.width * 0.42,
-        size.height * 0.46,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.62,
-        size.height * 0.34,
-        size.width * 0.93,
-        size.height * 0.12,
-      );
-
-    canvas.drawPath(roadPath, roadShadowPaint);
-    canvas.drawPath(roadPath, roadPaint);
-
-    final roadPathTwo = Path()
-      ..moveTo(size.width * 0.12, size.height * 0.08)
-      ..quadraticBezierTo(
-        size.width * 0.26,
-        size.height * 0.26,
-        size.width * 0.46,
-        size.height * 0.42,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.72,
-        size.height * 0.62,
-        size.width * 0.86,
-        size.height * 0.92,
-      );
-
-    canvas.drawPath(roadPathTwo, roadShadowPaint);
-    canvas.drawPath(roadPathTwo, roadPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

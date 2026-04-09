@@ -125,7 +125,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surfaceElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
@@ -143,7 +143,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     width: 46,
                     child: Divider(
                       thickness: 4,
-                      color: Color(0xFFE1E1E1),
+                      color: AppColors.border,
                     ),
                   ),
                 ),
@@ -153,7 +153,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF202020),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -319,7 +319,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -354,7 +354,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -366,7 +366,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: Form(
@@ -382,7 +382,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         style: TextStyle(
                           fontSize: 14.5,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF232323),
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -404,7 +404,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xFF252525),
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -538,7 +538,7 @@ class _EditProfileAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: const Color(0xFFE3E3E3),
+          color: AppColors.border,
         ),
       ),
       child: ClipOval(
@@ -550,7 +550,7 @@ class _EditProfileAvatar extends StatelessWidget {
           errorBuilder: (context, error, stackTrace) {
             return DecoratedBox(
               decoration: const BoxDecoration(
-                color: Color(0xFFECECEC),
+                color: AppColors.surfaceMuted,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -585,7 +585,7 @@ class _ImageSourceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.surfaceElevated,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -594,7 +594,7 @@ class _ImageSourceTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE8E8E8)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
@@ -602,7 +602,7 @@ class _ImageSourceTile extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF4F4F4),
+                  color: AppColors.surfaceMuted,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -617,7 +617,7 @@ class _ImageSourceTile extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF242424),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -663,7 +663,7 @@ class _ProfileFormField extends StatelessWidget {
           style: const TextStyle(
             fontSize: 14.5,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF232323),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -677,14 +677,14 @@ class _ProfileFormField extends StatelessWidget {
           cursorColor: AppColors.brandGreen,
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFFF6F6F6),
+            fillColor: AppColors.inputFill,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 16,
             ),
             hintStyle: const TextStyle(
               fontSize: 14,
-              color: Color(0xFF7C7C7C),
+              color: AppColors.textMuted,
             ),
             errorStyle: const TextStyle(
               fontSize: 11.5,
@@ -693,13 +693,13 @@ class _ProfileFormField extends StatelessWidget {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
               borderSide: const BorderSide(
-                color: Color(0xFFE0E0E0),
+                color: AppColors.border,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
               borderSide: const BorderSide(
-                color: Color(0xFFE0E0E0),
+                color: AppColors.border,
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -723,7 +723,7 @@ class _ProfileFormField extends StatelessWidget {
           ),
           style: const TextStyle(
             fontSize: 14,
-            color: Color(0xFF353535),
+            color: AppColors.textPrimary,
           ),
         ),
       ],

@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
+import 'package:car_wash/core/widgets/themed_google_map.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
@@ -7,6 +10,7 @@ import 'package:car_wash/features/home/data/provider_catalog.dart';
 import 'package:car_wash/features/washer/model/washer_profile.dart';
 import 'package:car_wash/features/washer/presentation/widgets/service_provider_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class ServiceProviderProfileScreen extends StatefulWidget {
   const ServiceProviderProfileScreen({super.key});
@@ -18,6 +22,12 @@ class ServiceProviderProfileScreen extends StatefulWidget {
 
 class _ServiceProviderProfileScreenState
     extends State<ServiceProviderProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    ProviderCatalog.fetchProviders();
+  }
+
   Future<void> _openEditProfile() async {
     final didUpdate = await context.pushToProfileEdit();
     if (didUpdate == true && mounted) {
@@ -31,15 +41,18 @@ class _ServiceProviderProfileScreenState
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<int>(
-      valueListenable: AuthSession.listenable,
-      builder: (context, _, child) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        AuthSession.listenable,
+        ProviderCatalog.listenable,
+      ]),
+      builder: (context, child) {
         final profile = _buildCurrentProviderProfile();
 
         return DefaultTabController(
           length: 3,
           child: Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.appBackground,
             body: SafeArea(
               bottom: false,
               child: Column(
@@ -147,7 +160,7 @@ class _ProfileHeader extends StatelessWidget {
             bottom: 0,
             child: DecoratedBox(
               decoration: const BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surfaceElevated,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
@@ -184,7 +197,7 @@ class _ProfileHeader extends StatelessWidget {
                           profile.reviews,
                           style: const TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF1D1D1D),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ],
@@ -199,7 +212,7 @@ class _ProfileHeader extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A1A1A),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -225,7 +238,7 @@ class _ProfileTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return const TabBar(
       labelColor: AppColors.brandGreen,
-      unselectedLabelColor: Color(0xFF9C9C9C),
+      unselectedLabelColor: AppColors.textMuted,
       indicatorColor: AppColors.brandGreen,
       indicatorWeight: 1.6,
       indicatorSize: TabBarIndicatorSize.tab,
@@ -260,16 +273,16 @@ class _ProfileDetailsTab extends StatelessWidget {
             style: TextStyle(
               fontSize: 15.5,
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 10),
           Text(
             profile.description,
             style: const TextStyle(
-              fontSize: 12.5,
+              fontSize: 13.4,
               height: 1.6,
-              color: Color(0xFF7B7B7B),
+              color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 16),
@@ -297,24 +310,27 @@ class _ProfileDetailsTab extends StatelessWidget {
             style: TextStyle(
               fontSize: 15.5,
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             profile.location,
-            style: const TextStyle(fontSize: 12.5, color: Color(0xFF6C6C6C)),
+            style: const TextStyle(
+              fontSize: 12.5,
+              color: AppColors.textSecondary,
+            ),
           ),
           const SizedBox(height: 12),
           Container(
             height: 246,
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: const Color(0xFFF7F7F7),
+              color: AppColors.surfaceMuted,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE6E6E6)),
+              border: Border.all(color: AppColors.border),
             ),
-            child: const _MockMapCard(),
+            child: _ProfileLocationMap(profile: profile),
           ),
         ],
       ),
@@ -393,7 +409,7 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F7F4),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
@@ -403,7 +419,7 @@ class _InfoChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF4D4D4D)),
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -418,67 +434,75 @@ class _ReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CircleAvatar(
-          radius: 14,
-          backgroundColor: const Color(0xFFF3ECE7),
-          child: Text(
-            _initials(review.customerName),
-            style: const TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF7B5B42),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 14,
+            backgroundColor: AppColors.surfaceMuted,
+            child: Text(
+              _initials(review.customerName),
+              style: const TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.brandGreenLight,
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: List.generate(5, (index) {
-                  return Icon(
-                    index < review.rating
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
-                    size: 14,
-                    color: const Color(0xFFFFB423),
-                  );
-                }),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                review.message,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  height: 1.52,
-                  color: Color(0xFF656565),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: List.generate(5, (index) {
+                    return Icon(
+                      index < review.rating
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                      size: 14,
+                      color: const Color(0xFFFFB423),
+                    );
+                  }),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                review.customerName,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF4A4A4A),
+                const SizedBox(height: 6),
+                Text(
+                  review.message,
+                  style: const TextStyle(
+                    fontSize: 13.2,
+                    height: 1.52,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                review.dateLabel,
-                style: const TextStyle(
-                  fontSize: 10.5,
-                  color: Color(0xFF9C9C9C),
+                const SizedBox(height: 8),
+                Text(
+                  review.customerName,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  review.dateLabel,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -517,18 +541,51 @@ class _ProviderNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.network(
-      imageUrl,
+    final normalizedImageUrl = imageUrl.trim();
+
+    if (normalizedImageUrl.startsWith('http')) {
+      return Image.network(
+        normalizedImageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _FlexibleProviderImage(path: fallbackAssetPath);
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) {
+            return child;
+          }
+
+          return _FlexibleProviderImage(path: fallbackAssetPath);
+        },
+      );
+    }
+
+    return _FlexibleProviderImage(
+      path: normalizedImageUrl.isEmpty ? fallbackAssetPath : normalizedImageUrl,
+    );
+  }
+}
+
+class _FlexibleProviderImage extends StatelessWidget {
+  const _FlexibleProviderImage({required this.path});
+
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedPath = path.trim();
+    if (normalizedPath.startsWith('assets/')) {
+      return Image.asset(normalizedPath, fit: BoxFit.cover);
+    }
+
+    return Image.file(
+      File(normalizedPath),
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
-        return Image.asset(fallbackAssetPath, fit: BoxFit.cover);
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) {
-          return child;
-        }
-
-        return Image.asset(fallbackAssetPath, fit: BoxFit.cover);
+        return Image.asset(
+          'assets/images/onboarding/pexels-bulat843-1243575272-28995187.jpg',
+          fit: BoxFit.cover,
+        );
       },
     );
   }
@@ -550,7 +607,7 @@ class _ProviderReview {
 
 WasherProfile _buildCurrentProviderProfile() {
   final baseProfile = WasherProfile.fromServiceProvider(
-    ProviderCatalog.providers.first,
+    ProviderCatalog.currentProviderProfile(),
     id: 'service_provider_profile',
     phoneNumber: AuthSession.displayPhoneNumber,
     email: AuthSession.displayEmail,
@@ -581,6 +638,8 @@ WasherProfile _buildCurrentProviderProfile() {
     location: hasCustomLocation
         ? AuthSession.displayLocationLabel
         : baseProfile.location,
+    latitude: AuthSession.currentLatitude ?? baseProfile.latitude,
+    longitude: AuthSession.currentLongitude ?? baseProfile.longitude,
   );
 }
 
@@ -646,21 +705,21 @@ List<_ProviderReview> _buildReviews(
       customerName: 'Kristin Watson',
       rating: 4,
       message:
-          'Lorem ipsum dolor sit amet consectetur. Lorem nibh in vitae cras. Rhoncus justo volutpat nisi sed. Interdum aenean lobortis ipsum bibendum.',
+          'The washer arrived on time, explained the service clearly, and left the car looking fresh inside and out. Very smooth experience overall.',
       dateLabel: 'March 14, 2021',
     ),
     _ProviderReview(
-      customerName: 'Kristin Watson',
-      rating: 4,
+      customerName: 'Leslie Alexander',
+      rating: 5,
       message:
-          'Lorem ipsum dolor sit amet consectetur. Lorem nibh in vitae cras. Rhoncus justo volutpat nisi sed. Interdum aenean lobortis ipsum bibendum.',
+          'Great attention to detail on the seats, dashboard, and wheel finish. The car looked much cleaner than I expected for a quick booking.',
       dateLabel: 'March 14, 2021',
     ),
     _ProviderReview(
-      customerName: 'Kristin Watson',
-      rating: 4,
+      customerName: 'Devon Lane',
+      rating: 5,
       message:
-          'Lorem ipsum dolor sit amet consectetur. Lorem nibh in vitae cras. Rhoncus justo volutpat nisi sed. Interdum aenean lobortis ipsum bibendum.',
+          'Professional behavior, fast setup, and a really nice final shine. I would happily book this provider again for my next wash.',
       dateLabel: 'March 14, 2021',
     ),
   ];
@@ -714,129 +773,75 @@ String _initials(String name) {
   return '${words.first[0]}${words.last[0]}'.toUpperCase();
 }
 
-class _MockMapCard extends StatelessWidget {
-  const _MockMapCard();
+class _ProfileLocationMap extends StatelessWidget {
+  const _ProfileLocationMap({required this.profile});
+
+  final WasherProfile profile;
 
   @override
   Widget build(BuildContext context) {
+    if (profile.latitude == null || profile.longitude == null) {
+      return const ColoredBox(
+        color: AppColors.surfaceMuted,
+        child: Center(
+          child: Text(
+            'Location unavailable',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Stack(
       fit: StackFit.expand,
       children: [
-        CustomPaint(painter: _MapPainter()),
-        const Positioned(
-          left: 104,
-          top: 84,
-          child: Icon(
-            Icons.location_on_rounded,
-            size: 28,
-            color: Color(0xFFF05A45),
+        ThemedGoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: LatLng(profile.latitude!, profile.longitude!),
+            zoom: 14.9,
           ),
-        ),
-        const Positioned(
-          left: 148,
-          top: 52,
-          child: Text(
-            'Nirmala\nGirls HSS',
-            style: TextStyle(fontSize: 8, color: Color(0xFF8F8F8F)),
-          ),
-        ),
-        const Positioned(
-          left: 22,
-          top: 118,
-          child: RotatedBox(
-            quarterTurns: 3,
-            child: Text(
-              'Upperhandalva Salai',
-              style: TextStyle(fontSize: 8, color: Color(0xFF9A9A9A)),
+          scrollGesturesEnabled: false,
+          zoomGesturesEnabled: false,
+          rotateGesturesEnabled: false,
+          tiltGesturesEnabled: false,
+          markers: {
+            Marker(
+              markerId: MarkerId(profile.profileKeyName),
+              position: LatLng(profile.latitude!, profile.longitude!),
+              infoWindow: InfoWindow(
+                title: profile.name,
+                snippet: profile.location,
+              ),
             ),
-          ),
+          },
         ),
-        const Positioned(
-          left: 64,
-          top: 108,
-          child: RotatedBox(
-            quarterTurns: 3,
-            child: Text(
-              '8th St.',
-              style: TextStyle(fontSize: 8, color: Color(0xFF9A9A9A)),
+        Positioned(
+          left: 12,
+          right: 12,
+          bottom: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.62),
+              borderRadius: BorderRadius.circular(12),
             ),
-          ),
-        ),
-        const Positioned(
-          left: 102,
-          top: 100,
-          child: RotatedBox(
-            quarterTurns: 3,
             child: Text(
-              'Balaramapuram Main St.',
-              style: TextStyle(fontSize: 7.5, color: Color(0xFF9A9A9A)),
-            ),
-          ),
-        ),
-        const Positioned(
-          left: 188,
-          top: 92,
-          child: RotatedBox(
-            quarterTurns: 3,
-            child: Text(
-              '8th Street',
-              style: TextStyle(fontSize: 8, color: Color(0xFF9A9A9A)),
+              profile.location,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.3,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
       ],
     );
   }
-}
-
-class _MapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final backgroundPaint = Paint()..color = const Color(0xFFF5F5F5);
-    canvas.drawRect(Offset.zero & size, backgroundPaint);
-
-    final roadPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 17
-      ..color = Colors.white;
-
-    final roadEdgePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 1
-      ..color = const Color(0xFFE2E2E2);
-
-    final paths = <Path>[
-      Path()
-        ..moveTo(12, 18)
-        ..quadraticBezierTo(70, 98, 102, 242),
-      Path()
-        ..moveTo(60, 0)
-        ..quadraticBezierTo(120, 88, 112, 248),
-      Path()
-        ..moveTo(154, 8)
-        ..quadraticBezierTo(136, 102, 164, 248),
-      Path()
-        ..moveTo(228, 12)
-        ..quadraticBezierTo(204, 104, 228, 248),
-      Path()
-        ..moveTo(0, 84)
-        ..quadraticBezierTo(120, 102, 310, 88),
-      Path()
-        ..moveTo(0, 148)
-        ..quadraticBezierTo(150, 132, 310, 154),
-      Path()
-        ..moveTo(44, 210)
-        ..quadraticBezierTo(136, 194, 310, 208),
-    ];
-
-    for (final path in paths) {
-      canvas.drawPath(path, roadPaint);
-      canvas.drawPath(path, roadEdgePaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

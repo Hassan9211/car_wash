@@ -1,5 +1,6 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/home/booking/model/booking_payment_success_details.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +17,7 @@ class BookingPaymentSuccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -51,7 +52,7 @@ class BookingPaymentSuccessScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -63,7 +64,7 @@ class BookingPaymentSuccessScreen extends StatelessWidget {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: Padding(
@@ -83,7 +84,7 @@ class BookingPaymentSuccessScreen extends StatelessWidget {
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
                                 height: 1.45,
-                                color: Color(0xFF232323),
+                                color: AppColors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 26),
@@ -267,12 +268,12 @@ class _PaymentSuccessRow extends StatelessWidget {
     final labelStyle = TextStyle(
       fontSize: 12,
       fontWeight: isTotal ? FontWeight.w500 : FontWeight.w400,
-      color: const Color(0xFFB0B0B0),
+      color: isTotal ? AppColors.textSecondary : AppColors.textMuted,
     );
     final valueStyle = TextStyle(
       fontSize: 12,
       fontWeight: isTotal ? FontWeight.w500 : FontWeight.w400,
-      color: const Color(0xFF525252),
+      color: isTotal ? AppColors.textPrimary : AppColors.textSecondary,
     );
 
     return Row(

@@ -1,8 +1,12 @@
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/location/app_location_details.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
+import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/model/booking_flow_details.dart';
 import 'package:car_wash/features/home/model/service_provider_profile.dart';
+import 'package:car_wash/features/services/data/service_catalog.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -21,29 +25,374 @@ class _BookingScreenState extends State<BookingScreen> {
   final TextEditingController _numberPlateController = TextEditingController();
 
   bool _hasAttemptedSubmit = false;
-  String? _selectedLocation;
+  AppLocationDetails? _selectedLocation;
   String? _selectedServiceType;
   String? _selectedBrand;
   String? _selectedCar;
 
-  static const _serviceTypes = [
-    'Select Service type',
-    'Basic wash',
-    'Foam wash',
-    'Interior',
-    'Wax',
+  static const _serviceTypePlaceholder = 'Select Service type';
+
+  static const _brandPlaceholder = 'Select Brand';
+  static const _carPlaceholder = 'Select Car';
+
+  static const _uaeCarModelsByBrand = <String, List<String>>{
+    'Toyota': [
+      'Land Cruiser',
+      'Prado',
+      'Fortuner',
+      'Hilux',
+      'Corolla',
+      'Camry',
+      'Yaris',
+      'Raize',
+      'RAV4',
+      'Highlander',
+      'Innova',
+      'Coaster',
+    ],
+    'Nissan': [
+      'Patrol',
+      'Patrol Safari',
+      'X-Trail',
+      'Kicks',
+      'Pathfinder',
+      'Altima',
+      'Sunny',
+      'Sentra',
+      'Maxima',
+      'Z',
+      'Navara',
+      'Urvan',
+    ],
+    'Mitsubishi': [
+      'Pajero',
+      'Montero Sport',
+      'L200',
+      'ASX',
+      'Outlander',
+      'Eclipse Cross',
+      'Attrage',
+      'Xpander',
+    ],
+    'Honda': [
+      'Civic',
+      'Accord',
+      'City',
+      'HR-V',
+      'CR-V',
+      'ZR-V',
+      'Pilot',
+      'Odyssey',
+    ],
+    'Hyundai': [
+      'Elantra',
+      'Accent',
+      'Sonata',
+      'Azera',
+      'Tucson',
+      'Santa Fe',
+      'Palisade',
+      'Creta',
+      'Venue',
+      'Staria',
+    ],
+    'Kia': [
+      'Picanto',
+      'Rio',
+      'Cerato',
+      'K5',
+      'Sonet',
+      'Seltos',
+      'Sportage',
+      'Sorento',
+      'Telluride',
+      'Carnival',
+    ],
+    'Mazda': [
+      'Mazda 2',
+      'Mazda 3',
+      'Mazda 6',
+      'CX-3',
+      'CX-30',
+      'CX-5',
+      'CX-60',
+      'CX-9',
+      'CX-90',
+    ],
+    'Suzuki': [
+      'Swift',
+      'Dzire',
+      'Baleno',
+      'Ciaz',
+      'Jimny',
+      'Vitara',
+      'Ertiga',
+      'XL7',
+    ],
+    'Ford': [
+      'Territory',
+      'Escape',
+      'Edge',
+      'Explorer',
+      'Expedition',
+      'Taurus',
+      'Mustang',
+      'Ranger',
+      'F-150',
+      'Bronco',
+    ],
+    'Chevrolet': [
+      'Spark',
+      'Groove',
+      'Captiva',
+      'Equinox',
+      'Traverse',
+      'Tahoe',
+      'Suburban',
+      'Silverado',
+      'Camaro',
+      'Malibu',
+    ],
+    'GMC': [
+      'Terrain',
+      'Acadia',
+      'Yukon',
+      'Sierra',
+      'Hummer EV',
+    ],
+    'Jeep': [
+      'Wrangler',
+      'Grand Cherokee',
+      'Cherokee',
+      'Compass',
+      'Renegade',
+      'Gladiator',
+    ],
+    'Dodge': [
+      'Charger',
+      'Challenger',
+      'Durango',
+      'Hornet',
+    ],
+    'Ram': [
+      '1500',
+      '2500',
+      'TRX',
+    ],
+    'Lexus': [
+      'LX',
+      'GX',
+      'RX',
+      'NX',
+      'UX',
+      'ES',
+      'IS',
+      'LS',
+      'LM',
+    ],
+    'Infiniti': [
+      'QX80',
+      'QX60',
+      'QX55',
+      'Q50',
+    ],
+    'BMW': [
+      '1 Series',
+      '3 Series',
+      '5 Series',
+      '7 Series',
+      'X1',
+      'X3',
+      'X5',
+      'X6',
+      'X7',
+      'XM',
+      'i4',
+      'iX',
+    ],
+    'Mercedes-Benz': [
+      'A-Class',
+      'C-Class',
+      'E-Class',
+      'S-Class',
+      'CLA',
+      'GLA',
+      'GLC',
+      'GLE',
+      'GLS',
+      'G-Class',
+      'V-Class',
+      'EQE',
+      'EQS',
+    ],
+    'Audi': [
+      'A3',
+      'A4',
+      'A6',
+      'A8',
+      'Q3',
+      'Q5',
+      'Q7',
+      'Q8',
+      'e-tron',
+      'RS Q8',
+    ],
+    'Volkswagen': [
+      'Polo',
+      'Golf',
+      'Passat',
+      'T-Roc',
+      'Tiguan',
+      'Teramont',
+      'Touareg',
+    ],
+    'Porsche': [
+      'Cayenne',
+      'Macan',
+      'Panamera',
+      '911',
+      'Taycan',
+    ],
+    'Land Rover': [
+      'Defender',
+      'Discovery',
+      'Discovery Sport',
+      'Range Rover',
+      'Range Rover Sport',
+      'Range Rover Velar',
+      'Range Rover Evoque',
+    ],
+    'Tesla': [
+      'Model 3',
+      'Model Y',
+      'Model S',
+      'Model X',
+      'Cybertruck',
+    ],
+    'Cadillac': [
+      'XT4',
+      'XT5',
+      'XT6',
+      'Escalade',
+      'CT4',
+      'CT5',
+    ],
+    'Lincoln': [
+      'Corsair',
+      'Nautilus',
+      'Aviator',
+      'Navigator',
+    ],
+    'Peugeot': [
+      '208',
+      '2008',
+      '3008',
+      '5008',
+      'Landtrek',
+    ],
+    'Renault': [
+      'Kwid',
+      'Duster',
+      'Koleos',
+      'Megane',
+      'Arkana',
+    ],
+    'MG': [
+      'MG 5',
+      'MG 6',
+      'MG 7',
+      'ZS',
+      'HS',
+      'RX5',
+      'RX8',
+      'Whale',
+      'One',
+    ],
+    'Geely': [
+      'Coolray',
+      'Tugella',
+      'Emgrand',
+      'Okavango',
+      'Monjaro',
+      'Geometry C',
+    ],
+    'BYD': [
+      'Atto 3',
+      'Seal',
+      'Han',
+      'Song Plus',
+      'Tang',
+      'Dolphin',
+    ],
+    'Changan': [
+      'Alsvin',
+      'Eado Plus',
+      'CS35 Plus',
+      'CS55 Plus',
+      'CS75 Plus',
+      'UNI-K',
+      'UNI-V',
+    ],
+    'Jetour': [
+      'X70',
+      'X70 Plus',
+      'X90 Plus',
+      'Dashing',
+      'T2',
+    ],
+    'GAC': [
+      'Empow',
+      'Emkoo',
+      'GS3',
+      'GS4',
+      'GS8',
+      'M8',
+    ],
+    'Chery': [
+      'Arrizo 5',
+      'Arrizo 8',
+      'Tiggo 2 Pro',
+      'Tiggo 4 Pro',
+      'Tiggo 7 Pro',
+      'Tiggo 8 Pro',
+    ],
+    'Haval': [
+      'Jolion',
+      'H6',
+      'Dargo',
+      'H9',
+    ],
+    'Exeed': [
+      'LX',
+      'TXL',
+      'RX',
+      'VX',
+    ],
+    'Isuzu': [
+      'D-Max',
+      'MU-X',
+    ],
+    'JAC': [
+      'J7',
+      'JS4',
+      'JS6',
+      'T8',
+    ],
+  };
+
+  static final _brands = <String>[
+    _brandPlaceholder,
+    ..._uaeCarModelsByBrand.keys,
   ];
-
-  static const _brands = ['Select Brand', 'Toyota', 'Honda', 'BMW', 'Mercedes'];
-
-  static const _cars = ['Select Car', 'Corolla', 'Civic', 'X5', 'C-Class'];
 
   @override
   void initState() {
     super.initState();
-    _selectedServiceType = _serviceTypes.first;
-    _selectedBrand = _brands.first;
-    _selectedCar = _cars.first;
+    ServiceCatalog.fetchServices();
+    _selectedLocation = AuthSession.currentLocationDetails;
+    _selectedServiceType = _serviceTypePlaceholder;
+    _selectedBrand = _brandPlaceholder;
+    _selectedCar = _carPlaceholder;
   }
 
   @override
@@ -94,7 +443,7 @@ class _BookingScreenState extends State<BookingScreen> {
   BookingFlowDetails _buildBookingFlowDetails() {
     final customerName = _nameController.text.trim();
     final serviceType = _selectedServiceType == null ||
-            _selectedServiceType == _serviceTypes.first
+            _selectedServiceType == _serviceTypePlaceholder
         ? 'Basic Car Wash'
         : _selectedServiceType!;
 
@@ -102,6 +451,7 @@ class _BookingScreenState extends State<BookingScreen> {
       provider: widget.provider,
       customerName: customerName,
       serviceType: serviceType,
+      bookingLocation: _selectedLocation,
     );
   }
 
@@ -121,12 +471,32 @@ class _BookingScreenState extends State<BookingScreen> {
     return null;
   }
 
-  String? _validateLocation(String? value) {
-    if (value == null || value.trim().isEmpty) {
+  String? _validateLocation(AppLocationDetails? value) {
+    if (value == null || value.displayLabel.trim().isEmpty) {
       return 'Please set location';
     }
 
     return null;
+  }
+
+  List<String> get _serviceTypes {
+    final serviceLabels = ServiceCatalog.servicesGridList
+        .map((service) => service.label.trim())
+        .where((label) => label.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+
+    return <String>[_serviceTypePlaceholder, ...serviceLabels];
+  }
+
+  List<String> get _availableCars {
+    final selectedBrand = _selectedBrand;
+    if (selectedBrand == null || selectedBrand == _brandPlaceholder) {
+      return const [_carPlaceholder];
+    }
+
+    final models = _uaeCarModelsByBrand[selectedBrand] ?? const <String>[];
+    return <String>[_carPlaceholder, ...models];
   }
 
   @override
@@ -136,7 +506,7 @@ class _BookingScreenState extends State<BookingScreen> {
         : null;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -171,7 +541,7 @@ class _BookingScreenState extends State<BookingScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -183,7 +553,7 @@ class _BookingScreenState extends State<BookingScreen> {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -210,7 +580,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       const SizedBox(height: 6),
                       _BookingLocationField(
                         key: const Key('booking_location_field'),
-                        value: _selectedLocation,
+                        value: _selectedLocation?.displayLabel,
                         errorText: locationErrorText,
                         onTap: _openLocationPicker,
                         onTrailingIconTap: _openLocationPicker,
@@ -224,7 +594,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         items: _serviceTypes,
                         validator: (value) => _validateRequiredSelection(
                           value,
-                          _serviceTypes.first,
+                          _serviceTypePlaceholder,
                         ),
                         onChanged: (value) {
                           setState(() {
@@ -243,11 +613,12 @@ class _BookingScreenState extends State<BookingScreen> {
                         items: _brands,
                         validator: (value) => _validateRequiredSelection(
                           value,
-                          _brands.first,
+                          _brandPlaceholder,
                         ),
                         onChanged: (value) {
                           setState(() {
                             _selectedBrand = value;
+                            _selectedCar = _carPlaceholder;
                           });
                         },
                       ),
@@ -257,10 +628,10 @@ class _BookingScreenState extends State<BookingScreen> {
                       _BookingDropdownField(
                         key: const Key('booking_car_field'),
                         value: _selectedCar,
-                        items: _cars,
+                        items: _availableCars,
                         validator: (value) => _validateRequiredSelection(
                           value,
-                          _cars.first,
+                          _carPlaceholder,
                         ),
                         onChanged: (value) {
                           setState(() {
@@ -330,11 +701,11 @@ class _BookingLocationField extends StatelessWidget {
         children: [
           Ink(
             decoration: BoxDecoration(
-              color: const Color(0xFFF7F7F7),
+              color: AppColors.surfaceElevated,
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
                 color: errorText == null
-                    ? const Color(0xFFE7E7E7)
+                    ? AppColors.border
                     : const Color(0xFFE53935),
               ),
             ),
@@ -358,8 +729,8 @@ class _BookingLocationField extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12.5,
                           color: hasValue
-                              ? const Color(0xFF6F6F6F)
-                              : const Color(0xFFB2B2B2),
+                              ? AppColors.textSecondary
+                              : AppColors.textMuted,
                         ),
                       ),
                     ),
@@ -368,7 +739,7 @@ class _BookingLocationField extends StatelessWidget {
                 Container(
                   width: 1,
                   height: 22,
-                  color: const Color(0xFFE0E0E0),
+                  color: AppColors.border,
                 ),
                 InkWell(
                   key: const Key('booking_location_icon_button'),
@@ -420,7 +791,7 @@ class _BookingFieldLabel extends StatelessWidget {
       style: TextStyle(
         fontSize: isSubLabel ? 12 : 14,
         fontWeight: FontWeight.w500,
-        color: Colors.black,
+        color: AppColors.textPrimary,
       ),
     );
   }
@@ -443,6 +814,11 @@ class _BookingTextField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       cursorColor: AppButtonColors.primaryBackground,
+      style: const TextStyle(
+        fontSize: 13.2,
+        fontWeight: FontWeight.w500,
+        color: Color(0xFF1F1F1F),
+      ),
       validator: validator,
       decoration: InputDecoration(
         hintText: hintText,
@@ -452,10 +828,10 @@ class _BookingTextField extends StatelessWidget {
           vertical: 14,
         ),
         filled: true,
-        fillColor: const Color(0xFFF7F7F7),
+        fillColor: AppColors.inputFill,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4),
-          borderSide: const BorderSide(color: Color(0xFFE7E7E7)),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4),
@@ -503,10 +879,10 @@ class _BookingDropdownField extends StatelessWidget {
       decoration: InputDecoration(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         filled: true,
-        fillColor: const Color(0xFFF7F7F7),
+        fillColor: AppColors.inputFill,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4),
-          borderSide: const BorderSide(color: Color(0xFFE7E7E7)),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4),
@@ -524,7 +900,7 @@ class _BookingDropdownField extends StatelessWidget {
         ),
         errorStyle: const TextStyle(fontSize: 12),
       ),
-      style: const TextStyle(fontSize: 12.5, color: Color(0xFF6F6F6F)),
+      style: const TextStyle(fontSize: 12.5, color: AppColors.textPrimary),
       dropdownColor: Colors.white,
       items: items
           .map((item) {

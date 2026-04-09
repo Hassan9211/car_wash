@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:car_wash/core/services/app_permission_service.dart';
+import 'package:car_wash/core/services/app_location_service.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/authentication/model/app_user_role.dart';
@@ -111,10 +113,11 @@ class _LocationAccessScreenState extends State<LocationAccessScreen> {
         return;
       }
 
-      AuthSession.updateCurrentLocation(
+      final resolvedLocation = await AppLocationService.buildLocationDetails(
         latitude: position.latitude,
         longitude: position.longitude,
       );
+      AuthSession.setCurrentLocationDetails(resolvedLocation);
 
       if (!mounted) {
         return;
@@ -266,7 +269,7 @@ class _LocationAccessScreenState extends State<LocationAccessScreen> {
                 fontSize: 18,
                 height: 1.2,
                 fontWeight: FontWeight.w500,
-                color: Colors.black,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 14),
@@ -278,7 +281,7 @@ class _LocationAccessScreenState extends State<LocationAccessScreen> {
                 style: TextStyle(
                   fontSize: 12.5,
                   height: 1.15,
-                  color: Color(0xFF222222),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
@@ -341,7 +344,10 @@ class _LocationAccessIllustration extends StatelessWidget {
           ),
           const Positioned(
             top: 25,
-            child: CircleAvatar(radius: 13, backgroundColor: Colors.white),
+            child: CircleAvatar(
+              radius: 13,
+              backgroundColor: AppColors.surface,
+            ),
           ),
         ],
       ),
@@ -363,13 +369,13 @@ class _MapCardPainter extends CustomPainter {
 
     canvas.drawRRect(cardRect.shift(const Offset(0, 3)), shadowPaint);
 
-    final cardPaint = Paint()..color = Colors.white;
+    final cardPaint = Paint()..color = AppColors.surface;
     canvas.drawRRect(cardRect, cardPaint);
 
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
-      ..color = const Color(0xFFD7D7D7);
+      ..color = AppColors.border;
     canvas.drawRRect(cardRect, borderPaint);
 
     final greenPaint = Paint()..color = const Color(0xFFA2D748);

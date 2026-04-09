@@ -28,6 +28,9 @@ android {
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] =
+            project.findProperty("GOOGLE_MAPS_API_KEY")?.toString()
+                ?: "YOUR_GOOGLE_MAPS_API_KEY"
     }
 
     buildTypes {

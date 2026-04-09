@@ -30,12 +30,12 @@ class VerificationCompleteScreen extends StatelessWidget {
               'Verification Complete!',
               key: Key('verification_complete_title'),
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w500,
-                color: Colors.black,
-              ),
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
             ),
+          ),
             const SizedBox(height: 10),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 28),
@@ -45,7 +45,7 @@ class VerificationCompleteScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14.5,
                   height: 1.2,
-                  color: Color(0xFFAAA5A1),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
@@ -95,7 +95,7 @@ class _VerificationSuccessBadge extends StatelessWidget {
             width: 74,
             height: 74,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               shape: BoxShape.circle,
               border: Border.all(
                 color: AppColors.brandGreen,

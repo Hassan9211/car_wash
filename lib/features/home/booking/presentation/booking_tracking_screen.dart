@@ -1,21 +1,218 @@
+import 'dart:async';
+
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
+import 'package:car_wash/core/widgets/themed_google_map.dart';
+import 'package:car_wash/features/authentication/data/auth_session.dart';
+import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-class BookingTrackingScreen extends StatelessWidget {
-  const BookingTrackingScreen({
-    super.key,
-    required this.order,
-  });
+class BookingTrackingScreen extends StatefulWidget {
+  const BookingTrackingScreen({super.key, required this.order});
 
   final BookingOrderItem order;
 
   @override
+  State<BookingTrackingScreen> createState() => _BookingTrackingScreenState();
+}
+
+class _BookingTrackingScreenState extends State<BookingTrackingScreen> {
+  static const LatLng _fallbackLatLng = LatLng(40.7581, -73.9856);
+
+  GoogleMapController? _mapController;
+  StreamSubscription<Position>? _positionSubscription;
+  LatLng? _liveDeviceLocation;
+
+  @override
+  void initState() {
+    super.initState();
+    _startLiveLocationTracking();
+  }
+
+  @override
+  void dispose() {
+    _positionSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _startLiveLocationTracking() async {
+    try {
+      final isEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!isEnabled) {
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      final sessionLocation = AuthSession.currentLocationDetails;
+      if (sessionLocation != null) {
+        _liveDeviceLocation = LatLng(
+          sessionLocation.latitude,
+          sessionLocation.longitude,
+        );
+      }
+
+      _positionSubscription =
+          Geolocator.getPositionStream(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              distanceFilter: 10,
+            ),
+          ).listen((position) {
+            if (!mounted) {
+              return;
+            }
+
+            setState(() {
+              _liveDeviceLocation = LatLng(
+                position.latitude,
+                position.longitude,
+              );
+            });
+          });
+    } catch (_) {
+      // Keep the screen usable even if live location is unavailable.
+    }
+  }
+
+  LatLng get _providerPosition {
+    if (AuthSession.effectiveRole == AppUserRole.serviceProvider &&
+        _liveDeviceLocation != null) {
+      return _liveDeviceLocation!;
+    }
+
+    if (widget.order.hasProviderCoordinates) {
+      return LatLng(
+        widget.order.providerLatitude!,
+        widget.order.providerLongitude!,
+      );
+    }
+
+    return _fallbackLatLng;
+  }
+
+  LatLng get _customerPosition {
+    if (widget.order.hasCustomerCoordinates) {
+      return LatLng(
+        widget.order.customerLatitude!,
+        widget.order.customerLongitude!,
+      );
+    }
+
+    final sessionLocation = AuthSession.currentLocationDetails;
+    if (sessionLocation != null) {
+      return LatLng(sessionLocation.latitude, sessionLocation.longitude);
+    }
+
+    return _fallbackLatLng;
+  }
+
+  String get _bookedLocationLabel {
+    final savedAddress = widget.order.address.trim();
+    if (savedAddress.isNotEmpty) {
+      return savedAddress;
+    }
+
+    if (widget.order.hasCustomerCoordinates) {
+      return 'Booked service location';
+    }
+
+    final sessionAddress = AuthSession.displayLocationLabel.trim();
+    if (sessionAddress.isNotEmpty) {
+      return sessionAddress;
+    }
+
+    return 'Booked service location';
+  }
+
+  Set<Marker> _buildMarkers() {
+    return {
+      Marker(
+        markerId: const MarkerId('provider_marker'),
+        position: _providerPosition,
+        infoWindow: InfoWindow(
+          title: widget.order.serviceProviderName,
+          snippet: 'Service provider location',
+        ),
+      ),
+      Marker(
+        markerId: const MarkerId('customer_marker'),
+        position: _customerPosition,
+        infoWindow: InfoWindow(
+          title: widget.order.customerName,
+          snippet: _bookedLocationLabel,
+        ),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+      ),
+    };
+  }
+
+  Set<Polyline> _buildPolylines() {
+    return {
+      Polyline(
+        polylineId: const PolylineId('booking_route'),
+        points: [_providerPosition, _customerPosition],
+        color: AppButtonColors.primaryBackground,
+        width: 5,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+      ),
+    };
+  }
+
+  Future<void> _fitRouteBounds() async {
+    final controller = _mapController;
+    if (controller == null) {
+      return;
+    }
+
+    final southWest = LatLng(
+      _providerPosition.latitude < _customerPosition.latitude
+          ? _providerPosition.latitude
+          : _customerPosition.latitude,
+      _providerPosition.longitude < _customerPosition.longitude
+          ? _providerPosition.longitude
+          : _customerPosition.longitude,
+    );
+    final northEast = LatLng(
+      _providerPosition.latitude > _customerPosition.latitude
+          ? _providerPosition.latitude
+          : _customerPosition.latitude,
+      _providerPosition.longitude > _customerPosition.longitude
+          ? _providerPosition.longitude
+          : _customerPosition.longitude,
+    );
+
+    await controller.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(southwest: southWest, northeast: northEast),
+        64,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final initialCameraTarget = LatLng(
+      (_providerPosition.latitude + _customerPosition.latitude) / 2,
+      (_providerPosition.longitude + _customerPosition.longitude) / 2,
+    );
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -49,8 +246,8 @@ class BookingTrackingScreen extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 17,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -59,24 +256,64 @@ class BookingTrackingScreen extends StatelessWidget {
                 ],
               ),
             ),
-            Divider(
-              height: 1,
-              thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
-            ),
+            Divider(height: 1, thickness: 0.8, color: AppColors.border),
             Expanded(
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: _TrackingMap(
-                      providerName: order.serviceProviderName,
+                    child: ThemedGoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: initialCameraTarget,
+                        zoom: 13.8,
+                      ),
+                      myLocationEnabled: true,
+                      myLocationButtonEnabled: false,
+                      markers: _buildMarkers(),
+                      polylines: _buildPolylines(),
+                      onMapCreated: (controller) {
+                        _mapController = controller;
+                        unawaited(_fitRouteBounds());
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    top: 14,
+                    left: 14,
+                    right: 14,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _TopInfoChip(
+                          icon: Icons.local_shipping_outlined,
+                          label: widget.order.serviceProviderName,
+                        ),
+                        _TopInfoChip(
+                          icon: Icons.location_on_outlined,
+                          label: _bookedLocationLabel,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    right: 14,
+                    bottom: 238,
+                    child: FloatingActionButton.small(
+                      heroTag: 'tracking_recenter_button',
+                      backgroundColor: AppColors.surfaceElevated,
+                      foregroundColor: AppColors.textPrimary,
+                      onPressed: _fitRouteBounds,
+                      child: const Icon(Icons.my_location_rounded, size: 20),
                     ),
                   ),
                   Positioned(
                     left: 14,
                     right: 14,
                     bottom: 16,
-                    child: _TrackingBottomPanel(order: order),
+                    child: _TrackingBottomPanel(
+                      order: widget.order,
+                      bookedLocationLabel: _bookedLocationLabel,
+                    ),
                   ),
                 ],
               ),
@@ -88,175 +325,36 @@ class BookingTrackingScreen extends StatelessWidget {
   }
 }
 
-class _TrackingMap extends StatelessWidget {
-  const _TrackingMap({
-    required this.providerName,
-  });
+class _TopInfoChip extends StatelessWidget {
+  const _TopInfoChip({required this.icon, required this.label});
 
-  final String providerName;
+  final IconData icon;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: const Color(0xFFF4F4F2),
-      child: Stack(
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 250),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderSoft),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _MapBackgroundPainter(),
-            ),
-          ),
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _TrackingRoutePainter(),
-            ),
-          ),
-          Positioned(
-            left: 26,
-            top: 108,
-            child: Transform.rotate(
-              angle: -0.18,
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8EDE8).withValues(alpha: 0.9),
-                  shape: BoxShape.circle,
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x18000000),
-                      blurRadius: 12,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: Container(
-                  width: 38,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF474747),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Icon(
-                    Icons.directions_car_filled_rounded,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 42,
-            top: 126,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD8E8D9).withValues(alpha: 0.9),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    providerName,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF5C755D),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Icon(
-                  Icons.location_pin,
-                  size: 34,
-                  color: AppButtonColors.primaryBackground,
-                ),
-              ],
-            ),
-          ),
-          const Positioned(
-            left: 18,
-            top: 150,
-            child: RotatedBox(
-              quarterTurns: 3,
-              child: Text(
-                'Cleveland Street',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  color: Color(0xFF8D8D8D),
-                ),
-              ),
-            ),
-          ),
-          const Positioned(
-            left: 74,
-            top: 72,
-            child: RotatedBox(
-              quarterTurns: 3,
-              child: Text(
-                '93rd St.',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  color: Color(0xFF8D8D8D),
-                ),
-              ),
-            ),
-          ),
-          const Positioned(
-            left: 96,
-            top: 188,
-            child: RotatedBox(
-              quarterTurns: 3,
-              child: Text(
-                'Balasubramanyam St.',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  color: Color(0xFF8D8D8D),
-                ),
-              ),
-            ),
-          ),
-          const Positioned(
-            right: 38,
-            top: 94,
+          Icon(icon, size: 16, color: AppColors.brandGreen),
+          const SizedBox(width: 8),
+          Flexible(
             child: Text(
-              '86th Street',
-              style: TextStyle(
-                fontSize: 10.5,
-                color: Color(0xFF8D8D8D),
-              ),
-            ),
-          ),
-          const Positioned(
-            right: 30,
-            bottom: 240,
-            child: RotatedBox(
-              quarterTurns: 1,
-              child: Text(
-                '18th Avenue',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  color: Color(0xFF8D8D8D),
-                ),
-              ),
-            ),
-          ),
-          const Positioned(
-            left: 152,
-            top: 150,
-            child: RotatedBox(
-              quarterTurns: 3,
-              child: Text(
-                '88 Street',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  color: Color(0xFF8D8D8D),
-                ),
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12.2,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
               ),
             ),
           ),
@@ -269,9 +367,11 @@ class _TrackingMap extends StatelessWidget {
 class _TrackingBottomPanel extends StatelessWidget {
   const _TrackingBottomPanel({
     required this.order,
+    required this.bookedLocationLabel,
   });
 
   final BookingOrderItem order;
+  final String bookedLocationLabel;
 
   static const _labels = [
     'Order Placed',
@@ -287,11 +387,11 @@ class _TrackingBottomPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x14000000),
+            color: Color(0x18000000),
             blurRadius: 18,
             offset: Offset(0, 10),
           ),
@@ -312,7 +412,7 @@ class _TrackingBottomPanel extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 6),
                     color: isActive
                         ? AppButtonColors.primaryBackground
-                        : const Color(0xFFD8D8D8),
+                        : const Color(0xFF496257),
                   ),
                 );
               }
@@ -326,7 +426,7 @@ class _TrackingBottomPanel extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isDone
                       ? AppButtonColors.primaryBackground
-                      : const Color(0xFFD8D8D8),
+                      : const Color(0xFF496257),
                   shape: BoxShape.circle,
                 ),
                 child: isDone
@@ -350,14 +450,23 @@ class _TrackingBottomPanel extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF666666),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ),
                 )
                 .toList(growable: false),
           ),
-          const SizedBox(height: 26),
+          const SizedBox(height: 14),
+          if (bookedLocationLabel.trim().isNotEmpty)
+            Text(
+              bookedLocationLabel,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+          const SizedBox(height: 20),
           AppPrimaryButton(
             key: const Key('booking_tracking_done_button'),
             label: 'Done',
@@ -373,138 +482,6 @@ class _TrackingBottomPanel extends StatelessWidget {
       ),
     );
   }
-}
-
-class _MapBackgroundPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final backgroundPaint = Paint()
-      ..color = const Color(0xFFEBEBE8)
-      ..style = PaintingStyle.fill;
-    final roadPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.88)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 27
-      ..strokeCap = StrokeCap.round;
-    final lanePaint = Paint()
-      ..color = const Color(0xFFE2E2DE)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.3;
-
-    canvas.drawRect(Offset.zero & size, backgroundPaint);
-
-    final streetPaths = <Path>[
-      Path()
-        ..moveTo(size.width * 0.03, size.height * 0.10)
-        ..lineTo(size.width * 0.35, size.height * 0.10)
-        ..lineTo(size.width * 0.64, size.height * 0.12)
-        ..lineTo(size.width * 0.97, size.height * 0.12),
-      Path()
-        ..moveTo(size.width * 0.08, size.height * 0.28)
-        ..lineTo(size.width * 0.82, size.height * 0.28),
-      Path()
-        ..moveTo(size.width * 0.05, size.height * 0.47)
-        ..lineTo(size.width * 0.78, size.height * 0.47),
-      Path()
-        ..moveTo(size.width * 0.12, size.height * 0.68)
-        ..lineTo(size.width * 0.90, size.height * 0.68),
-      Path()
-        ..moveTo(size.width * 0.10, size.height * 0.88)
-        ..lineTo(size.width * 0.94, size.height * 0.94),
-      Path()
-        ..moveTo(size.width * 0.18, size.height * 0.04)
-        ..lineTo(size.width * 0.04, size.height * 0.22)
-        ..lineTo(size.width * 0.20, size.height * 0.40)
-        ..lineTo(size.width * 0.08, size.height * 0.76),
-      Path()
-        ..moveTo(size.width * 0.32, size.height * 0.04)
-        ..lineTo(size.width * 0.26, size.height * 0.42)
-        ..lineTo(size.width * 0.18, size.height * 0.86),
-      Path()
-        ..moveTo(size.width * 0.56, size.height * 0.0)
-        ..lineTo(size.width * 0.50, size.height * 0.60)
-        ..lineTo(size.width * 0.56, size.height * 0.82),
-      Path()
-        ..moveTo(size.width * 0.77, size.height * 0.06)
-        ..lineTo(size.width * 0.75, size.height * 0.52)
-        ..lineTo(size.width * 0.90, size.height * 0.78),
-    ];
-
-    for (final path in streetPaths) {
-      canvas.drawPath(path, roadPaint);
-      canvas.drawPath(path, lanePaint);
-    }
-
-    final blockPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.38)
-      ..style = PaintingStyle.fill;
-
-    final blocks = [
-      Rect.fromLTWH(size.width * 0.58, size.height * 0.18, 76, 54),
-      Rect.fromLTWH(size.width * 0.22, size.height * 0.54, 62, 48),
-      Rect.fromLTWH(size.width * 0.63, size.height * 0.62, 80, 50),
-      Rect.fromLTWH(size.width * 0.10, size.height * 0.30, 54, 64),
-    ];
-
-    for (final block in blocks) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(block, const Radius.circular(4)),
-        blockPaint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _TrackingRoutePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final routeShadowPaint = Paint()
-      ..color = const Color(0x330F7D32)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
-      ..strokeCap = StrokeCap.round;
-    final routePaint = Paint()
-      ..color = AppButtonColors.primaryBackground
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path()
-      ..moveTo(size.width * 0.18, size.height * 0.34)
-      ..cubicTo(
-        size.width * 0.29,
-        size.height * 0.34,
-        size.width * 0.39,
-        size.height * 0.35,
-        size.width * 0.38,
-        size.height * 0.41,
-      )
-      ..cubicTo(
-        size.width * 0.37,
-        size.height * 0.46,
-        size.width * 0.49,
-        size.height * 0.44,
-        size.width * 0.59,
-        size.height * 0.44,
-      )
-      ..cubicTo(
-        size.width * 0.67,
-        size.height * 0.44,
-        size.width * 0.68,
-        size.height * 0.32,
-        size.width * 0.79,
-        size.height * 0.31,
-      );
-
-    canvas.drawPath(path, routeShadowPaint);
-    canvas.drawPath(path, routePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 extension on BookingOrderItem {

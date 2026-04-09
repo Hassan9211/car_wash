@@ -1,3 +1,4 @@
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/services/model/service_item.dart';
 import 'package:flutter/material.dart';
 
@@ -22,10 +23,10 @@ class ServiceTile extends StatelessWidget {
             width: 52,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F4F3),
+              color: AppColors.surfaceElevated,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: const Color(0xFFD6E1DD),
+                color: AppColors.border,
               ),
             ),
             child: Icon(
@@ -41,7 +42,7 @@ class ServiceTile extends StatelessWidget {
             style: const TextStyle(
               fontSize: 9.8,
               height: 1.15,
-              color: Colors.black,
+              color: AppColors.textPrimary,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

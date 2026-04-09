@@ -30,7 +30,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8F6),
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -64,7 +64,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -76,7 +76,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: Padding(
@@ -89,12 +89,15 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFFF8FCF9), Color(0xFFEEF8F1)],
+                          colors: [
+                            AppColors.surfaceHighlight,
+                            AppColors.surface,
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: const Color(0xFFDCEBDF)),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +109,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                               fontSize: 25,
                               height: 1.15,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF16241A),
+                              color: AppColors.textPrimary,
                               letterSpacing: -0.8,
                             ),
                           ),
@@ -116,7 +119,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                             style: TextStyle(
                               fontSize: 14.5,
                               height: 1.45,
-                              color: Color(0xFF5E6E65),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -163,9 +166,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surfaceElevated,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE7EBE8)),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,12 +177,12 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                             width: 34,
                             height: 34,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFF6DE),
+                              color: AppColors.warningSurface,
                               borderRadius: BorderRadius.circular(11),
                             ),
                             child: const Icon(
                               Icons.info_outline_rounded,
-                              color: Color(0xFF8A5D0A),
+                              color: Color(0xFFF0C56A),
                               size: 18,
                             ),
                           ),
@@ -190,7 +193,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                               style: const TextStyle(
                                 fontSize: 12.8,
                                 height: 1.45,
-                                color: Color(0xFF617168),
+                                color: AppColors.textSecondary,
                               ),
                             ),
                           ),
@@ -253,19 +256,19 @@ class _RoleOptionCard extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isSelected
                   ? AppColors.brandGreen
-                  : const Color(0xFFE6EBE7),
+                  : AppColors.border,
               width: isSelected ? 1.3 : 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: isSelected
-                    ? const Color(0x140F7D32)
-                    : const Color(0x0D000000),
+                    ? AppColors.brandGreen.withValues(alpha: 0.16)
+                    : Colors.black.withValues(alpha: 0.16),
                 blurRadius: isSelected ? 18 : 12,
                 offset: const Offset(0, 6),
               ),
@@ -295,7 +298,7 @@ class _RoleOptionCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1C251F),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 3),
@@ -303,7 +306,7 @@ class _RoleOptionCard extends StatelessWidget {
                           role.description,
                           style: const TextStyle(
                             fontSize: 12.5,
-                            color: Color(0xFF7A8981),
+                            color: AppColors.textMuted,
                           ),
                         ),
                       ],
@@ -318,7 +321,7 @@ class _RoleOptionCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 13,
                   height: 1.45,
-                  color: Color(0xFF5F6E66),
+                  color: AppColors.textSecondary,
                 ),
               ),
               const SizedBox(height: 12),
@@ -369,7 +372,7 @@ class _RoleRadio extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: isSelected ? AppColors.brandGreen : const Color(0xFFD2DAD4),
+          color: isSelected ? AppColors.brandGreen : AppColors.border,
         ),
       ),
       child: DecoratedBox(

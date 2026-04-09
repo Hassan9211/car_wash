@@ -1,5 +1,6 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:car_wash/features/home/presentation/widgets/home_bottom_navigation_bar.dart';
@@ -63,12 +64,73 @@ class _BookingsScreenState extends State<BookingsScreen> {
       );
   }
 
-  void _rescheduleOrder() {
+  Future<void> _rescheduleOrder(BookingOrderItem order) async {
+    final now = DateTime.now();
+    final initialDate = order.orderDate.isAfter(now) ? order.orderDate : now;
+
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: DateTime(now.year + 1, 12, 31),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: AppButtonColors.primaryBackground,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (!mounted || selectedDate == null) {
+      return;
+    }
+
+    final selectedTime = await showTimePicker(
+      context: context,
+      initialTime: _parseInitialTime(order.bookingTime),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: AppButtonColors.primaryBackground,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (!mounted || selectedTime == null) {
+      return;
+    }
+
+    final formattedTime = _formatTimeOfDay(selectedTime);
+
+    await BookingOrdersStore.instance.rescheduleOrder(
+      orderId: order.id,
+      bookingDate: selectedDate,
+      bookingTime: formattedTime,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _selectedTab = _BookingsFilterTab.active;
+    });
+
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(
-          content: Text('Re-schedule screen will be available soon'),
+        SnackBar(
+          content: Text(
+            'Booking re-scheduled for ${_formatRescheduleDate(selectedDate)} at $formattedTime',
+          ),
         ),
       );
   }
@@ -76,7 +138,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -111,7 +173,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -123,7 +185,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: Column(
@@ -177,7 +239,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                 BookingOrderStatus.inProgress =>
                                   () => _trackOrder(order),
                                 BookingOrderStatus.completed =>
-                                  _rescheduleOrder,
+                                  () => _rescheduleOrder(order),
                                 BookingOrderStatus.cancelled => null,
                               },
                             );
@@ -197,6 +259,54 @@ class _BookingsScreenState extends State<BookingsScreen> {
       ),
     );
   }
+}
+
+TimeOfDay _parseInitialTime(String? value) {
+  final normalized = value?.trim() ?? '';
+  final match = RegExp(r'^(\d{1,2}):(\d{2})\s*([AP]M)$').firstMatch(
+    normalized.toUpperCase(),
+  );
+
+  if (match == null) {
+    return const TimeOfDay(hour: 19, minute: 0);
+  }
+
+  final hour = int.tryParse(match.group(1) ?? '') ?? 7;
+  final minute = int.tryParse(match.group(2) ?? '') ?? 0;
+  final period = match.group(3) ?? 'PM';
+
+  var normalizedHour = hour % 12;
+  if (period == 'PM') {
+    normalizedHour += 12;
+  }
+
+  return TimeOfDay(hour: normalizedHour, minute: minute);
+}
+
+String _formatTimeOfDay(TimeOfDay time) {
+  final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+  final minute = time.minute.toString().padLeft(2, '0');
+  final suffix = time.period == DayPeriod.am ? 'AM' : 'PM';
+  return '$hour:$minute $suffix';
+}
+
+String _formatRescheduleDate(DateTime value) {
+  const monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  return '${value.day} ${monthNames[value.month - 1]} ${value.year}';
 }
 
 class _BookingsTabBar extends StatelessWidget {
@@ -254,7 +364,7 @@ class _BookingsTabItem extends StatelessWidget {
                   fontWeight: FontWeight.w400,
                   color: isSelected
                       ? AppButtonColors.primaryBackground
-                      : const Color(0xFF757575),
+                      : AppColors.textMuted,
                 ),
               ),
             ),
@@ -262,7 +372,7 @@ class _BookingsTabItem extends StatelessWidget {
               height: 1.8,
               color: isSelected
                   ? AppButtonColors.primaryBackground
-                  : const Color(0xFFE2E2E2),
+                  : AppColors.border,
             ),
           ],
         ),
@@ -286,11 +396,12 @@ class _BookingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0A000000),
+            color: Colors.black.withValues(alpha: 0.14),
             blurRadius: 18,
             offset: Offset(0, 8),
           ),
@@ -403,7 +514,7 @@ class _BookingInfoColumn extends StatelessWidget {
           textAlign: textAlign,
           style: const TextStyle(
             fontSize: 11,
-            color: Color(0xFFA9A9A9),
+            color: AppColors.textMuted,
           ),
         ),
         const SizedBox(height: 4),
@@ -412,7 +523,7 @@ class _BookingInfoColumn extends StatelessWidget {
           textAlign: textAlign,
           style: const TextStyle(
             fontSize: 11.5,
-            color: Color(0xFF333333),
+            color: AppColors.textPrimary,
           ),
         ),
       ],
@@ -438,7 +549,7 @@ class _BookingRatingColumn extends StatelessWidget {
           'Ratings',
           style: TextStyle(
             fontSize: 11,
-            color: Color(0xFFA9A9A9),
+            color: AppColors.textMuted,
           ),
         ),
         const SizedBox(height: 4),
@@ -458,7 +569,7 @@ class _BookingRatingColumn extends StatelessWidget {
               rating,
               style: const TextStyle(
                 fontSize: 9.5,
-                color: Color(0xFF333333),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(width: 4),
@@ -466,7 +577,7 @@ class _BookingRatingColumn extends StatelessWidget {
               reviews,
               style: const TextStyle(
                 fontSize: 9.5,
-                color: Color(0xFF333333),
+                color: AppColors.textPrimary,
               ),
             ),
           ],
@@ -506,8 +617,9 @@ class _BookingActionButton extends StatelessWidget {
           : TextButton(
               onPressed: onTap,
               style: TextButton.styleFrom(
-                foregroundColor: AppButtonColors.primaryBackground,
-                backgroundColor: Colors.white,
+                foregroundColor: AppButtonColors.actionForeground,
+                backgroundColor: AppColors.surfaceMuted,
+                side: const BorderSide(color: AppColors.border),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -535,7 +647,7 @@ class _BookingsEmptyState extends StatelessWidget {
           textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 13,
-            color: Color(0xFF888888),
+            color: AppColors.textSecondary,
           ),
         ),
       ),

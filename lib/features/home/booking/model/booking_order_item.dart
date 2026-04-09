@@ -5,6 +5,7 @@ class BookingOrderItem {
     required this.status,
     required this.orderDate,
     required this.paymentDate,
+    this.statusUpdatedAt,
     required this.rating,
     required this.reviews,
     required this.totalPayment,
@@ -13,6 +14,10 @@ class BookingOrderItem {
     required this.customerName,
     this.customerEmail = '',
     this.address = '',
+    this.customerLatitude,
+    this.customerLongitude,
+    this.providerLatitude,
+    this.providerLongitude,
     this.paymentStatus = BookingPaymentStatus.pending,
     this.paymentMethod = '',
     this.bookingTime,
@@ -26,6 +31,7 @@ class BookingOrderItem {
   final BookingOrderStatus status;
   final DateTime orderDate;
   final DateTime paymentDate;
+  final DateTime? statusUpdatedAt;
   final String rating;
   final String reviews;
   final String totalPayment;
@@ -34,6 +40,10 @@ class BookingOrderItem {
   final String customerName;
   final String customerEmail;
   final String address;
+  final double? customerLatitude;
+  final double? customerLongitude;
+  final double? providerLatitude;
+  final double? providerLongitude;
   final BookingPaymentStatus paymentStatus;
   final String paymentMethod;
   final String? bookingTime;
@@ -52,10 +62,24 @@ class BookingOrderItem {
     return reviewRating != null || reviewText.trim().isNotEmpty;
   }
 
+  bool get hasCustomerCoordinates =>
+      customerLatitude != null && customerLongitude != null;
+
+  bool get hasProviderCoordinates =>
+      providerLatitude != null && providerLongitude != null;
+
+  DateTime get notificationTimestamp => statusUpdatedAt ?? paymentDate;
+
+  bool get hasUnreadNotification {
+    final difference = DateTime.now().difference(notificationTimestamp);
+    return difference.inMinutes < 180;
+  }
+
   BookingOrderItem copyWith({
     BookingOrderStatus? status,
     DateTime? orderDate,
     DateTime? paymentDate,
+    DateTime? statusUpdatedAt,
     String? providerId,
     String? rating,
     String? reviews,
@@ -65,6 +89,10 @@ class BookingOrderItem {
     String? customerName,
     String? customerEmail,
     String? address,
+    double? customerLatitude,
+    double? customerLongitude,
+    double? providerLatitude,
+    double? providerLongitude,
     BookingPaymentStatus? paymentStatus,
     String? paymentMethod,
     String? bookingTime,
@@ -78,6 +106,7 @@ class BookingOrderItem {
       status: status ?? this.status,
       orderDate: orderDate ?? this.orderDate,
       paymentDate: paymentDate ?? this.paymentDate,
+      statusUpdatedAt: statusUpdatedAt ?? this.statusUpdatedAt,
       rating: rating ?? this.rating,
       reviews: reviews ?? this.reviews,
       totalPayment: totalPayment ?? this.totalPayment,
@@ -86,6 +115,10 @@ class BookingOrderItem {
       customerName: customerName ?? this.customerName,
       customerEmail: customerEmail ?? this.customerEmail,
       address: address ?? this.address,
+      customerLatitude: customerLatitude ?? this.customerLatitude,
+      customerLongitude: customerLongitude ?? this.customerLongitude,
+      providerLatitude: providerLatitude ?? this.providerLatitude,
+      providerLongitude: providerLongitude ?? this.providerLongitude,
       paymentStatus: paymentStatus ?? this.paymentStatus,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       bookingTime: bookingTime ?? this.bookingTime,
@@ -117,6 +150,13 @@ class BookingOrderItem {
     final createdAt = DateTime.tryParse(
       (booking['created_at'] ?? booking['payment_date'] ?? '').toString(),
     );
+    final updatedAt = DateTime.tryParse(
+      (booking['updated_at'] ??
+              booking['status_updated_at'] ??
+              booking['last_updated_at'] ??
+              '')
+          .toString(),
+    );
 
     final paymentValue =
         booking['total_payment'] ??
@@ -137,6 +177,7 @@ class BookingOrderItem {
       ),
       orderDate: orderDate ?? createdAt ?? DateTime.now(),
       paymentDate: createdAt ?? orderDate ?? DateTime.now(),
+      statusUpdatedAt: updatedAt,
       rating: (provider['rating'] ??
               booking['provider_rating'] ??
               booking['rating'] ??
@@ -162,6 +203,22 @@ class BookingOrderItem {
       customerEmail:
           (customer['email'] ?? booking['customer_email'] ?? '').toString(),
       address: (booking['address'] ?? '').toString(),
+      customerLatitude: _readDouble(
+        booking,
+        ['customer_latitude', 'latitude', 'lat'],
+      ),
+      customerLongitude: _readDouble(
+        booking,
+        ['customer_longitude', 'longitude', 'lng'],
+      ),
+      providerLatitude: _readDouble(
+        booking,
+        ['provider_latitude', 'service_provider_latitude'],
+      ),
+      providerLongitude: _readDouble(
+        booking,
+        ['provider_longitude', 'service_provider_longitude'],
+      ),
       paymentStatus: BookingPaymentStatusX.fromApi(
         (booking['payment_status'] ?? 'pending').toString(),
       ),
@@ -188,6 +245,26 @@ class BookingOrderItem {
     };
 
     return '\$${numeric.toStringAsFixed(2)}';
+  }
+
+  static double? _readDouble(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) {
+        continue;
+      }
+
+      if (value is num) {
+        return value.toDouble();
+      }
+
+      final parsed = double.tryParse(value.toString());
+      if (parsed != null) {
+        return parsed;
+      }
+    }
+
+    return null;
   }
 }
 

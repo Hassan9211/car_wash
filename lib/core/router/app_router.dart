@@ -1,4 +1,5 @@
 import 'package:car_wash/core/router/app_routes.dart';
+import 'package:car_wash/core/location/app_location_details.dart';
 import 'package:car_wash/features/authentication/presentation/check_email_screen.dart';
 import 'package:car_wash/features/authentication/presentation/forgot_password_screen.dart';
 import 'package:car_wash/features/authentication/presentation/login_screen.dart';
@@ -158,7 +159,9 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.bookingLocation,
       builder: (context, state) => BookingLocationScreen(
-        initialLocation: state.extra is String ? state.extra! as String : null,
+        initialLocation: state.extra is AppLocationDetails
+            ? state.extra! as AppLocationDetails
+            : null,
       ),
     ),
     GoRoute(

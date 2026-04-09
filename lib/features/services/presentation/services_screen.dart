@@ -1,5 +1,6 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/services/data/service_catalog.dart';
 import 'package:car_wash/features/services/model/service_item.dart';
 import 'package:car_wash/features/services/presentation/widgets/service_tile.dart';
@@ -26,7 +27,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -61,7 +62,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -73,7 +74,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: ValueListenableBuilder<List<ServiceItem>>(

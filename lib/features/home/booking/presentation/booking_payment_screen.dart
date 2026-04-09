@@ -1,5 +1,6 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/model/booking_flow_details.dart';
@@ -34,7 +35,7 @@ class BookingPaymentScreen extends StatelessWidget {
     final totalAmount = details.provider.price;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -69,7 +70,7 @@ class BookingPaymentScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -81,7 +82,7 @@ class BookingPaymentScreen extends StatelessWidget {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: Padding(
@@ -99,8 +100,9 @@ class BookingPaymentScreen extends StatelessWidget {
                               width: double.infinity,
                               padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFDCE7DC),
+                                color: AppColors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.border),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,7 +112,7 @@ class BookingPaymentScreen extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500,
-                                      color: Colors.black,
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
@@ -257,7 +259,7 @@ class _ProgressPending extends StatelessWidget {
       width: 8,
       height: 8,
       decoration: const BoxDecoration(
-        color: Color(0xFFD8D8D8),
+        color: AppColors.border,
         shape: BoxShape.circle,
       ),
     );
@@ -275,7 +277,7 @@ class _ProgressLine extends StatelessWidget {
         child: Divider(
           height: 1,
           thickness: 1.5,
-          color: Color(0xFFE1E1E1),
+          color: AppColors.border,
         ),
       ),
     );
@@ -319,7 +321,7 @@ class _PaymentDetailRow extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF1E1E1E),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 )
@@ -331,7 +333,7 @@ class _PaymentDetailRow extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF1E1E1E),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 1),
@@ -339,7 +341,7 @@ class _PaymentDetailRow extends StatelessWidget {
                       value,
                       style: const TextStyle(
                         fontSize: 9.5,
-                        color: Color(0xFF8A8A8A),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -366,7 +368,7 @@ class _PaymentAmountRow extends StatelessWidget {
     final textStyle = TextStyle(
       fontSize: 13,
       fontWeight: isBold ? FontWeight.w600 : FontWeight.w400,
-      color: const Color(0xFF2A2A2A),
+      color: isBold ? AppColors.textPrimary : AppColors.textSecondary,
     );
 
     return Row(

@@ -1,4 +1,5 @@
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -9,7 +10,7 @@ class MyProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -44,7 +45,7 @@ class MyProfileScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -56,7 +57,7 @@ class MyProfileScreen extends StatelessWidget {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: ValueListenableBuilder<int>(
@@ -110,7 +111,7 @@ class _ProfileAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: const Color(0xFFE3E3E3),
+          color: AppColors.border,
         ),
       ),
       child: ClipOval(
@@ -120,7 +121,7 @@ class _ProfileAvatar extends StatelessWidget {
           errorBuilder: (context, error, stackTrace) {
             return DecoratedBox(
               decoration: const BoxDecoration(
-                color: Color(0xFFECECEC),
+                color: AppColors.surfaceMuted,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -163,7 +164,7 @@ class _ProfileInfoRow extends StatelessWidget {
                   label,
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFFD3D3D3),
+                    color: AppColors.textMuted,
                   ),
                 ),
               ),
@@ -175,7 +176,7 @@ class _ProfileInfoRow extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w400,
-                    color: Color(0xFF6A6A6A),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -185,7 +186,7 @@ class _ProfileInfoRow extends StatelessWidget {
           const Divider(
             height: 1,
             thickness: 0.8,
-            color: Color(0xFFE8E8E8),
+            color: AppColors.border,
           ),
         ],
       ),

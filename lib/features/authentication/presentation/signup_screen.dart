@@ -109,7 +109,7 @@ class _SignupScreenState extends State<SignupScreen> {
               style: TextStyle(
                 fontSize: 23,
                 fontWeight: FontWeight.w500,
-                color: Colors.black,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -118,7 +118,7 @@ class _SignupScreenState extends State<SignupScreen> {
               style: TextStyle(
                 fontSize: 14.5,
                 height: 1.2,
-                color: Color(0xFFAAA5A1),
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 16),
@@ -166,7 +166,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
                   size: 20,
-                  color: const Color(0xFF9C9793),
+                  color: AppColors.textMuted,
                 ),
               ),
             ),
@@ -192,7 +192,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
                   size: 20,
-                  color: const Color(0xFF9C9793),
+                  color: AppColors.textMuted,
                 ),
               ),
             ),
@@ -220,14 +220,14 @@ class _SignupScreenState extends State<SignupScreen> {
                         decoration: BoxDecoration(
                           color: _agreedToTerms
                               ? AppButtonColors.primaryBackground
-                              : Colors.white,
+                              : AppColors.inputFill,
                           borderRadius: BorderRadius.circular(2),
                           border: Border.all(
                             color: _agreedToTerms
                                 ? AppButtonColors.primaryBackground
                                 : _showTermsError
                                     ? AppButtonColors.destructiveForeground
-                                    : const Color(0xFFE0DBD7),
+                                    : AppColors.border,
                           ),
                         ),
                         child: _agreedToTerms
@@ -243,7 +243,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         'I agree to the Terms and Conditions.',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF8B8682),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -276,7 +276,7 @@ class _SignupScreenState extends State<SignupScreen> {
               children: [
                 Expanded(
                   child: Divider(
-                    color: const Color(0xFFE2DDD9).withValues(alpha: 0.85),
+                    color: AppColors.border,
                   ),
                 ),
                 const Padding(
@@ -285,25 +285,23 @@ class _SignupScreenState extends State<SignupScreen> {
                     'or continue with',
                     style: TextStyle(
                       fontSize: 12.5,
-                      color: Color(0xFFB3ACA7),
+                      color: AppColors.textMuted,
                     ),
                   ),
                 ),
                 Expanded(
                   child: Divider(
-                    color: const Color(0xFFE2DDD9).withValues(alpha: 0.85),
+                    color: AppColors.border,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            Row(
-              children: const [
+            const Row(
+              children: [
                 Expanded(
                   child: AppSocialButton(
                     height: 38,
-                    backgroundColor: Colors.white,
-                    borderColor: Color(0xFFE4DFDA),
                     borderRadius: 5,
                     child: AppGoogleLogo(),
                   ),
@@ -312,8 +310,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 Expanded(
                   child: AppSocialButton(
                     height: 38,
-                    backgroundColor: Colors.white,
-                    borderColor: Color(0xFFE4DFDA),
                     borderRadius: 5,
                     child: AppAppleLogo(),
                   ),
@@ -322,8 +318,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 Expanded(
                   child: AppSocialButton(
                     height: 38,
-                    backgroundColor: Colors.white,
-                    borderColor: Color(0xFFE4DFDA),
                     borderRadius: 5,
                     child: AppFacebookLogo(),
                   ),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/presentation/widgets/auth_shared_widgets.dart';
 import 'package:flutter/material.dart';
@@ -128,9 +129,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         ).copyWith(
           color: _showInvalidCode
               ? AppButtonColors.destructiveForeground
-              : Colors.black,
+              : AppColors.textPrimary,
         ),
         decoration: InputDecoration(
+          filled: true,
+          fillColor: AppColors.inputFill,
           isDense: true,
           counterText: '',
           contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -181,7 +184,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             style: TextStyle(
               fontSize: 23,
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 10),
@@ -190,7 +193,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             style: TextStyle(
               fontSize: 14.5,
               height: 1.2,
-              color: Color(0xFFAAA5A1),
+              color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 18),
@@ -250,7 +253,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   '00:${_secondsRemaining.toString().padLeft(2, '0')} ',
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFFAAA5A1),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 GestureDetector(

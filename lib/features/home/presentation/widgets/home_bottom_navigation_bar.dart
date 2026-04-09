@@ -41,13 +41,17 @@ class HomeBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.navBar,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+        border: const Border(
+          top: BorderSide(color: AppColors.border),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 10,
-            offset: Offset(0, -2),
+            color: Color(0x50000000),
+            blurRadius: 24,
+            offset: Offset(0, -8),
           ),
         ],
       ),
@@ -105,14 +109,37 @@ class _BottomNavItem extends StatelessWidget {
         child: SizedBox(
           width: 40,
           height: 40,
-          child: DecoratedBox(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.brandGreen : Colors.transparent,
+              gradient: isSelected
+                  ? const LinearGradient(
+                      colors: [
+                        Color(0xFF28D877),
+                        AppColors.brandGreen,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
+              color: isSelected ? null : Colors.transparent,
               shape: BoxShape.circle,
+              border: Border.all(
+                color: isSelected ? AppColors.brandGreenLight : AppColors.border,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.brandGreen.withValues(alpha: 0.32),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : const [],
             ),
             child: Icon(
               icon,
-              color: isSelected ? Colors.white : const Color(0xFF8D8D8D),
+              color: isSelected ? Colors.white : AppColors.textMuted,
               size: 22,
             ),
           ),

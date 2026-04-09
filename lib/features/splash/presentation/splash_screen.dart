@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
@@ -12,8 +13,13 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   Timer? _navigationTimer;
+  late final AnimationController _ambienceController = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 6),
+  )..repeat(reverse: true);
 
   @override
   void initState() {
@@ -37,36 +43,206 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void dispose() {
     _navigationTimer?.cancel();
+    _ambienceController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: 1),
-            duration: const Duration(milliseconds: 1800),
-            curve: Curves.easeOutCubic,
-            builder: (context, value, child) {
-              return Opacity(
-                opacity: value.clamp(0.0, 1.0).toDouble(),
-                child: Transform.scale(
-                  scale: 0.94 + (value * 0.06),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const _LogoHalo(),
-                      const SizedBox(height: 18),
-                      const _LoadingBar(),
-                    ],
-                  ),
+      backgroundColor: const Color(0xFF031008),
+      body: AnimatedBuilder(
+        animation: _ambienceController,
+        builder: (context, child) {
+          final motion = Curves.easeInOut.transform(_ambienceController.value);
+          final drift = math.sin(motion * math.pi * 2);
+          final glide = math.cos(motion * math.pi * 2);
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              _SplashBackdrop(motion: motion, drift: drift, glide: glide),
+              _SplashScrim(motion: motion),
+              SafeArea(
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 1800),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    return Opacity(
+                      opacity: value.clamp(0.0, 1.0),
+                      child: Transform.translate(
+                        offset: Offset(0, 24 * (1 - value)),
+                        child: Transform.scale(
+                          scale: 0.97 + (value * 0.03),
+                          child: _SplashBrandPanel(
+                            drift: drift,
+                            glide: glide,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SplashBackdrop extends StatelessWidget {
+  const _SplashBackdrop({
+    required this.motion,
+    required this.drift,
+    required this.glide,
+  });
+
+  final double motion;
+  final double drift;
+  final double glide;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF07170D),
+                const Color(0xFF041008),
+                const Color(0xFF020905),
+              ],
+              stops: const [0, 0.48, 1],
+            ),
           ),
         ),
+        Positioned(
+          left: -70 + (drift * 10),
+          top: -40,
+          child: _GlowOrb(
+            size: 220,
+            color: AppColors.brandGreenLight.withValues(alpha: 0.24),
+          ),
+        ),
+        Positioned(
+          right: -90 + (glide * 14),
+          bottom: 80,
+          child: _GlowOrb(
+            size: 260,
+            color: const Color(0xFFF3C95E).withValues(alpha: 0.18),
+          ),
+        ),
+        Positioned(
+          left: 24,
+          right: 24,
+          bottom: 120 + (drift * 10),
+          child: _GroundGlow(
+            color: AppColors.brandGreen.withValues(alpha: 0.22),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SplashScrim extends StatelessWidget {
+  const _SplashScrim({required this.motion});
+
+  final double motion;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.black.withValues(alpha: 0.26),
+            Colors.black.withValues(alpha: 0.18),
+            const Color(0xFF07120B).withValues(alpha: 0.44 + (motion * 0.08)),
+            const Color(0xFF041008),
+          ],
+          stops: const [0, 0.26, 0.62, 1],
+        ),
+      ),
+    );
+  }
+}
+
+class _SplashBrandPanel extends StatelessWidget {
+  const _SplashBrandPanel({
+    required this.drift,
+    required this.glide,
+  });
+
+  final double drift;
+  final double glide;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.white.withValues(alpha: 0.03),
+            Colors.transparent,
+            Colors.black.withValues(alpha: 0.12),
+          ],
+        ),
+      ),
+      child: Column(
+        children: [
+          const Spacer(),
+          Transform.translate(
+            offset: Offset(drift * 2, glide * -2),
+            child: const _LogoHalo(),
+          ),
+          const SizedBox(height: 22),
+          const Text(
+            'Lavego',
+            style: TextStyle(
+              fontSize: 38,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -1.2,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Premium car wash experience, polished before the app even opens.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14.2,
+              height: 1.5,
+              color: Colors.white.withValues(alpha: 0.84),
+            ),
+          ),
+          const Spacer(),
+          const _LoadingBar(),
+          const SizedBox(height: 12),
+          Text(
+            'Preparing your shine',
+            style: TextStyle(
+              fontSize: 11.8,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withValues(alpha: 0.68),
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -79,19 +255,25 @@ class _LogoHalo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       key: const Key('splash_logo_badge'),
-      width: 128,
-      height: 128,
+      width: 150,
+      height: 150,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const RadialGradient(
           colors: [Colors.white, AppColors.haloColor],
-          radius: 0.9,
+          radius: 0.92,
         ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
+            color: AppColors.brandGreen.withValues(alpha: 0.18),
+            blurRadius: 30,
+            spreadRadius: 3,
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
           ),
         ],
       ),
@@ -104,11 +286,11 @@ class _LogoHalo extends StatelessWidget {
           Text(
             'Lavego',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 22,
               height: 1,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               color: AppColors.deepInk,
-              letterSpacing: -0.4,
+              letterSpacing: -0.5,
             ),
           ),
         ],
@@ -123,8 +305,8 @@ class _BrandMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 80,
-      height: 44,
+      width: 84,
+      height: 48,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
@@ -149,7 +331,7 @@ class _BrandMark extends StatelessWidget {
           ),
           Positioned(
             top: 4,
-            left: 44,
+            left: 45,
             child: _LeafIcon(
               size: 18,
               rotation: 0.18,
@@ -157,7 +339,7 @@ class _BrandMark extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 12,
+            top: 13,
             left: 24,
             child: _LeafIcon(
               size: 16,
@@ -178,7 +360,7 @@ class _BrandMark extends StatelessWidget {
             bottom: 0,
             child: Icon(
               Icons.directions_car_filled_rounded,
-              size: 31,
+              size: 32,
               color: AppColors.deepInk,
             ),
           ),
@@ -256,7 +438,7 @@ class _LoadingBarState extends State<_LoadingBar>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1100),
+    duration: const Duration(milliseconds: 1200),
   )..repeat();
 
   @override
@@ -269,16 +451,16 @@ class _LoadingBarState extends State<_LoadingBar>
   Widget build(BuildContext context) {
     return Container(
       key: const Key('splash_progress'),
-      width: 92,
-      height: 4,
+      width: 128,
+      height: 6,
       decoration: BoxDecoration(
-        color: AppColors.trackColor,
+        color: Colors.white.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(999),
       ),
       clipBehavior: Clip.antiAlias,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final segmentWidth = constraints.maxWidth * 0.48;
+          final segmentWidth = constraints.maxWidth * 0.42;
           final travelDistance = constraints.maxWidth + segmentWidth;
 
           return AnimatedBuilder(
@@ -300,9 +482,18 @@ class _LoadingBarState extends State<_LoadingBar>
                           colors: [
                             AppColors.brandGreen,
                             AppColors.brandGreenLight,
+                            Color(0xFFE6D36C),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(999),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.brandGreenLight.withValues(
+                              alpha: 0.34,
+                            ),
+                            blurRadius: 10,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -311,6 +502,54 @@ class _LoadingBarState extends State<_LoadingBar>
             },
           );
         },
+      ),
+    );
+  }
+}
+
+class _GlowOrb extends StatelessWidget {
+  const _GlowOrb({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color, color.withValues(alpha: 0)],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GroundGlow extends StatelessWidget {
+  const _GroundGlow({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          gradient: LinearGradient(
+            colors: [
+              color.withValues(alpha: 0),
+              color,
+              color.withValues(alpha: 0),
+            ],
+          ),
+        ),
       ),
     );
   }

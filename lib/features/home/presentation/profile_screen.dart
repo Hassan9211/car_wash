@@ -62,7 +62,7 @@ class ProfileScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -97,7 +97,7 @@ class ProfileScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -109,7 +109,7 @@ class ProfileScreen extends StatelessWidget {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: ValueListenableBuilder<int>(
@@ -132,7 +132,7 @@ class ProfileScreen extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF222222),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -211,12 +211,12 @@ class _ProfileSummaryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE7E2DE)),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: const Color(0x12000000),
+            color: Colors.black.withValues(alpha: 0.16),
             blurRadius: 18,
             offset: const Offset(0, 6),
           ),
@@ -241,7 +241,7 @@ class _ProfileSummaryCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 12.5,
-              color: AppColors.brandGreenLight,
+            color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 16),
@@ -326,7 +326,7 @@ class _ProfileAvatar extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0x12000000),
+                  color: Colors.black.withValues(alpha: 0.18),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -344,8 +344,8 @@ class _ProfileAvatar extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           colors: [
-                            Color(0xFFF6E6D8),
-                            Color(0xFFD0D7E6),
+                            AppColors.surfaceHighlight,
+                            AppColors.surfaceMuted,
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -357,7 +357,7 @@ class _ProfileAvatar extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF263238),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -383,7 +383,7 @@ class _ProfileActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.surfaceElevated,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: item.onTap,
@@ -392,7 +392,7 @@ class _ProfileActionTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE9E5E1)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
@@ -416,7 +416,7 @@ class _ProfileActionTile extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF2A2A2A),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -424,13 +424,13 @@ class _ProfileActionTile extends StatelessWidget {
                 width: 22,
                 height: 22,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFF1F1F1),
+                  color: AppColors.surfaceMuted,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.chevron_right_rounded,
                   size: 18,
-                  color: Color(0xFF777777),
+                  color: AppColors.textMuted,
                 ),
               ),
             ],
@@ -477,11 +477,11 @@ class _DeleteAccountDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(22),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x25000000),
+            color: Colors.black.withValues(alpha: 0.22),
             blurRadius: 26,
             offset: Offset(0, 18),
           ),
@@ -495,7 +495,7 @@ class _DeleteAccountDialog extends StatelessWidget {
             height: 88,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: const Color(0xFFF3FAF5),
+              color: AppColors.surfaceMuted,
               borderRadius: BorderRadius.circular(24),
             ),
             child: const Icon(
@@ -512,7 +512,7 @@ class _DeleteAccountDialog extends StatelessWidget {
               fontSize: 16,
               height: 1.3,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF232323),
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 10),
@@ -522,7 +522,7 @@ class _DeleteAccountDialog extends StatelessWidget {
             style: TextStyle(
               fontSize: 12.5,
               height: 1.4,
-              color: Color(0xFF8D8D8D),
+              color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 18),

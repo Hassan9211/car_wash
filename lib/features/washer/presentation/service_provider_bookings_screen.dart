@@ -1,3 +1,4 @@
+import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
@@ -15,7 +16,7 @@ class ServiceProviderBookingsScreen extends StatefulWidget {
 
 class _ServiceProviderBookingsScreenState
     extends State<ServiceProviderBookingsScreen> {
-  _ProviderBookingsTab _selectedTab = _ProviderBookingsTab.accepted;
+  _ProviderBookingsTab _selectedTab = _ProviderBookingsTab.pending;
 
   @override
   void initState() {
@@ -32,7 +33,11 @@ class _ServiceProviderBookingsScreenState
 
     final pendingOrders = orders
         .where((order) => order.status == BookingOrderStatus.pending)
-        .toList(growable: false);
+        .toList(growable: false)
+      ..sort(
+        (first, second) =>
+            second.notificationTimestamp.compareTo(first.notificationTimestamp),
+      );
 
     if (pendingOrders.isEmpty) {
       return const [];
@@ -64,7 +69,11 @@ class _ServiceProviderBookingsScreenState
               order.status == BookingOrderStatus.orderPlaced ||
               order.status == BookingOrderStatus.inProgress,
         )
-        .toList(growable: false);
+        .toList(growable: false)
+      ..sort(
+        (first, second) =>
+            second.notificationTimestamp.compareTo(first.notificationTimestamp),
+      );
 
     if (acceptedOrders.isEmpty) {
       return const [];
@@ -73,6 +82,7 @@ class _ServiceProviderBookingsScreenState
     return acceptedOrders
         .map(
           (order) => _ProviderBookingSummary(
+            order: order,
             customerName: order.customerName,
             orderDate: order.orderDate,
             totalPayment: order.totalPayment,
@@ -87,7 +97,11 @@ class _ServiceProviderBookingsScreenState
   ) {
     final completedOrders = orders
         .where((order) => order.status == BookingOrderStatus.completed)
-        .toList(growable: false);
+        .toList(growable: false)
+      ..sort(
+        (first, second) =>
+            second.notificationTimestamp.compareTo(first.notificationTimestamp),
+      );
 
     if (completedOrders.isEmpty) {
       return const [];
@@ -96,6 +110,7 @@ class _ServiceProviderBookingsScreenState
     return completedOrders
         .map(
           (order) => _ProviderBookingSummary(
+            order: order,
             customerName: order.customerName,
             orderDate: order.orderDate,
             totalPayment: order.totalPayment,
@@ -123,7 +138,11 @@ class _ServiceProviderBookingsScreenState
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(content: Text('${booking.customerName} booking accepted')),
+          SnackBar(
+            content: Text(
+              '${booking.customerName} booking accepted. Customer notified.',
+            ),
+          ),
         );
     } catch (error) {
       if (!mounted) {
@@ -160,10 +179,14 @@ class _ServiceProviderBookingsScreenState
     }
   }
 
+  Future<void> _openTracking(BookingOrderItem order) async {
+    await context.pushToBookingTracking(order);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -175,7 +198,7 @@ class _ServiceProviderBookingsScreenState
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w500,
-                    color: Colors.black,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -183,7 +206,7 @@ class _ServiceProviderBookingsScreenState
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
@@ -207,6 +230,7 @@ class _ServiceProviderBookingsScreenState
                   return switch (_selectedTab) {
                     _ProviderBookingsTab.accepted => _SummaryBookingsList(
                       items: acceptedBookings,
+                      onTap: _openTracking,
                     ),
                     _ProviderBookingsTab.pending => _PendingBookingsList(
                       items: pendingBookings,
@@ -289,7 +313,7 @@ class _ProviderBookingsTabItem extends StatelessWidget {
                   fontWeight: FontWeight.w400,
                   color: isSelected
                       ? AppColors.brandGreen
-                      : const Color(0xFF808080),
+                      : AppColors.textMuted,
                 ),
               ),
             ),
@@ -297,7 +321,7 @@ class _ProviderBookingsTabItem extends StatelessWidget {
               height: 1.8,
               color: isSelected
                   ? AppColors.brandGreen
-                  : const Color(0xFFE2E2E2),
+                  : AppColors.border,
             ),
           ],
         ),
@@ -307,9 +331,13 @@ class _ProviderBookingsTabItem extends StatelessWidget {
 }
 
 class _SummaryBookingsList extends StatelessWidget {
-  const _SummaryBookingsList({required this.items});
+  const _SummaryBookingsList({
+    required this.items,
+    this.onTap,
+  });
 
   final List<_ProviderBookingSummary> items;
+  final ValueChanged<BookingOrderItem>? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -324,7 +352,10 @@ class _SummaryBookingsList extends StatelessWidget {
       itemCount: items.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        return _ProviderSummaryBookingCard(item: items[index]);
+        return _ProviderSummaryBookingCard(
+          item: items[index],
+          onTap: onTap == null ? null : () => onTap!(items[index].order),
+        );
       },
     );
   }
@@ -366,55 +397,126 @@ class _PendingBookingsList extends StatelessWidget {
 }
 
 class _ProviderSummaryBookingCard extends StatelessWidget {
-  const _ProviderSummaryBookingCard({required this.item});
+  const _ProviderSummaryBookingCard({
+    required this.item,
+    this.onTap,
+  });
 
   final _ProviderBookingSummary item;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _ProviderStatusBadge(status: item.status),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _SummaryInfoColumn(
-                  label: 'Name',
-                  value: item.customerName,
-                ),
-              ),
-              Expanded(
-                child: _SummaryInfoColumn(
-                  label: 'Order Date',
-                  value: _formatShortDate(item.orderDate),
-                ),
-              ),
-              Expanded(
-                child: _SummaryInfoColumn(
-                  label: 'Total Payment',
-                  value: item.totalPayment,
-                  alignment: CrossAxisAlignment.end,
-                  textAlign: TextAlign.right,
-                ),
+        child: Ink(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.14),
+                blurRadius: 18,
+                offset: Offset(0, 8),
               ),
             ],
           ),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _ProviderStatusBadge(status: item.status),
+                  const Spacer(),
+                  if (onTap != null)
+                    const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.route_rounded,
+                          size: 14,
+                          color: AppColors.brandGreen,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Track',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.brandGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SummaryInfoColumn(
+                      label: 'Name',
+                      value: item.customerName,
+                    ),
+                  ),
+                  Expanded(
+                    child: _SummaryInfoColumn(
+                      label: 'Order Date',
+                      value: _formatShortDate(item.orderDate),
+                    ),
+                  ),
+                  Expanded(
+                    child: _SummaryInfoColumn(
+                      label: 'Total Payment',
+                      value: item.totalPayment,
+                      alignment: CrossAxisAlignment.end,
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
+              if (item.order.paymentStatus == BookingPaymentStatus.paid) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.successSurface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.payments_rounded,
+                        size: 15,
+                        color: AppColors.brandGreenLight,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${item.customerName} has paid ${item.totalPayment}',
+                          style: const TextStyle(
+                            fontSize: 11.8,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.brandGreenLight,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -436,9 +538,9 @@ class _ProviderPendingBookingCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8ECE8)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
@@ -497,7 +599,7 @@ class _ProviderPendingBookingCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const Divider(height: 1, color: Color(0xFFE9ECE9)),
+          const Divider(height: 1, color: AppColors.border),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -505,8 +607,9 @@ class _ProviderPendingBookingCard extends StatelessWidget {
                 child: FilledButton(
                   onPressed: onAccept,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.brandGreen,
+                    backgroundColor: AppColors.surfaceHighlight,
                     foregroundColor: Colors.white,
+                    side: const BorderSide(color: AppColors.brandGreen),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -519,8 +622,9 @@ class _ProviderPendingBookingCard extends StatelessWidget {
                 child: FilledButton(
                   onPressed: onDecline,
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFDDE9DF),
-                    foregroundColor: const Color(0xFF45634D),
+                    backgroundColor: AppColors.surfaceMuted,
+                    foregroundColor: AppColors.textSecondary,
+                    side: const BorderSide(color: AppColors.border),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -572,7 +676,7 @@ class _PendingInfoRow extends StatelessWidget {
                     label,
                     style: const TextStyle(
                       fontSize: 12.8,
-                      color: Color(0xFF252525),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 )
@@ -584,7 +688,7 @@ class _PendingInfoRow extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1F251F),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 1),
@@ -592,7 +696,7 @@ class _PendingInfoRow extends StatelessWidget {
                       value,
                       style: const TextStyle(
                         fontSize: 11.5,
-                        color: Color(0xFF8A8A8A),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -645,13 +749,13 @@ class _SummaryInfoColumn extends StatelessWidget {
         Text(
           label,
           textAlign: textAlign,
-          style: const TextStyle(fontSize: 10.8, color: Color(0xFFACACAC)),
+          style: const TextStyle(fontSize: 10.8, color: AppColors.textMuted),
         ),
         const SizedBox(height: 4),
         Text(
           value,
           textAlign: textAlign,
-          style: const TextStyle(fontSize: 11.5, color: Color(0xFF333333)),
+          style: const TextStyle(fontSize: 11.5, color: AppColors.textPrimary),
         ),
       ],
     );
@@ -671,7 +775,7 @@ class _ProviderBookingsEmptyState extends StatelessWidget {
         child: Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 13, color: Color(0xFF8A8A8A)),
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
       ),
     );
@@ -689,8 +793,8 @@ enum _ProviderBookingsTab {
 }
 
 enum _ProviderBookingStatus {
-  accepted('Accepted', Color(0xFFEAF7EE), Color(0xFF7EBF8C)),
-  completed('Completed', Color(0xFFE8F6FD), Color(0xFF6BB6DF));
+  accepted('Accepted', AppColors.successSurface, AppColors.brandGreenLight),
+  completed('Completed', AppColors.infoSurface, Color(0xFF7DD0F3));
 
   const _ProviderBookingStatus(
     this.label,
@@ -705,12 +809,14 @@ enum _ProviderBookingStatus {
 
 class _ProviderBookingSummary {
   const _ProviderBookingSummary({
+    required this.order,
     required this.customerName,
     required this.orderDate,
     required this.totalPayment,
     required this.status,
   });
 
+  final BookingOrderItem order;
   final String customerName;
   final DateTime orderDate;
   final String totalPayment;

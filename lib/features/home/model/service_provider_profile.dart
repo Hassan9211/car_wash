@@ -13,6 +13,10 @@ class ServiceProviderProfile {
     required this.location,
     required this.availability,
     this.categoryLabel = 'Car Washer',
+    this.latitude,
+    this.longitude,
+    this.isNewProvider = false,
+    this.joinedAt,
   });
 
   final String id;
@@ -28,6 +32,10 @@ class ServiceProviderProfile {
   final String location;
   final String availability;
   final String categoryLabel;
+  final double? latitude;
+  final double? longitude;
+  final bool isNewProvider;
+  final DateTime? joinedAt;
 
   factory ServiceProviderProfile.fromJson(Map<String, dynamic> json) {
     final gallery = _readList(json, [
@@ -67,6 +75,12 @@ class ServiceProviderProfile {
       json,
       ['description', 'bio', 'about'],
       fallback: 'Professional car wash service provider.',
+    );
+    final joinedAt = DateTime.tryParse(
+      _readString(
+        json,
+        ['joined_at', 'created_at', 'registered_at'],
+      ),
     );
 
     final searchTerms = _readList(json, ['search_terms', 'tags', 'keywords'])
@@ -113,6 +127,15 @@ class ServiceProviderProfile {
         ['category_label', 'service_type', 'category'],
         fallback: 'Car Washer',
       ),
+      latitude: _readDouble(json, ['latitude', 'lat', 'provider_latitude']),
+      longitude: _readDouble(
+        json,
+        ['longitude', 'lng', 'provider_longitude'],
+      ),
+      isNewProvider:
+          _readBool(json, ['is_new_provider', 'is_new', 'new_provider']) ??
+          false,
+      joinedAt: joinedAt,
     );
   }
 
@@ -120,9 +143,81 @@ class ServiceProviderProfile {
     return searchTerms.any((term) => term.toLowerCase().contains(query));
   }
 
+  ServiceProviderProfile copyWith({
+    String? id,
+    String? name,
+    String? price,
+    String? rating,
+    String? reviews,
+    String? imagePath,
+    String? mainImageUrl,
+    List<String>? galleryImageUrls,
+    String? description,
+    List<String>? searchTerms,
+    String? location,
+    String? availability,
+    String? categoryLabel,
+    double? latitude,
+    double? longitude,
+    bool? isNewProvider,
+    DateTime? joinedAt,
+  }) {
+    return ServiceProviderProfile(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      rating: rating ?? this.rating,
+      reviews: reviews ?? this.reviews,
+      imagePath: imagePath ?? this.imagePath,
+      mainImageUrl: mainImageUrl ?? this.mainImageUrl,
+      galleryImageUrls: galleryImageUrls ?? this.galleryImageUrls,
+      description: description ?? this.description,
+      searchTerms: searchTerms ?? this.searchTerms,
+      location: location ?? this.location,
+      availability: availability ?? this.availability,
+      categoryLabel: categoryLabel ?? this.categoryLabel,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      isNewProvider: isNewProvider ?? this.isNewProvider,
+      joinedAt: joinedAt ?? this.joinedAt,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'price': price,
+      'rating': rating,
+      'reviews': reviews,
+      'image_path': imagePath,
+      'main_image_url': mainImageUrl,
+      'gallery_urls': galleryImageUrls,
+      'description': description,
+      'search_terms': searchTerms,
+      'location': location,
+      'availability': availability,
+      'category_label': categoryLabel,
+      'latitude': latitude,
+      'longitude': longitude,
+      'is_new_provider': isNewProvider,
+      'joined_at': joinedAt?.toIso8601String(),
+    };
+  }
+
   String get detailsKeyName => (id.trim().isNotEmpty ? id : name)
       .toLowerCase()
       .replaceAll(' ', '_');
+
+  bool get hasCoordinates => latitude != null && longitude != null;
+
+  bool get showNewBadge {
+    if (joinedAt != null) {
+      return DateTime.now().difference(joinedAt!).inDays < 14;
+    }
+
+    return isNewProvider;
+  }
 }
 
 String _readString(
@@ -154,4 +249,47 @@ List<dynamic> _readList(Map<String, dynamic> json, List<String> keys) {
   }
 
   return const [];
+}
+
+double? _readDouble(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value == null) {
+      continue;
+    }
+
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    final parsed = double.tryParse(value.toString());
+    if (parsed != null) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+bool? _readBool(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value == null) {
+      continue;
+    }
+
+    if (value is bool) {
+      return value;
+    }
+
+    final normalized = value.toString().trim().toLowerCase();
+    if (normalized == 'true' || normalized == '1') {
+      return true;
+    }
+    if (normalized == 'false' || normalized == '0') {
+      return false;
+    }
+  }
+
+  return null;
 }

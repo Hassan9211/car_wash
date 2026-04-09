@@ -1,7 +1,9 @@
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
-class AppPrimaryButton extends StatelessWidget {
+class AppPrimaryButton extends StatefulWidget {
   const AppPrimaryButton({
     super.key,
     required this.label,
@@ -18,27 +20,97 @@ class AppPrimaryButton extends StatelessWidget {
   final TextStyle? textStyle;
 
   @override
+  State<AppPrimaryButton> createState() => _AppPrimaryButtonState();
+}
+
+class _AppPrimaryButtonState extends State<AppPrimaryButton> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final isEnabled = widget.onPressed != null;
+    final resolvedTextStyle =
+        (widget.textStyle ??
+                const TextStyle(
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w600,
+                ))
+            .copyWith(color: AppButtonColors.primaryForeground);
+
     return SizedBox(
       width: double.infinity,
-      child: FilledButton(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: AppButtonColors.primaryBackground,
-          foregroundColor: AppButtonColors.primaryForeground,
-          minimumSize: Size.fromHeight(height),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
+      child: Opacity(
+        opacity: isEnabled ? 1 : 0.58,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.985 : 1,
+          duration: const Duration(milliseconds: 110),
+          curve: Curves.easeOutCubic,
+          child: AnimatedSlide(
+            offset: _isPressed ? const Offset(0, 0.02) : Offset.zero,
+            duration: const Duration(milliseconds: 110),
+            curve: Curves.easeOutCubic,
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(widget.borderRadius),
+              child: Ink(
+                height: widget.height,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF2ADB77),
+                      AppColors.brandGreen,
+                      Color(0xFF0F6D35),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(widget.borderRadius),
+                  border: Border.all(
+                    color: AppColors.brandGreenLight.withValues(alpha: 0.35),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.brandGreen.withValues(
+                        alpha: _isPressed ? 0.18 : 0.34,
+                      ),
+                      blurRadius: _isPressed ? 10 : 22,
+                      offset: Offset(0, _isPressed ? 5 : 12),
+                    ),
+                  ],
+                ),
+                child: InkWell(
+                  onTap: isEnabled
+                      ? () {
+                          HapticFeedback.lightImpact();
+                          widget.onPressed?.call();
+                        }
+                      : null,
+                  onHighlightChanged: (isHighlighted) {
+                    if (_isPressed == isHighlighted) {
+                      return;
+                    }
+
+                    setState(() {
+                      _isPressed = isHighlighted;
+                    });
+                  },
+                  splashColor: Colors.white.withValues(alpha: 0.16),
+                  highlightColor: Colors.black.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(widget.borderRadius),
+                  child: Center(
+                    child: Text(widget.label, style: resolvedTextStyle),
+                  ),
+                ),
+              ),
+            ),
           ),
-          textStyle: textStyle,
         ),
-        child: Text(label),
       ),
     );
   }
 }
 
-class AppCircularIconButton extends StatelessWidget {
+class AppCircularIconButton extends StatefulWidget {
   const AppCircularIconButton({
     super.key,
     required this.backgroundColor,
@@ -47,6 +119,7 @@ class AppCircularIconButton extends StatelessWidget {
     required this.onTap,
     this.size = 52,
     this.iconSize = 26,
+    this.showShadow = true,
   });
 
   final Color backgroundColor;
@@ -55,22 +128,66 @@ class AppCircularIconButton extends StatelessWidget {
   final VoidCallback onTap;
   final double size;
   final double iconSize;
+  final bool showShadow;
+
+  @override
+  State<AppCircularIconButton> createState() => _AppCircularIconButtonState();
+}
+
+class _AppCircularIconButtonState extends State<AppCircularIconButton> {
+  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Ink(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            shape: BoxShape.circle,
+    return AnimatedScale(
+      scale: _isPressed ? 0.94 : 1,
+      duration: const Duration(milliseconds: 100),
+      curve: Curves.easeOutCubic,
+      child: Material(
+        color: Colors.transparent,
+        shadowColor: widget.backgroundColor.withValues(alpha: 0.4),
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            widget.onTap();
+          },
+          onHighlightChanged: (isHighlighted) {
+            if (_isPressed == isHighlighted) {
+              return;
+            }
+
+            setState(() {
+              _isPressed = isHighlighted;
+            });
+          },
+          splashColor: Colors.white.withValues(alpha: 0.14),
+          highlightColor: Colors.black.withValues(alpha: 0.08),
+          customBorder: const CircleBorder(),
+          child: Ink(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              color: widget.backgroundColor,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.border),
+              boxShadow: widget.showShadow
+                  ? [
+                      BoxShadow(
+                        color: widget.backgroundColor.withValues(
+                          alpha: _isPressed ? 0.14 : 0.24,
+                        ),
+                        blurRadius: _isPressed ? 7 : 12,
+                        offset: Offset(0, _isPressed ? 3 : 6),
+                      ),
+                    ]
+                  : const [],
+            ),
+            child: Icon(
+              widget.icon,
+              color: widget.iconColor,
+              size: widget.iconSize,
+            ),
           ),
-          child: Icon(icon, color: iconColor, size: iconSize),
         ),
       ),
     );
@@ -100,6 +217,8 @@ class AppActionTextButton extends StatelessWidget {
         padding: EdgeInsets.zero,
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        animationDuration: const Duration(milliseconds: 110),
+        overlayColor: foregroundColor.withValues(alpha: 0.12),
       ),
       child: Text(
         label,
@@ -114,7 +233,7 @@ class AppSocialButton extends StatelessWidget {
     super.key,
     required this.child,
     this.height = 44,
-    this.backgroundColor = Colors.white,
+    this.backgroundColor = AppColors.surfaceElevated,
     this.borderColor = AppButtonColors.socialBorder,
     this.borderRadius = 6,
     this.padding = EdgeInsets.zero,
@@ -138,6 +257,13 @@ class AppSocialButton extends StatelessWidget {
         border: Border.all(
           color: borderColor,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       alignment: Alignment.center,
       child: child,
@@ -198,7 +324,7 @@ class AppAppleLogo extends StatelessWidget {
     return Icon(
       Icons.apple_rounded,
       size: size,
-      color: Colors.black,
+      color: AppColors.textPrimary,
     );
   }
 }

@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/widgets/themed_google_map.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/home/model/service_provider_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class ServiceDetailScreen extends StatefulWidget {
   const ServiceDetailScreen({
@@ -42,47 +46,40 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                     _DetailHero(provider: provider),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEAF7EC),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  provider.categoryLabel,
-                                  style: const TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF238A42),
-                                  ),
-                                ),
-                              ),
-                              const Spacer(),
-                              const _RatingStars(),
-                              const SizedBox(width: 8),
-                              Text(
-                                provider.reviews,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  color: Color(0xFF1E1E1E),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final useStackedPriceLayout =
+                              constraints.maxWidth < 365;
+
+                          return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Text(
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 10,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  _InfoBadge(
+                                    label: provider.categoryLabel,
+                                    backgroundColor: const Color(0xFFEAF7EC),
+                                    textColor: const Color(0xFF238A42),
+                                    borderRadius: 6,
+                                  ),
+                                  if (provider.showNewBadge)
+                                    const _InfoBadge(
+                                      label: 'New Provider',
+                                      backgroundColor: Color(0xFF183222),
+                                      textColor: Color(0xFF8BF0AE),
+                                      borderRadius: 999,
+                                      fontWeight: FontWeight.w700,
+                                      horizontalPadding: 10,
+                                    ),
+                                  _RatingSummary(reviews: provider.reviews),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              if (useStackedPriceLayout) ...[
+                                Text(
                                   provider.name,
                                   key: const Key('service_detail_provider_name'),
                                   style: const TextStyle(
@@ -91,65 +88,110 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                     color: Colors.black,
                                   ),
                                 ),
-                              ),
-                              Text(
-                                provider.price,
-                                style: const TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF202020),
+                                const SizedBox(height: 8),
+                                Text(
+                                  provider.price,
+                                  style: const TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF202020),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.location_on_rounded,
-                                size: 18,
-                                color: Colors.red,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                provider.location,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF555555),
+                              ] else
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        provider.name,
+                                        key: const Key(
+                                          'service_detail_provider_name',
+                                        ),
+                                        style: const TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      provider.price,
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF202020),
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                              const SizedBox(height: 8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 1),
+                                    child: Icon(
+                                      Icons.location_on_rounded,
+                                      size: 18,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      provider.location,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        height: 1.35,
+                                        color: Color(0xFF555555),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 1),
+                                    child: Icon(
+                                      Icons.access_time_filled_rounded,
+                                      size: 16,
+                                      color: Color(0xFF0F7D32),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      provider.availability,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF222222),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              _DetailTabs(
+                                selectedIndex: _selectedTabIndex,
+                                onSelected: (index) {
+                                  setState(() {
+                                    _selectedTabIndex = index;
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              tabContent,
                             ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.access_time_filled_rounded,
-                                size: 16,
-                                color: Color(0xFF0F7D32),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                provider.availability,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF222222),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _DetailTabs(
-                            selectedIndex: _selectedTabIndex,
-                            onSelected: (index) {
-                              setState(() {
-                                _selectedTabIndex = index;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          tabContent,
-                        ],
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -241,6 +283,32 @@ class _DetailHero extends StatelessWidget {
                     const SizedBox(width: 48),
                   ],
                 ),
+                if (provider.showNewBadge)
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 54, right: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.66),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: const Color(0xFF8BF0AE),
+                        ),
+                      ),
+                      child: const Text(
+                        'Just Joined',
+                        style: TextStyle(
+                          fontSize: 10.8,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF8BF0AE),
+                        ),
+                      ),
+                    ),
+                  ),
                 const Spacer(),
                 Row(
                   children: [
@@ -354,6 +422,70 @@ class _RatingStars extends StatelessWidget {
   }
 }
 
+class _RatingSummary extends StatelessWidget {
+  const _RatingSummary({required this.reviews});
+
+  final String reviews;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const _RatingStars(),
+        const SizedBox(width: 8),
+        Text(
+          reviews,
+          style: const TextStyle(
+            fontSize: 15,
+            color: Color(0xFF1E1E1E),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoBadge extends StatelessWidget {
+  const _InfoBadge({
+    required this.label,
+    required this.backgroundColor,
+    required this.textColor,
+    required this.borderRadius,
+    this.fontWeight = FontWeight.w500,
+    this.horizontalPadding = 12,
+  });
+
+  final String label;
+  final Color backgroundColor;
+  final Color textColor;
+  final double borderRadius;
+  final FontWeight fontWeight;
+  final double horizontalPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12.5,
+          fontWeight: fontWeight,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+}
+
 class _DetailTabs extends StatelessWidget {
   const _DetailTabs({
     required this.selectedIndex,
@@ -428,7 +560,7 @@ class _DetailsTab extends StatelessWidget {
         Text(
           provider.description,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 13.8,
             height: 1.55,
             color: Color(0xFF8A8A8A),
           ),
@@ -453,7 +585,7 @@ class _DetailsTab extends StatelessWidget {
             ),
           ),
           clipBehavior: Clip.antiAlias,
-          child: const _MockMapCard(),
+          child: _ProviderLocationMap(provider: provider),
         ),
       ],
     );
@@ -565,122 +697,77 @@ class _ReviewsTab extends StatelessWidget {
   }
 }
 
-class _MockMapCard extends StatelessWidget {
-  const _MockMapCard();
+class _ProviderLocationMap extends StatelessWidget {
+  const _ProviderLocationMap({required this.provider});
+
+  final ServiceProviderProfile provider;
 
   @override
   Widget build(BuildContext context) {
+    if (!provider.hasCoordinates) {
+      return const ColoredBox(
+        color: Color(0xFFF3F3F3),
+        child: Center(
+          child: Text(
+            'Location unavailable',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF6E6E6E),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Stack(
       fit: StackFit.expand,
       children: [
-        CustomPaint(
-          painter: _MapPainter(),
-        ),
-        const Positioned(
-          left: 98,
-          top: 78,
-          child: Icon(
-            Icons.location_on_rounded,
-            size: 26,
-            color: Color(0xFFF05A45),
+        ThemedGoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: LatLng(provider.latitude!, provider.longitude!),
+            zoom: 14.8,
           ),
-        ),
-        const Positioned(
-          left: 124,
-          top: 42,
-          child: Text(
-            'Nirmala\nHSS',
-            style: TextStyle(
-              fontSize: 8,
-              color: Color(0xFF8F8F8F),
+          scrollGesturesEnabled: false,
+          zoomGesturesEnabled: false,
+          rotateGesturesEnabled: false,
+          tiltGesturesEnabled: false,
+          markers: {
+            Marker(
+              markerId: MarkerId(provider.detailsKeyName),
+              position: LatLng(provider.latitude!, provider.longitude!),
+              infoWindow: InfoWindow(
+                title: provider.name,
+                snippet: provider.location,
+              ),
             ),
-          ),
+          },
         ),
-        const Positioned(
-          left: 16,
-          top: 104,
-          child: RotatedBox(
-            quarterTurns: 3,
-            child: Text(
-              'Vepernandi S...',
-              style: TextStyle(fontSize: 8, color: Color(0xFF9A9A9A)),
+        Positioned(
+          left: 12,
+          right: 12,
+          bottom: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.62),
+              borderRadius: BorderRadius.circular(12),
             ),
-          ),
-        ),
-        const Positioned(
-          left: 46,
-          top: 90,
-          child: RotatedBox(
-            quarterTurns: 3,
             child: Text(
-              '8th St.',
-              style: TextStyle(fontSize: 8, color: Color(0xFF9A9A9A)),
-            ),
-          ),
-        ),
-        const Positioned(
-          left: 78,
-          top: 78,
-          child: RotatedBox(
-            quarterTurns: 3,
-            child: Text(
-              'Babusak Junathamman Salai',
-              style: TextStyle(fontSize: 7.5, color: Color(0xFF9A9A9A)),
+              provider.location,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.3,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
       ],
     );
   }
-}
-
-class _MapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final backgroundPaint = Paint()..color = const Color(0xFFF5F5F5);
-    canvas.drawRect(Offset.zero & size, backgroundPaint);
-
-    final roadPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 16
-      ..color = Colors.white;
-
-    final roadEdgePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 1
-      ..color = const Color(0xFFE2E2E2);
-
-    final paths = <Path>[
-      Path()
-        ..moveTo(10, 20)
-        ..quadraticBezierTo(60, 80, 90, 210),
-      Path()
-        ..moveTo(56, 10)
-        ..quadraticBezierTo(120, 70, 110, 220),
-      Path()
-        ..moveTo(150, 0)
-        ..quadraticBezierTo(130, 80, 155, 220),
-      Path()
-        ..moveTo(205, 10)
-        ..quadraticBezierTo(185, 90, 205, 220),
-      Path()
-        ..moveTo(0, 72)
-        ..quadraticBezierTo(110, 90, 245, 82),
-      Path()
-        ..moveTo(0, 138)
-        ..quadraticBezierTo(120, 120, 245, 146),
-    ];
-
-    for (final path in paths) {
-      canvas.drawPath(path, roadPaint);
-      canvas.drawPath(path, roadEdgePaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _NetworkCarImage extends StatelessWidget {
@@ -694,22 +781,48 @@ class _NetworkCarImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.network(
-      imageUrl,
+    final normalizedImageUrl = imageUrl.trim();
+    if (normalizedImageUrl.startsWith('http')) {
+      return Image.network(
+        normalizedImageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _FallbackProviderImage(path: fallbackAssetPath);
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) {
+            return child;
+          }
+
+          return _FallbackProviderImage(path: fallbackAssetPath);
+        },
+      );
+    }
+
+    return _FallbackProviderImage(
+      path: normalizedImageUrl.isEmpty ? fallbackAssetPath : normalizedImageUrl,
+    );
+  }
+}
+
+class _FallbackProviderImage extends StatelessWidget {
+  const _FallbackProviderImage({required this.path});
+
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedPath = path.trim();
+    if (normalizedPath.startsWith('assets/')) {
+      return Image.asset(normalizedPath, fit: BoxFit.cover);
+    }
+
+    return Image.file(
+      File(normalizedPath),
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
         return Image.asset(
-          fallbackAssetPath,
-          fit: BoxFit.cover,
-        );
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) {
-          return child;
-        }
-
-        return Image.asset(
-          fallbackAssetPath,
+          'assets/images/onboarding/pexels-bulat843-1243575272-28995187.jpg',
           fit: BoxFit.cover,
         );
       },

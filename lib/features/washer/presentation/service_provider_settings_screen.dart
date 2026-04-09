@@ -44,7 +44,7 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,7 +53,7 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -66,7 +66,7 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1D1D1D),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -145,7 +145,7 @@ class _SettingsTopBar extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w500,
-                    color: Colors.black,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -165,7 +165,7 @@ class _SettingsActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.surfaceElevated,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: item.onTap,
@@ -174,7 +174,7 @@ class _SettingsActionTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE8E8E8)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
@@ -194,7 +194,7 @@ class _SettingsActionTile extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 12.8,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF282828),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -202,13 +202,13 @@ class _SettingsActionTile extends StatelessWidget {
                 width: 24,
                 height: 24,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFF3F3F3),
+                  color: AppColors.surfaceMuted,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.chevron_right_rounded,
                   size: 17,
-                  color: Color(0xFF7A7A7A),
+                  color: AppColors.textMuted,
                 ),
               ),
             ],
@@ -242,11 +242,11 @@ class _DeleteAccountDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(22),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x25000000),
+            color: Colors.black.withValues(alpha: 0.28),
             blurRadius: 26,
             offset: Offset(0, 18),
           ),
@@ -260,7 +260,7 @@ class _DeleteAccountDialog extends StatelessWidget {
             height: 88,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: const Color(0xFFF3FAF5),
+              color: AppColors.surfaceMuted,
               borderRadius: BorderRadius.circular(24),
             ),
             child: const Icon(
@@ -277,7 +277,7 @@ class _DeleteAccountDialog extends StatelessWidget {
               fontSize: 16,
               height: 1.3,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF232323),
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 10),
@@ -287,7 +287,7 @@ class _DeleteAccountDialog extends StatelessWidget {
             style: TextStyle(
               fontSize: 12.5,
               height: 1.4,
-              color: Color(0xFF8D8D8D),
+              color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 18),
@@ -323,7 +323,8 @@ class _DeleteAccountDialog extends StatelessWidget {
                     onPressed: onConfirm,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.brandGreen,
-                      side: const BorderSide(color: AppColors.brandGreen),
+                      side: const BorderSide(color: AppColors.border),
+                      backgroundColor: AppColors.surfaceMuted,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),

@@ -9,7 +9,7 @@ class AuthScreenShell extends StatelessWidget {
     required this.onBack,
     required this.child,
     this.footer,
-    this.backgroundColor = Colors.white,
+    this.backgroundColor = AppColors.authSoftBackground,
   });
 
   final String title;
@@ -23,77 +23,89 @@ class AuthScreenShell extends StatelessWidget {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: backgroundColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            SizedBox(
-              height: 54,
-              child: Stack(
-                children: [
-                  Positioned(
-                    left: 8,
-                    top: 0,
-                    bottom: 0,
-                    child: IconButton(
-                      onPressed: onBack,
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: AppButtonColors.actionForeground,
-                        size: 18,
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              backgroundColor,
+              AppColors.appBackground,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              SizedBox(
+                height: 54,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: 8,
+                      top: 0,
+                      bottom: 0,
+                      child: IconButton(
+                        onPressed: onBack,
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: AppButtonColors.actionForeground,
+                          size: 18,
+                        ),
                       ),
                     ),
-                  ),
-                  Positioned.fill(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 56),
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 24 / 1.4,
-                            fontWeight: FontWeight.w500,
-                            color: AppButtonColors.actionForeground,
+                    Positioned.fill(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 56),
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 24 / 1.4,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Divider(
-              height: 1,
-              thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
-            ),
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(
-                        18,
-                        18,
-                        18,
-                        footer != null ? 92 : 20,
+              const Divider(
+                height: 1,
+                thickness: 0.8,
+                color: AppColors.border,
+              ),
+              Expanded(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.fromLTRB(
+                          18,
+                          18,
+                          18,
+                          footer != null ? 92 : 20,
+                        ),
+                        child: child,
                       ),
-                      child: child,
                     ),
-                  ),
-                  if (footer != null)
-                    Positioned(
-                      left: 18,
-                      right: 18,
-                      bottom: 18,
-                      child: footer!,
-                    ),
-                ],
+                    if (footer != null)
+                      Positioned(
+                        left: 18,
+                        right: 18,
+                        bottom: 18,
+                        child: footer!,
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -124,7 +136,7 @@ class AuthBottomPrompt extends StatelessWidget {
             prefixText,
             style: const TextStyle(
               fontSize: 14.5,
-              color: Color(0xFFA29B97),
+              color: AppColors.textMuted,
             ),
           ),
           GestureDetector(
@@ -156,7 +168,7 @@ class AuthBrandBadge extends StatelessWidget {
         Icon(
           Icons.local_car_wash_rounded,
           size: 22,
-          color: AppColors.brandGreen,
+          color: AppColors.brandGreenLight,
         ),
         SizedBox(height: 2),
         Text(
@@ -165,7 +177,7 @@ class AuthBrandBadge extends StatelessWidget {
             fontSize: 9,
             height: 1,
             fontWeight: FontWeight.w700,
-            color: AppColors.deepInk,
+            color: AppColors.textSecondary,
           ),
         ),
       ],
@@ -219,7 +231,7 @@ class _AuthInputFieldState extends State<AuthInputField> {
 
     final borderColor = isHighlighted
         ? AppColors.brandGreen
-        : const Color(0xFFE3E0DD);
+        : AppColors.border;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,20 +255,26 @@ class _AuthInputFieldState extends State<AuthInputField> {
           validator: widget.validator,
           onChanged: widget.onChanged,
           cursorColor: AppColors.brandGreen,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 14.5,
+          ),
           autocorrect: false,
           enableSuggestions: false,
           autofillHints: const <String>[],
           decoration: InputDecoration(
+            filled: true,
+            fillColor: AppColors.inputFill,
             hintText: widget.isFocusedStyle && !isHighlighted
                 ? widget.label
                 : widget.hintText,
             labelText: widget.isFocusedStyle ? null : widget.label,
             labelStyle: const TextStyle(
-              color: Color(0xFFACA7A2),
+              color: AppColors.textMuted,
               fontSize: 14.5,
             ),
             hintStyle: const TextStyle(
-              color: Color(0xFFACA7A2),
+              color: AppColors.textMuted,
               fontSize: 14.5,
             ),
             errorStyle: const TextStyle(

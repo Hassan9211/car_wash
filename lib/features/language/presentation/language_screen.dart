@@ -28,7 +28,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -41,7 +41,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                 style: TextStyle(
                   fontSize: 27,
                   fontWeight: FontWeight.w700,
-                  color: Colors.black,
+                  color: AppColors.textPrimary,
                   letterSpacing: -0.8,
                 ),
               ),
@@ -76,7 +76,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                 text: TextSpan(
                   style: const TextStyle(
                     fontSize: 14.5,
-                    color: Color(0xFF332D28),
+                    color: AppColors.textSecondary,
                   ),
                   children: [
                     const TextSpan(text: 'Already have an account? '),
@@ -117,10 +117,10 @@ class _LanguageOptionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final borderColor = isSelected
         ? AppColors.brandGreen
-        : const Color(0xFFE9E6E3);
+        : AppColors.border;
     final textColor = isSelected
-        ? AppColors.brandGreen
-        : const Color(0xFFA6A19D);
+        ? AppColors.brandGreenLight
+        : AppColors.textSecondary;
 
     return Material(
       color: Colors.transparent,
@@ -130,7 +130,9 @@ class _LanguageOptionTile extends StatelessWidget {
         child: Ink(
           height: 50,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isSelected
+                ? AppColors.surfaceHighlight
+                : AppColors.surfaceElevated,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: borderColor, width: isSelected ? 1 : 0.8),
           ),
@@ -170,7 +172,7 @@ class _LanguageRadio extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: isSelected ? AppColors.brandGreen : const Color(0xFFDCD8D4),
+          color: isSelected ? AppColors.brandGreen : AppColors.border,
         ),
       ),
       padding: const EdgeInsets.all(2),

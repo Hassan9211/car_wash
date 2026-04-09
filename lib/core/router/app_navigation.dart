@@ -1,4 +1,5 @@
 import 'package:car_wash/core/router/app_routes.dart';
+import 'package:car_wash/core/location/app_location_details.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:car_wash/features/home/booking/model/booking_flow_details.dart';
@@ -58,8 +59,9 @@ extension AppNavigation on BuildContext {
   void pushToBooking(ServiceProviderProfile provider) =>
       push(AppRoutes.booking, extra: provider);
 
-  Future<String?> pushToBookingLocation([String? initialLocation]) =>
-      push<String>(AppRoutes.bookingLocation, extra: initialLocation);
+  Future<AppLocationDetails?> pushToBookingLocation([
+    AppLocationDetails? initialLocation,
+  ]) => push<AppLocationDetails>(AppRoutes.bookingLocation, extra: initialLocation);
 
   Future<void> pushToBookingSchedule(BookingFlowDetails details) =>
       push(AppRoutes.bookingSchedule, extra: details);

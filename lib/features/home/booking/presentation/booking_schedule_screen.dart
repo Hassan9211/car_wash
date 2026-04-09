@@ -1,5 +1,6 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/home/booking/model/booking_flow_details.dart';
 import 'package:flutter/material.dart';
@@ -113,7 +114,7 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
     final calendarDays = _buildCalendarDays();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -148,7 +149,7 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -160,7 +161,7 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -176,9 +177,9 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
                     Container(
                       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surfaceElevated,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE6E6E6)),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Column(
                         children: [
@@ -195,7 +196,7 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xFF202020),
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                               ),
@@ -218,7 +219,7 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
                                           fontWeight: FontWeight.w500,
                                           color: day == 'S'
                                               ? AppButtonColors.primaryBackground
-                                              : Colors.black,
+                                              : AppColors.textPrimary,
                                         ),
                                       ),
                                     ),
@@ -351,7 +352,7 @@ class _SectionLabel extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.black,
+              color: AppColors.textPrimary,
             ),
             children: [
               TextSpan(
@@ -366,7 +367,7 @@ class _SectionLabel extends StatelessWidget {
           Icon(
             icon,
             size: 18,
-            color: const Color(0xFF808080),
+            color: AppColors.textMuted,
           ),
         ],
       ],
@@ -390,7 +391,7 @@ class _MonthNavButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       child: Padding(
         padding: const EdgeInsets.all(4),
-        child: Icon(icon, color: Colors.black, size: 22),
+        child: Icon(icon, color: AppColors.textPrimary, size: 22),
       ),
     );
   }
@@ -415,7 +416,7 @@ class _CalendarDateButton extends StatelessWidget {
         ? Colors.white
         : isWeekend
         ? AppButtonColors.primaryBackground
-        : const Color(0xFF2A2A2A);
+        : AppColors.textPrimary;
 
     return InkWell(
       onTap: onTap,
@@ -486,7 +487,7 @@ class _TimeSlotButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 9.5,
                 fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.white : const Color(0xFF8D8D8D),
+                color: isSelected ? Colors.white : AppColors.textSecondary,
               ),
             ),
           ),

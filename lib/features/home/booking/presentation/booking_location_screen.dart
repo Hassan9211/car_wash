@@ -1,58 +1,256 @@
+import 'package:car_wash/core/location/app_location_details.dart';
+import 'package:car_wash/core/services/app_location_service.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
+import 'package:car_wash/core/widgets/themed_google_map.dart';
+import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class BookingLocationScreen extends StatefulWidget {
   const BookingLocationScreen({super.key, this.initialLocation});
 
-  final String? initialLocation;
+  final AppLocationDetails? initialLocation;
 
   @override
   State<BookingLocationScreen> createState() => _BookingLocationScreenState();
 }
 
 class _BookingLocationScreenState extends State<BookingLocationScreen> {
-  static const _fullAddress = 'Ranya, Mousel, Street 423, Rd 1158B';
+  static const AppLocationDetails _fallbackLocation = AppLocationDetails(
+    latitude: 40.7581,
+    longitude: -73.9856,
+    label: 'Midtown, New York, USA',
+  );
 
-  late String _selectedLocation;
+  GoogleMapController? _mapController;
+  late AppLocationDetails _selectedLocation;
+  bool _isResolvingAddress = false;
+  bool _isRefreshingLocation = false;
 
   @override
   void initState() {
     super.initState();
-    _selectedLocation = widget.initialLocation?.trim().isNotEmpty == true
-        ? widget.initialLocation!
-        : _fullAddress;
+    _selectedLocation =
+        widget.initialLocation ??
+        AuthSession.currentLocationDetails ??
+        _fallbackLocation;
+    _resolveInitialAddress();
+  }
+
+  Future<void> _resolveInitialAddress() async {
+    if (_selectedLocation.trimmedLabel.isNotEmpty &&
+        !_selectedLocation.trimmedLabel.startsWith('Lat ')) {
+      return;
+    }
+
+    await _updateSelection(
+      latitude: _selectedLocation.latitude,
+      longitude: _selectedLocation.longitude,
+      animateCamera: false,
+    );
+  }
+
+  Future<void> _updateSelection({
+    required double latitude,
+    required double longitude,
+    bool animateCamera = true,
+  }) async {
+    setState(() {
+      _selectedLocation = _selectedLocation.copyWith(
+        latitude: latitude,
+        longitude: longitude,
+      );
+      _isResolvingAddress = true;
+    });
+
+    final resolvedLocation = await AppLocationService.buildLocationDetails(
+      latitude: latitude,
+      longitude: longitude,
+      fallbackLabel: _selectedLocation.displayLabel,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _selectedLocation = resolvedLocation;
+      _isResolvingAddress = false;
+    });
+
+    if (animateCamera) {
+      await _mapController?.animateCamera(
+        CameraUpdate.newLatLng(_toLatLng(resolvedLocation)),
+      );
+    }
+  }
+
+  Future<void> _useCurrentLocation() async {
+    if (_isRefreshingLocation) {
+      return;
+    }
+
+    setState(() {
+      _isRefreshingLocation = true;
+    });
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+
+      final resolvedLocation = await AppLocationService.buildLocationDetails(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        fallbackLabel: AuthSession.displayLocationLabel,
+      );
+
+      AuthSession.setCurrentLocationDetails(resolvedLocation);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _selectedLocation = resolvedLocation;
+      });
+
+      await _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: _toLatLng(resolvedLocation), zoom: 16),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Current location refresh nahi ho saki.'),
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshingLocation = false;
+        });
+      }
+    }
   }
 
   void _saveSelection() {
-    context.pop<String>(_selectedLocation);
+    context.pop<AppLocationDetails>(_selectedLocation);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDefaultLocation = _selectedLocation == _fullAddress;
+    final markerPosition = _toLatLng(_selectedLocation);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
             const _BookingLocationAppBar(),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
+            Divider(height: 1, thickness: 1, color: AppColors.border),
             Expanded(
               child: Stack(
                 children: [
-                  const Positioned.fill(child: _BookingMapSection()),
+                  Positioned.fill(
+                    child: ThemedGoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: markerPosition,
+                        zoom: 15.5,
+                      ),
+                      myLocationEnabled: true,
+                      myLocationButtonEnabled: false,
+                      compassEnabled: false,
+                      markers: {
+                        Marker(
+                          markerId: const MarkerId('booking_location'),
+                          position: markerPosition,
+                          infoWindow: InfoWindow(
+                            title: 'Service location',
+                            snippet: _selectedLocation.displayLabel,
+                          ),
+                        ),
+                      },
+                      circles: {
+                        Circle(
+                          circleId: const CircleId('booking_location_radius'),
+                          center: markerPosition,
+                          radius: 40,
+                          fillColor: AppColors.brandGreen.withValues(
+                            alpha: 0.18,
+                          ),
+                          strokeColor: AppColors.brandGreen,
+                          strokeWidth: 1,
+                        ),
+                      },
+                      onMapCreated: (controller) {
+                        _mapController = controller;
+                      },
+                      onTap: (position) {
+                        _updateSelection(
+                          latitude: position.latitude,
+                          longitude: position.longitude,
+                        );
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    top: 14,
+                    left: 14,
+                    right: 14,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceElevated.withValues(
+                                alpha: 0.92,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.borderSoft),
+                            ),
+                            child: const Text(
+                              'Tap on the map to set the exact service location',
+                              style: TextStyle(
+                                fontSize: 12.6,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        _CircleActionButton(
+                          icon: Icons.my_location_rounded,
+                          isLoading: _isRefreshingLocation,
+                          onTap: _useCurrentLocation,
+                        ),
+                      ],
+                    ),
+                  ),
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: _BookingLocationSheet(
-                      isSelected: isDefaultLocation,
-                      onTap: () {
-                        setState(() {
-                          _selectedLocation = _fullAddress;
-                        });
-                      },
+                      selectedLocation: _selectedLocation,
+                      isResolvingAddress: _isResolvingAddress,
                       onDone: _saveSelection,
                     ),
                   ),
@@ -63,6 +261,10 @@ class _BookingLocationScreenState extends State<BookingLocationScreen> {
         ),
       ),
     );
+  }
+
+  LatLng _toLatLng(AppLocationDetails location) {
+    return LatLng(location.latitude, location.longitude);
   }
 }
 
@@ -85,7 +287,7 @@ class _BookingLocationAppBar extends StatelessWidget {
               icon: const Icon(
                 Icons.arrow_back_ios_new_rounded,
                 size: 18,
-                color: Colors.black,
+                color: AppButtonColors.actionForeground,
               ),
             ),
           ),
@@ -101,8 +303,8 @@ class _BookingLocationAppBar extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 17,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -114,104 +316,40 @@ class _BookingLocationAppBar extends StatelessWidget {
   }
 }
 
-class _BookingMapSection extends StatelessWidget {
-  const _BookingMapSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: ColoredBox(
-            color: const Color(0xFFF5F3EF),
-            child: CustomPaint(
-              painter: _BookingMapPainter(),
-            ),
-          ),
-        ),
-        const Positioned(
-          left: 18,
-          top: 122,
-          child: _MapStreetLabel(
-            label: '83rd St.',
-            angle: -1.42,
-          ),
-        ),
-        const Positioned(
-          left: 106,
-          top: 258,
-          child: _MapStreetLabel(
-            label: 'Kamrajar Sala',
-            angle: -1.57,
-          ),
-        ),
-        const Positioned(
-          left: 158,
-          top: 170,
-          child: _MapStreetLabel(
-            label: '88th Street',
-            angle: -1.57,
-          ),
-        ),
-        const Positioned(
-          right: 24,
-          top: 82,
-          child: Text(
-            '86th Street',
-            style: TextStyle(
-              fontSize: 12,
-              color: Color(0xFF959595),
-            ),
-          ),
-        ),
-        const Positioned(
-          right: 34,
-          top: 136,
-          child: Text(
-            'Nirmala\nGirls HSS',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.25,
-              color: Color(0xFFB0AAA3),
-            ),
-          ),
-        ),
-        Positioned.fill(
-          child: Center(
-            child: Transform.translate(
-              offset: const Offset(8, 12),
-              child: const _MapPin(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _BookingLocationSheet extends StatelessWidget {
   const _BookingLocationSheet({
-    required this.isSelected,
-    required this.onTap,
+    required this.selectedLocation,
+    required this.isResolvingAddress,
     required this.onDone,
   });
 
-  final bool isSelected;
-  final VoidCallback onTap;
+  final AppLocationDetails selectedLocation;
+  final bool isResolvingAddress;
   final VoidCallback onDone;
 
   @override
   Widget build(BuildContext context) {
+    final addressParts = selectedLocation.displayLabel
+        .split(',')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+    final title = addressParts.isEmpty
+        ? 'Selected location'
+        : addressParts.first;
+    final subtitle = addressParts.length > 1
+        ? addressParts.skip(1).join(', ')
+        : 'Lat ${selectedLocation.latitude.toStringAsFixed(4)}, Lng ${selectedLocation.longitude.toStringAsFixed(4)}';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x16000000),
+            color: Color(0x28000000),
             blurRadius: 22,
             offset: Offset(0, -4),
           ),
@@ -224,83 +362,88 @@ class _BookingLocationSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Address',
+              'Exact Address',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Colors.black,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF0EFEC)),
+            Divider(height: 1, thickness: 1, color: AppColors.borderSoft),
             const SizedBox(height: 14),
-            Material(
-              color: isSelected
-                  ? const Color(0xFFF7FCF8)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                key: const Key('booking_location_address_tile'),
-                onTap: onTap,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 6,
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.brandGreen.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.location_on_rounded,
+                      size: 18,
+                      color: AppColors.brandGreen,
+                    ),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 24,
-                        height: 24,
-                        margin: const EdgeInsets.only(top: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE7F7EC),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.location_on_rounded,
-                          size: 16,
-                          color: AppButtonColors.primaryBackground,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Ranya, Mousel',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF202020),
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Street 423, Rd 1158B',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF9B9B9B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (isSelected)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 3),
-                          child: Icon(
-                            Icons.check_circle_rounded,
-                            size: 18,
-                            color: AppButtonColors.primaryBackground,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
                           ),
                         ),
-                    ],
+                        const SizedBox(height: 5),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            height: 1.35,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        if (isResolvingAddress) ...[
+                          const SizedBox(height: 8),
+                          const Row(
+                            children: [
+                              SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.8,
+                                  color: AppColors.brandGreen,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Resolving address...',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
             const SizedBox(height: 22),
@@ -309,7 +452,7 @@ class _BookingLocationSheet extends StatelessWidget {
               label: 'Done',
               onPressed: onDone,
               height: 48,
-              borderRadius: 8,
+              borderRadius: 10,
               textStyle: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -322,172 +465,42 @@ class _BookingLocationSheet extends StatelessWidget {
   }
 }
 
-class _MapStreetLabel extends StatelessWidget {
-  const _MapStreetLabel({
-    required this.label,
-    required this.angle,
+class _CircleActionButton extends StatelessWidget {
+  const _CircleActionButton({
+    required this.icon,
+    required this.isLoading,
+    required this.onTap,
   });
 
-  final String label;
-  final double angle;
+  final IconData icon;
+  final bool isLoading;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Transform.rotate(
-      angle: angle,
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          color: Color(0xFFAAA59E),
+    return Material(
+      color: AppColors.surfaceElevated.withValues(alpha: 0.94),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: isLoading ? null : onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.brandGreen,
+                    ),
+                  )
+                : Icon(icon, size: 20, color: AppColors.textPrimary),
+          ),
         ),
       ),
     );
   }
-}
-
-class _MapPin extends StatelessWidget {
-  const _MapPin();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.08),
-            shape: BoxShape.circle,
-          ),
-        ),
-        const Icon(
-          Icons.location_on_rounded,
-          size: 42,
-          color: Color(0xFFF07B56),
-        ),
-        const Positioned(
-          top: 10,
-          child: CircleAvatar(
-            radius: 5.5,
-            backgroundColor: Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _BookingMapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final blockPaint = Paint()..color = const Color(0xFFF0EDE7);
-    final roadPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 12
-      ..color = Colors.white.withValues(alpha: 0.92);
-
-    final thinRoadPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 8
-      ..color = Colors.white;
-
-    final blocks = <RRect>[
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(14, 10, size.width * 0.34, 92),
-        const Radius.circular(14),
-      ),
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.41, 10, size.width * 0.47, 76),
-        const Radius.circular(12),
-      ),
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(20, 126, size.width * 0.28, 74),
-        const Radius.circular(12),
-      ),
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.35, 122, size.width * 0.23, 84),
-        const Radius.circular(12),
-      ),
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.64, 104, size.width * 0.24, 120),
-        const Radius.circular(14),
-      ),
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(8, 246, size.width * 0.23, 76),
-        const Radius.circular(12),
-      ),
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.29, 248, size.width * 0.18, 98),
-        const Radius.circular(12),
-      ),
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.54, 246, size.width * 0.25, 78),
-        const Radius.circular(12),
-      ),
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.82, 252, size.width * 0.18, 126),
-        const Radius.circular(12),
-      ),
-    ];
-
-    for (final block in blocks) {
-      canvas.drawRRect(block, blockPaint);
-    }
-
-    final mainRoads = <Path>[
-      Path()
-        ..moveTo(0, 100)
-        ..quadraticBezierTo(size.width * 0.18, 114, size.width * 0.26, 86)
-        ..quadraticBezierTo(size.width * 0.4, 44, size.width * 0.58, 72)
-        ..quadraticBezierTo(size.width * 0.8, 104, size.width, 92),
-      Path()
-        ..moveTo(size.width * 0.48, 0)
-        ..quadraticBezierTo(size.width * 0.52, 120, size.width * 0.5, 220)
-        ..quadraticBezierTo(size.width * 0.48, 320, size.width * 0.52, size.height),
-      Path()
-        ..moveTo(size.width * 0.2, 0)
-        ..quadraticBezierTo(size.width * 0.22, 140, size.width * 0.32, 220)
-        ..quadraticBezierTo(size.width * 0.42, 310, size.width * 0.4, size.height),
-      Path()
-        ..moveTo(size.width * 0.72, 80)
-        ..quadraticBezierTo(size.width * 0.74, 210, size.width * 0.78, size.height),
-      Path()
-        ..moveTo(0, 228)
-        ..quadraticBezierTo(size.width * 0.22, 214, size.width * 0.34, 234)
-        ..quadraticBezierTo(size.width * 0.54, 266, size.width, 252),
-    ];
-
-    final sideRoads = <Path>[
-      Path()
-        ..moveTo(0, 160)
-        ..quadraticBezierTo(size.width * 0.16, 182, size.width * 0.28, 172),
-      Path()
-        ..moveTo(size.width * 0.56, 118)
-        ..quadraticBezierTo(size.width * 0.7, 118, size.width * 0.84, 104),
-      Path()
-        ..moveTo(size.width * 0.58, 178)
-        ..quadraticBezierTo(size.width * 0.68, 178, size.width * 0.84, 166),
-      Path()
-        ..moveTo(size.width * 0.64, 324)
-        ..quadraticBezierTo(size.width * 0.7, 298, size.width * 0.84, 302),
-      Path()
-        ..moveTo(size.width * 0.38, 284)
-        ..quadraticBezierTo(size.width * 0.46, 304, size.width * 0.62, 298),
-    ];
-
-    for (final road in mainRoads) {
-      canvas.drawPath(road, roadPaint);
-    }
-
-    for (final road in sideRoads) {
-      canvas.drawPath(road, thinRoadPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

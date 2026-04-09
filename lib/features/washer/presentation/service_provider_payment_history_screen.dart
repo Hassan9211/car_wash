@@ -23,7 +23,7 @@ class _ServiceProviderPaymentHistoryScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -35,7 +35,7 @@ class _ServiceProviderPaymentHistoryScreenState
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w500,
-                    color: Colors.black,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -43,7 +43,7 @@ class _ServiceProviderPaymentHistoryScreenState
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: AnimatedBuilder(
@@ -54,8 +54,8 @@ class _ServiceProviderPaymentHistoryScreenState
                       orders
                           .where(
                             (order) =>
-                                order.showInWallet ||
-                                order.status == BookingOrderStatus.completed,
+                                order.paymentStatus ==
+                                BookingPaymentStatus.paid,
                           )
                           .toList(growable: false)
                         ..sort(
@@ -98,9 +98,9 @@ class _PaymentHistoryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE7EBE8)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,7 +131,7 @@ class _PaymentHistoryCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF202020),
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -147,10 +147,19 @@ class _PaymentHistoryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
+                  '${order.customerName} has paid for this booking',
+                  style: const TextStyle(
+                    fontSize: 11.2,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.brandGreenLight,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
                   'Booking on ${_formatPaymentDate(order.paymentDate)}',
                   style: const TextStyle(
                     fontSize: 10.8,
-                    color: Color(0xFF8C8C8C),
+                    color: AppColors.textMuted,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -158,7 +167,7 @@ class _PaymentHistoryCard extends StatelessWidget {
                   'Car Wash ${_capitalizeWords(order.serviceType)}',
                   style: const TextStyle(
                     fontSize: 11.2,
-                    color: Color(0xFF6D6D6D),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -179,7 +188,7 @@ class _PaymentHistoryCard extends StatelessWidget {
                       '${_ratingLabel(order)}/5',
                       style: const TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF5C5C5C),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -217,7 +226,7 @@ class _PaymentHistoryEmptyState extends StatelessWidget {
         child: Text(
           'No customer payments available right now.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: Color(0xFF8A8A8A)),
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
       ),
     );

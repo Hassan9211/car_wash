@@ -1,5 +1,6 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/authentication/presentation/widgets/auth_shared_widgets.dart';
@@ -81,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
               style: TextStyle(
                 fontSize: 23,
                 fontWeight: FontWeight.w500,
-                color: Colors.black,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -90,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
               style: TextStyle(
                 fontSize: 14.5,
                 height: 1.2,
-                color: Color(0xFFAAA5A1),
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 16),
@@ -122,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
                   size: 20,
-                  color: const Color(0xFF9C9793),
+                  color: AppColors.textMuted,
                 ),
               ),
             ),
@@ -167,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         'Remember me',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFFB0AAA6),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -197,19 +198,22 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 Expanded(
                   child: Divider(
-                    color: const Color(0xFFE2DDD9).withValues(alpha: 0.85),
+                    color: AppColors.border,
                   ),
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
                     'or continue with',
-                    style: TextStyle(fontSize: 12.5, color: Color(0xFFB3ACA7)),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 ),
                 Expanded(
                   child: Divider(
-                    color: const Color(0xFFE2DDD9).withValues(alpha: 0.85),
+                    color: AppColors.border,
                   ),
                 ),
               ],

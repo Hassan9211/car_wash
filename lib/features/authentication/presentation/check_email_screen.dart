@@ -32,7 +32,7 @@ class CheckEmailScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: Colors.black,
+                color: AppColors.textPrimary,
                 letterSpacing: -0.5,
               ),
             ),
@@ -45,7 +45,7 @@ class CheckEmailScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14.5,
                   height: 1.2,
-                  color: Color(0xFFAAA5A1),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
@@ -85,10 +85,10 @@ class _MailSuccessIllustration extends StatelessWidget {
             child: Container(
               height: 58,
               decoration: BoxDecoration(
-                color: const Color(0xFFF7F7F7),
+                color: AppColors.surfaceElevated,
                 borderRadius: BorderRadius.circular(2),
                 border: Border.all(
-                  color: const Color(0xFFBEBEBE),
+                  color: AppColors.border,
                 ),
               ),
             ),
@@ -108,10 +108,10 @@ class _MailSuccessIllustration extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(3),
                 border: Border.all(
-                  color: const Color(0xFFBEBEBE),
+                  color: AppColors.border,
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -145,11 +145,11 @@ class _EnvelopeFlapPainter extends CustomPainter {
     final stroke = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
-      ..color = const Color(0xFFBEBEBE);
+      ..color = AppColors.border;
 
     final fill = Paint()
       ..style = PaintingStyle.fill
-      ..color = Colors.white;
+      ..color = AppColors.surface;
 
     final path = Path()
       ..moveTo(0, size.height * 0.55)
@@ -187,7 +187,7 @@ class _TinyMailLines extends StatelessWidget {
           width: 22,
           height: 2.2,
           decoration: BoxDecoration(
-            color: const Color(0xFF222222),
+            color: AppColors.textSecondary,
             borderRadius: BorderRadius.circular(99),
           ),
         ),

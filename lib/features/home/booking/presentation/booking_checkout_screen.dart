@@ -1,5 +1,6 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
@@ -93,6 +94,8 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
       final serviceType = widget.details.serviceType.trim().isNotEmpty
           ? widget.details.serviceType.trim()
           : 'Car Wash';
+      final bookingLocation =
+          widget.details.bookingLocation ?? AuthSession.currentLocationDetails;
 
       final paidOrder = BookingOrderItem(
         id: 'order_${DateTime.now().microsecondsSinceEpoch}',
@@ -102,6 +105,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
         status: BookingOrderStatus.pending,
         orderDate: bookingDate,
         paymentDate: DateTime.now(),
+        statusUpdatedAt: DateTime.now(),
         rating: widget.details.provider.rating,
         reviews: widget.details.provider.reviews,
         totalPayment: _formatCurrencyLabel(totalAmount),
@@ -109,7 +113,11 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
         serviceType: serviceType,
         customerName: customerName,
         customerEmail: AuthSession.displayEmail,
-        address: AuthSession.displayLocationLabel,
+        address: bookingLocation?.displayLabel ?? AuthSession.displayLocationLabel,
+        customerLatitude: bookingLocation?.latitude,
+        customerLongitude: bookingLocation?.longitude,
+        providerLatitude: widget.details.provider.latitude,
+        providerLongitude: widget.details.provider.longitude,
         paymentStatus: BookingPaymentStatus.paid,
         paymentMethod: _selectedPaymentMethod.id,
         bookingTime: bookingTime,
@@ -152,6 +160,8 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     final serviceType = details.serviceType.trim().isNotEmpty
         ? details.serviceType.trim()
         : 'Basic Car Wash';
+    final bookingLocation =
+        details.bookingLocation?.displayLabel ?? AuthSession.displayLocationLabel;
     final bookingDateTime = _formatBookingDateTime(
       details.bookingDate ?? DateTime(2021, 1, 18),
       details.bookingTime ?? '11:30 AM',
@@ -159,11 +169,12 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     final baseAmount = _parseAmount(details.provider.price);
     final totalAmount = baseAmount + _selectedTip;
     final baseAmountLabel = _formatCurrency(baseAmount);
+    final tipAmountLabel = _formatCurrency(_selectedTip.toDouble());
     final totalAmountLabel = _formatCurrency(totalAmount);
     final paymentMethodSubtitle = _selectedPaymentMethod.displaySubtitle;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -198,7 +209,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -210,7 +221,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: Padding(
@@ -231,7 +242,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.black,
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                                 const Spacer(),
@@ -260,9 +271,9 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                                 vertical: 14,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: AppColors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFE6E6E6)),
+                                border: Border.all(color: AppColors.border),
                               ),
                               child: Row(
                                 children: [
@@ -280,7 +291,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w500,
-                                            color: Color(0xFF222222),
+                                            color: AppColors.textPrimary,
                                           ),
                                         ),
                                         if (paymentMethodSubtitle.isNotEmpty) ...[
@@ -289,7 +300,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                                             paymentMethodSubtitle,
                                             style: const TextStyle(
                                               fontSize: 11,
-                                              color: Color(0xFF8C8C8C),
+                                              color: AppColors.textSecondary,
                                             ),
                                           ),
                                         ],
@@ -301,7 +312,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
-                                      color: Colors.black,
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -321,9 +332,9 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                               width: double.infinity,
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF9F9F9),
+                                color: AppColors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFEAEAEA)),
+                                border: Border.all(color: AppColors.border),
                               ),
                               child: SingleChildScrollView(
                                 scrollDirection: Axis.horizontal,
@@ -369,7 +380,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500,
-                                      color: Colors.black,
+                                    color: AppColors.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
@@ -398,6 +409,12 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   _CheckoutDetailRow(
+                                    icon: Icons.location_on_rounded,
+                                    title: 'Location',
+                                    value: bookingLocation,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _CheckoutDetailRow(
                                     icon: Icons.calendar_month_rounded,
                                     title: bookingDateTime,
                                     value: '',
@@ -411,6 +428,15 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                               label: 'Total Bill',
                               amount: baseAmountLabel,
                               isBold: false,
+                            ),
+                            const SizedBox(height: 10),
+                            _CheckoutAmountRow(
+                              label: 'Tip for Service Provider',
+                              amount: tipAmountLabel,
+                              isBold: false,
+                              amountColor: _selectedTip == 0
+                                  ? const Color(0xFF7C7C7C)
+                                  : AppButtonColors.primaryBackground,
                             ),
                             const SizedBox(height: 10),
                             _CheckoutAmountRow(
@@ -731,8 +757,10 @@ class _TipOptionChip extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.white : Colors.black,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected
+                ? const Color(0xFF0C2817)
+                : const Color(0xFF1B1B1B),
           ),
         ),
       ),
@@ -813,25 +841,32 @@ class _CheckoutAmountRow extends StatelessWidget {
     required this.label,
     required this.amount,
     required this.isBold,
+    this.amountColor,
   });
 
   final String label;
   final String amount;
   final bool isBold;
+  final Color? amountColor;
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = TextStyle(
+    final labelStyle = TextStyle(
       fontSize: 13,
       fontWeight: isBold ? FontWeight.w600 : FontWeight.w400,
       color: const Color(0xFF2A2A2A),
     );
+    final amountStyle = TextStyle(
+      fontSize: 13,
+      fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+      color: amountColor ?? const Color(0xFF2A2A2A),
+    );
 
     return Row(
       children: [
-        Text(label, style: textStyle),
+        Text(label, style: labelStyle),
         const Spacer(),
-        Text(amount, style: textStyle),
+        Text(amount, style: amountStyle),
       ],
     );
   }

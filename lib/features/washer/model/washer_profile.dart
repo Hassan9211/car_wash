@@ -26,6 +26,8 @@ class WasherProfile {
     this.experienceLabel = '',
     this.isOnline = false,
     this.isVerified = false,
+    this.latitude,
+    this.longitude,
   });
 
   final String id;
@@ -52,6 +54,8 @@ class WasherProfile {
   final String experienceLabel;
   final bool isOnline;
   final bool isVerified;
+  final double? latitude;
+  final double? longitude;
 
   factory WasherProfile.fromServiceProvider(
     ServiceProviderProfile provider, {
@@ -93,6 +97,8 @@ class WasherProfile {
       experienceLabel: experienceLabel,
       isOnline: isOnline,
       isVerified: isVerified,
+      latitude: provider.latitude,
+      longitude: provider.longitude,
     );
   }
 
@@ -121,6 +127,8 @@ class WasherProfile {
     String? experienceLabel,
     bool? isOnline,
     bool? isVerified,
+    double? latitude,
+    double? longitude,
   }) {
     return WasherProfile(
       id: id ?? this.id,
@@ -147,6 +155,8 @@ class WasherProfile {
       experienceLabel: experienceLabel ?? this.experienceLabel,
       isOnline: isOnline ?? this.isOnline,
       isVerified: isVerified ?? this.isVerified,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 

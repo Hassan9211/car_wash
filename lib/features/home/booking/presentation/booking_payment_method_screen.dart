@@ -1,5 +1,6 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/home/booking/model/booking_payment_method.dart';
 import 'package:flutter/material.dart';
@@ -62,7 +63,7 @@ class _BookingPaymentMethodScreenState extends State<BookingPaymentMethodScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -97,7 +98,7 @@ class _BookingPaymentMethodScreenState extends State<BookingPaymentMethodScreen>
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -109,7 +110,7 @@ class _BookingPaymentMethodScreenState extends State<BookingPaymentMethodScreen>
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: Padding(
@@ -184,9 +185,9 @@ class _PaymentMethodOptionTile extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFE6E6E6)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
@@ -201,7 +202,7 @@ class _PaymentMethodOptionTile extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF202020),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     if (method.displaySubtitle.isNotEmpty) ...[
@@ -210,7 +211,7 @@ class _PaymentMethodOptionTile extends StatelessWidget {
                         method.displaySubtitle,
                         style: const TextStyle(
                           fontSize: 10.5,
-                          color: Color(0xFF8D8D8D),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -265,7 +266,7 @@ class _SelectionIndicator extends StatelessWidget {
         border: Border.all(
           color: isSelected
               ? AppButtonColors.primaryBackground
-              : const Color(0xFFD9D9D9),
+              : AppColors.border,
         ),
       ),
       child: Center(
@@ -338,7 +339,7 @@ class _CashBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFBDBDBD)),
+        border: Border.all(color: AppColors.border),
       ),
       alignment: Alignment.center,
       child: const Icon(
@@ -361,7 +362,7 @@ class _VisaBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: AppColors.border),
       ),
       alignment: Alignment.center,
       child: const Text(
@@ -387,7 +388,7 @@ class _PayPalBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: AppColors.border),
       ),
       alignment: Alignment.center,
       child: const Text(

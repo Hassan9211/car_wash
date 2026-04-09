@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:car_wash/core/location/app_location_details.dart';
 import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -57,6 +58,19 @@ class AuthSession {
   static double? get currentLongitude => _currentLongitude;
   static AppUserRole? get currentRole => _currentRole;
   static bool get isAuthenticated => _isAuthenticated;
+  static AppLocationDetails? get currentLocationDetails {
+    final latitude = _currentLatitude;
+    final longitude = _currentLongitude;
+    if (latitude == null || longitude == null) {
+      return null;
+    }
+
+    return AppLocationDetails(
+      latitude: latitude,
+      longitude: longitude,
+      label: displayLocationLabel,
+    );
+  }
 
   static AppUserRole get effectiveRole => _currentRole ?? AppUserRole.customer;
 
@@ -205,11 +219,20 @@ class AuthSession {
   static void updateCurrentLocation({
     required double latitude,
     required double longitude,
+    String? label,
   }) {
     _currentLatitude = latitude;
     _currentLongitude = longitude;
-    _currentLocationLabel =
-        'Lat ${latitude.toStringAsFixed(3)}, Lng ${longitude.toStringAsFixed(3)}';
+    _currentLocationLabel = _normalize(label) ??
+        'Lat ${latitude.toStringAsFixed(4)}, Lng ${longitude.toStringAsFixed(4)}';
+    _persistSessionAsync();
+    _notifyListeners();
+  }
+
+  static void setCurrentLocationDetails(AppLocationDetails location) {
+    _currentLatitude = location.latitude;
+    _currentLongitude = location.longitude;
+    _currentLocationLabel = _normalize(location.label);
     _persistSessionAsync();
     _notifyListeners();
   }

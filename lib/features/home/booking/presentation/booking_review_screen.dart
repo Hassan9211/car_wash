@@ -1,4 +1,5 @@
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
@@ -72,7 +73,7 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -107,7 +108,7 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -119,7 +120,7 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: Padding(
@@ -133,7 +134,7 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF222222),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -141,7 +142,7 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
                       'Your overall ratings',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF9C9C9C),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -176,7 +177,7 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF1F1F1F),
+                        color: AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -190,13 +191,15 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
                         hintText: 'Enter here...',
                         hintStyle: const TextStyle(
                           fontSize: 13,
-                          color: Color(0xFFC0C0C0),
+                          color: AppColors.textMuted,
                         ),
                         contentPadding: const EdgeInsets.all(12),
+                        filled: true,
+                        fillColor: AppColors.surfaceElevated,
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(
-                            color: Color(0xFFE4E4E4),
+                            color: AppColors.border,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -205,6 +208,10 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
                             color: AppButtonColors.primaryBackground,
                           ),
                         ),
+                      ),
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const Spacer(),

@@ -1,5 +1,6 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/presentation/widgets/auth_shared_widgets.dart';
 import 'package:car_wash/features/authentication/utils/auth_validators.dart';
@@ -63,7 +64,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               style: TextStyle(
                 fontSize: 23,
                 fontWeight: FontWeight.w600,
-                color: Colors.black,
+                color: AppColors.textPrimary,
                 letterSpacing: -0.4,
               ),
             ),
@@ -73,7 +74,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               style: TextStyle(
                 fontSize: 14.5,
                 height: 1.2,
-                color: Color(0xFFAAA5A1),
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 18),
@@ -105,7 +106,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     'Remember your password? ',
                     style: TextStyle(
                       fontSize: 13.5,
-                      color: Color(0xFFC0BBB7),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   GestureDetector(

@@ -20,19 +20,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     BookingOrdersStore.instance.fetchCustomerOrders();
   }
 
-  static const _defaultOffsets = <Duration>[
-    Duration(minutes: 12),
-    Duration(hours: 1, minutes: 40),
-    Duration(hours: 3, minutes: 15),
-    Duration(hours: 7),
-    Duration(days: 1, hours: 2),
-    Duration(days: 2, hours: 4),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8F6),
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -67,7 +58,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -79,7 +70,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             Divider(
               height: 1,
               thickness: 0.8,
-              color: const Color(0xFFE9E6E3).withValues(alpha: 0.9),
+              color: AppColors.border,
             ),
             Expanded(
               child: ValueListenableBuilder<List<BookingOrderItem>>(
@@ -141,16 +132,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   List<_NotificationItem> _buildNotifications(List<BookingOrderItem> orders) {
     final now = DateTime.now();
+    final sortedOrders = List<BookingOrderItem>.from(orders)
+      ..sort(
+        (first, second) =>
+            second.notificationTimestamp.compareTo(first.notificationTimestamp),
+      );
     final notifications = <_NotificationItem>[
-      for (var index = 0; index < orders.length; index++)
+      for (final order in sortedOrders)
         _buildOrderNotification(
-          order: orders[index],
-          timestamp: now.subtract(
-            index < _defaultOffsets.length
-                ? _defaultOffsets[index]
-                : Duration(days: index + 1),
-          ),
-          isUnread: index < 3,
+          order: order,
+          timestamp: order.notificationTimestamp,
+          isUnread: order.hasUnreadNotification,
         ),
       _NotificationItem(
         id: 'payment_security',
@@ -231,7 +223,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           id: '${order.id}_accepted',
           title: 'Booking accepted',
           message:
-              '${order.serviceProviderName} accepted your ${order.serviceType.toLowerCase()} booking for ${_scheduleLabel(order)}.',
+              '${order.serviceProviderName} accepted your ${order.serviceType.toLowerCase()} booking. Washer is on the way for ${_scheduleLabel(order)}.',
           tag: 'Accepted',
           timestamp: timestamp,
           icon: Icons.check_circle_outline_rounded,
@@ -263,7 +255,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case BookingOrderStatus.inProgress:
         return _NotificationItem(
           id: '${order.id}_live',
-          title: 'Provider is on the way',
+          title: 'Washer is on the way',
           message:
               '${order.serviceProviderName} has started your ${order.serviceType.toLowerCase()}. Track the service progress live.',
           tag: 'Live',
@@ -453,14 +445,14 @@ class _NotificationSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: const LinearGradient(
-          colors: [Color(0xFFF8FCF9), Color(0xFFEEF8F1)],
+          colors: [AppColors.surfaceHighlight, AppColors.surface],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: const Color(0xFFDCEBDF)),
-        boxShadow: const [
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x11000000),
+            color: Colors.black.withValues(alpha: 0.16),
             blurRadius: 16,
             offset: Offset(0, 8),
           ),
@@ -491,7 +483,7 @@ class _NotificationSummaryCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E2B21),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -505,7 +497,7 @@ class _NotificationSummaryCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 13,
               height: 1.45,
-              color: Color(0xFF55705F),
+              color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 14),
@@ -515,18 +507,18 @@ class _NotificationSummaryCard extends StatelessWidget {
             children: [
               _SummaryChip(
                 label: '$unreadCount unread',
-                color: const Color(0xFFF3E8FF),
-                textColor: const Color(0xFF6E3DA8),
+                color: AppColors.surfaceMuted,
+                textColor: AppColors.textSecondary,
               ),
               _SummaryChip(
                 label: '$activeBookings active bookings',
-                color: const Color(0xFFE6F6EC),
-                textColor: AppColors.brandGreen,
+                color: AppColors.successSurface,
+                textColor: AppColors.brandGreenLight,
               ),
               _SummaryChip(
                 label: '$paymentUpdates payment updates',
-                color: const Color(0xFFFFF3E2),
-                textColor: const Color(0xFFB26A00),
+                color: AppColors.warningSurface,
+                textColor: const Color(0xFFF3C96A),
               ),
             ],
           ),
@@ -589,7 +581,7 @@ class _NotificationSection extends StatelessWidget {
             fontSize: 12,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.6,
-            color: Color(0xFF8E8E8E),
+            color: AppColors.textMuted,
           ),
         ),
         const SizedBox(height: 10),
@@ -614,7 +606,7 @@ class _NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.surfaceElevated,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: item.destination == null ? null : onTap,
@@ -623,10 +615,10 @@ class _NotificationTile extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE7EBE8)),
-            boxShadow: const [
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x0E000000),
+                color: Colors.black.withValues(alpha: 0.16),
                 blurRadius: 14,
                 offset: Offset(0, 6),
               ),
@@ -658,7 +650,7 @@ class _NotificationTile extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF1F2722),
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ),
@@ -668,7 +660,7 @@ class _NotificationTile extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF93A19A),
+                            color: AppColors.textMuted,
                           ),
                         ),
                       ],
@@ -679,7 +671,7 @@ class _NotificationTile extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 12.5,
                         height: 1.45,
-                        color: Color(0xFF64736B),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -753,16 +745,16 @@ class _EmptyNotificationState extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 26),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE6EAE7)),
+        border: Border.all(color: AppColors.border),
       ),
       child: const Column(
         children: [
           Icon(
             Icons.notifications_none_rounded,
             size: 42,
-            color: Color(0xFF8C9A92),
+            color: AppColors.textMuted,
           ),
           SizedBox(height: 12),
           Text(
@@ -770,7 +762,7 @@ class _EmptyNotificationState extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF253129),
+              color: AppColors.textPrimary,
             ),
           ),
           SizedBox(height: 6),
@@ -780,7 +772,7 @@ class _EmptyNotificationState extends StatelessWidget {
             style: TextStyle(
               fontSize: 12.5,
               height: 1.45,
-              color: Color(0xFF76847C),
+              color: AppColors.textSecondary,
             ),
           ),
         ],

@@ -1,3 +1,4 @@
+import 'package:car_wash/core/location/app_location_details.dart';
 import 'package:car_wash/features/home/model/service_provider_profile.dart';
 
 class BookingFlowDetails {
@@ -7,6 +8,7 @@ class BookingFlowDetails {
     this.serviceType = '',
     this.bookingDate,
     this.bookingTime,
+    this.bookingLocation,
   });
 
   final ServiceProviderProfile provider;
@@ -14,6 +16,7 @@ class BookingFlowDetails {
   final String serviceType;
   final DateTime? bookingDate;
   final String? bookingTime;
+  final AppLocationDetails? bookingLocation;
 
   BookingFlowDetails copyWith({
     ServiceProviderProfile? provider,
@@ -21,6 +24,7 @@ class BookingFlowDetails {
     String? serviceType,
     DateTime? bookingDate,
     String? bookingTime,
+    AppLocationDetails? bookingLocation,
   }) {
     return BookingFlowDetails(
       provider: provider ?? this.provider,
@@ -28,6 +32,7 @@ class BookingFlowDetails {
       serviceType: serviceType ?? this.serviceType,
       bookingDate: bookingDate ?? this.bookingDate,
       bookingTime: bookingTime ?? this.bookingTime,
+      bookingLocation: bookingLocation ?? this.bookingLocation,
     );
   }
 }

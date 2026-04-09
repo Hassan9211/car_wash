@@ -57,7 +57,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F4),
+      backgroundColor: AppColors.appBackground,
       body: Column(
         children: [
           _ProviderHomeHeader(
@@ -177,7 +177,11 @@ class _ProviderHomeHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.brandGreen,
+        gradient: LinearGradient(
+          colors: [Color(0xFF0F6430), AppColors.brandGreen, AppColors.deepInk],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
       ),
       child: SafeArea(
@@ -247,22 +251,27 @@ class _ProviderHomeHeader extends StatelessWidget {
               Container(
                 height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: TextField(
                   controller: searchController,
                   onChanged: onSearchChanged,
                   cursorColor: AppColors.brandGreen,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13.5,
+                  ),
                   decoration: const InputDecoration(
                     hintText: 'Search',
                     hintStyle: TextStyle(
                       fontSize: 13.5,
-                      color: Color(0xFF9D9D9D),
+                      color: AppColors.textMuted,
                     ),
                     prefixIcon: Icon(
                       Icons.search_rounded,
-                      color: Color(0xFF97A39A),
+                      color: AppColors.brandGreenLight,
                       size: 22,
                     ),
                     border: InputBorder.none,
@@ -298,10 +307,10 @@ class _HeaderIconButton extends StatelessWidget {
           width: 38,
           height: 38,
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: const Color(0xFF1E2B21), size: 20),
+          child: Icon(icon, color: AppColors.textPrimary, size: 20),
         ),
       ),
     );
@@ -330,12 +339,12 @@ class _MetricCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE6E9E5)),
-        boxShadow: const [
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0D000000),
+            color: Colors.black.withValues(alpha: 0.14),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -351,7 +360,7 @@ class _MetricCard extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     fontSize: 10.5,
-                    color: Color(0xFF5C655E),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -389,7 +398,7 @@ class _MetricCard extends StatelessWidget {
                   trendLabel,
                   style: const TextStyle(
                     fontSize: 10.5,
-                    color: Color(0xFF4E8A5D),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -415,9 +424,9 @@ class _OrdersOverviewCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE6EAE7)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -451,7 +460,7 @@ class _OrdersOverviewCard extends StatelessWidget {
                       '$ordersLabel total orders',
                       style: TextStyle(
                         fontSize: 10.5,
-                        color: Color(0xFF7A837D),
+                        color: AppColors.textMuted,
                       ),
                     ),
                   ],
@@ -460,16 +469,16 @@ class _OrdersOverviewCard extends StatelessWidget {
               _ChangeChip(
                 label: '42%',
                 caption: 'Than last week',
-                backgroundColor: Color(0xFFFFECEC),
-                foregroundColor: Color(0xFFE06363),
+                backgroundColor: AppColors.dangerSurface,
+                foregroundColor: Color(0xFFFF9E9E),
                 icon: Icons.arrow_downward_rounded,
               ),
               SizedBox(width: 8),
               _ChangeChip(
                 label: '12%',
                 caption: 'Order',
-                backgroundColor: Color(0xFFE7F7EE),
-                foregroundColor: AppColors.brandGreen,
+                backgroundColor: AppColors.successSurface,
+                foregroundColor: AppColors.brandGreenLight,
                 icon: Icons.arrow_upward_rounded,
               ),
             ],
@@ -481,7 +490,7 @@ class _OrdersOverviewCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFF2F5F1),
+                color: AppColors.surfaceMuted,
                 borderRadius: BorderRadius.circular(999),
               ),
               child: const Row(
@@ -495,7 +504,10 @@ class _OrdersOverviewCard extends StatelessWidget {
                   SizedBox(width: 4),
                   Text(
                     'updated 6 mins ago',
-                    style: TextStyle(fontSize: 10.5, color: Color(0xFF6F7B72)),
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 ],
               ),
@@ -596,7 +608,7 @@ class _WeeklyOrdersChart extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 10,
-                      color: Color(0xFF7A837D),
+                      color: AppColors.textMuted,
                     ),
                   ),
                 ),
@@ -684,9 +696,9 @@ class _RecentOrderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE6EAE7)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -717,7 +729,7 @@ class _RecentOrderCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1C251F),
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -736,7 +748,7 @@ class _RecentOrderCard extends StatelessWidget {
                   'Booking on ${_formatOrderDate(order.paymentDate)}',
                   style: const TextStyle(
                     fontSize: 11.5,
-                    color: Color(0xFF7A837D),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -744,7 +756,7 @@ class _RecentOrderCard extends StatelessWidget {
                   'Car Wash: ${_capitalizeWords(order.serviceType)}',
                   style: const TextStyle(
                     fontSize: 11.8,
-                    color: Color(0xFF7A837D),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -763,7 +775,7 @@ class _RecentOrderCard extends StatelessWidget {
                       '${_ratingLabel(order)}/5',
                       style: const TextStyle(
                         fontSize: 11.5,
-                        color: Color(0xFF66736A),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -851,20 +863,24 @@ class _ProviderEmptyState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE6EAE7)),
+        border: Border.all(color: AppColors.border),
       ),
       child: const Column(
         children: [
-          Icon(Icons.receipt_long_outlined, size: 38, color: Color(0xFF8C9990)),
+          Icon(
+            Icons.receipt_long_outlined,
+            size: 38,
+            color: AppColors.textMuted,
+          ),
           SizedBox(height: 10),
           Text(
             'No recent orders found',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF223027),
+              color: AppColors.textPrimary,
             ),
           ),
           SizedBox(height: 6),
@@ -874,7 +890,7 @@ class _ProviderEmptyState extends StatelessWidget {
             style: TextStyle(
               fontSize: 12.5,
               height: 1.45,
-              color: Color(0xFF6E7A72),
+              color: AppColors.textSecondary,
             ),
           ),
         ],

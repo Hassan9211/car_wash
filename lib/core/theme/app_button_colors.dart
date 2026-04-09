@@ -7,12 +7,12 @@ class AppButtonColors {
   static const primaryBackground = AppColors.brandGreen;
   static const primaryForeground = Colors.white;
 
-  static const secondaryBackground = Colors.white;
-  static const secondaryForeground = Color(0xFF17233B);
+  static const secondaryBackground = AppColors.surfaceElevated;
+  static const secondaryForeground = AppColors.textPrimary;
 
-  static const actionForeground = AppColors.brandGreen;
-  static const destructiveForeground = Color(0xFFFF4B45);
+  static const actionForeground = AppColors.brandGreenLight;
+  static const destructiveForeground = Color(0xFFFF7B7B);
 
-  static const socialBorder = Color(0xFFE6E1DE);
-  static const selectionBorder = Color(0xFFD8D3CF);
+  static const socialBorder = AppColors.border;
+  static const selectionBorder = AppColors.border;
 }
