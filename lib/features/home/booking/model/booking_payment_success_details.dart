@@ -4,6 +4,7 @@ class BookingPaymentSuccessDetails {
     required this.promoCode,
     required this.expectedDeliveryTime,
     required this.amount,
+    required this.tipAmount,
     required this.deliveryCharge,
     required this.tax,
     required this.discount,
@@ -14,6 +15,7 @@ class BookingPaymentSuccessDetails {
   final String promoCode;
   final String expectedDeliveryTime;
   final double amount;
+  final double tipAmount;
   final double deliveryCharge;
   final double tax;
   final double discount;
@@ -24,9 +26,10 @@ class BookingPaymentSuccessDetails {
     promoCode: 'FR2412357435WER',
     expectedDeliveryTime: '12:00 pm',
     amount: 150,
-    deliveryCharge: 5,
+    tipAmount: 10,
+    deliveryCharge: 0,
     tax: 0,
     discount: 35,
-    totalAmount: 190,
+    totalAmount: 125,
   );
 }

@@ -72,6 +72,8 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
     return Scaffold(
       backgroundColor: AppColors.appBackground,
       body: SafeArea(
@@ -123,111 +125,129 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
               color: AppColors.border,
             ),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 22, 14, 16),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 10),
-                    Text(
-                      'How was your Service Provider?',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
-                      ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.fromLTRB(
+                      14,
+                      22,
+                      14,
+                      bottomInset + 16,
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Your overall ratings',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(5, (index) {
-                        final starIndex = index + 1;
-                        return IconButton(
-                          key: Key('booking_review_star_$starIndex'),
-                          onPressed: () {
-                            setState(() {
-                              _selectedRating = starIndex;
-                            });
-                          },
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          constraints: const BoxConstraints(),
-                          icon: Icon(
-                            starIndex <= _selectedRating
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
-                            size: 38,
-                            color: AppButtonColors.primaryBackground,
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 10),
+                          Text(
+                            'How was your Service Provider?',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
-                        );
-                      }),
-                    ),
-                    const SizedBox(height: 22),
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Add detailed review',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      key: const Key('booking_review_text_field'),
-                      controller: _reviewController,
-                      cursorColor: AppButtonColors.primaryBackground,
-                      maxLines: 5,
-                      decoration: InputDecoration(
-                        hintText: 'Enter here...',
-                        hintStyle: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textMuted,
-                        ),
-                        contentPadding: const EdgeInsets.all(12),
-                        filled: true,
-                        fillColor: AppColors.surfaceElevated,
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: AppColors.border,
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Your overall ratings',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: AppButtonColors.primaryBackground,
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(5, (index) {
+                              final starIndex = index + 1;
+                              return IconButton(
+                                key: Key('booking_review_star_$starIndex'),
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedRating = starIndex;
+                                  });
+                                },
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                constraints: const BoxConstraints(),
+                                icon: Icon(
+                                  starIndex <= _selectedRating
+                                      ? Icons.star_rounded
+                                      : Icons.star_outline_rounded,
+                                  size: 38,
+                                  color: AppButtonColors.primaryBackground,
+                                ),
+                              );
+                            }),
                           ),
-                        ),
-                      ),
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        color: AppColors.textPrimary,
+                          const SizedBox(height: 22),
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Add detailed review',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            key: const Key('booking_review_text_field'),
+                            controller: _reviewController,
+                            cursorColor: AppButtonColors.primaryBackground,
+                            maxLines: 5,
+                            decoration: InputDecoration(
+                              hintText: 'Enter here...',
+                              hintStyle: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textMuted,
+                              ),
+                              contentPadding: const EdgeInsets.all(12),
+                              filled: true,
+                              fillColor: AppColors.surfaceElevated,
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(
+                                  color: AppColors.border,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(
+                                  color:
+                                      AppButtonColors.primaryBackground,
+                                ),
+                              ),
+                            ),
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+                          AppPrimaryButton(
+                            key: const Key('booking_review_done_button'),
+                            label: _isSubmitting ? 'Saving...' : 'Done',
+                            onPressed: _isSubmitting ? null : _submitReview,
+                            height: 46,
+                            borderRadius: 6,
+                            textStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const Spacer(),
-                    AppPrimaryButton(
-                      key: const Key('booking_review_done_button'),
-                      label: _isSubmitting ? 'Saving...' : 'Done',
-                      onPressed: _isSubmitting ? null : _submitReview,
-                      height: 46,
-                      borderRadius: 6,
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ],

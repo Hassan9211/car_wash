@@ -239,11 +239,13 @@ class _SignupScreenState extends State<SignupScreen> {
                             : null,
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        'I agree to the Terms and Conditions.',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
+                      const Expanded(
+                        child: Text(
+                          'I agree to the Terms and Conditions.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
                     ],

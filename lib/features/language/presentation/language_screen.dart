@@ -1,8 +1,6 @@
 import 'package:car_wash/core/router/app_navigation.dart';
-import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 class LanguageScreen extends StatefulWidget {
@@ -68,28 +66,6 @@ class _LanguageScreenState extends State<LanguageScreen> {
                 textStyle: const TextStyle(
                   fontSize: 22 / 1.45,
                   fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 10),
-              RichText(
-                key: const Key('language_login_text'),
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    color: AppColors.textSecondary,
-                  ),
-                  children: [
-                    const TextSpan(text: 'Already have an account? '),
-                    TextSpan(
-                      text: 'Login Now',
-                      style: const TextStyle(
-                        color: AppButtonColors.actionForeground,
-                        decoration: TextDecoration.underline,
-                        decorationColor: AppButtonColors.actionForeground,
-                      ),
-                      recognizer: TapGestureRecognizer()..onTap = _continue,
-                    ),
-                  ],
                 ),
               ),
               const SizedBox(height: 8),

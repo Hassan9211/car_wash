@@ -109,6 +109,14 @@ class BookingPaymentSuccessScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 12),
                             _PaymentSuccessRow(
+                              label: 'Tip for Service Provider',
+                              value: _formatCurrency(details.tipAmount),
+                              valueColor: details.tipAmount > 0
+                                  ? AppButtonColors.primaryBackground
+                                  : null,
+                            ),
+                            const SizedBox(height: 12),
+                            _PaymentSuccessRow(
                               label: 'Delivery Charge',
                               value: _formatCurrency(details.deliveryCharge),
                             ),
@@ -257,11 +265,13 @@ class _PaymentSuccessRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.isTotal = false,
+    this.valueColor,
   });
 
   final String label;
   final String value;
   final bool isTotal;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -273,7 +283,8 @@ class _PaymentSuccessRow extends StatelessWidget {
     final valueStyle = TextStyle(
       fontSize: 12,
       fontWeight: isTotal ? FontWeight.w500 : FontWeight.w400,
-      color: isTotal ? AppColors.textPrimary : AppColors.textSecondary,
+      color: valueColor ??
+          (isTotal ? AppColors.textPrimary : AppColors.textSecondary),
     );
 
     return Row(

@@ -68,10 +68,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _initializeVideos() async {
     for (final controller in _videoControllers) {
-      await controller.initialize();
-      await controller.setLooping(true);
-      await controller.setVolume(0);
-      await controller.setPlaybackSpeed(_onboardingPlaybackSpeed);
+      try {
+        await controller.initialize();
+        await controller.setLooping(true);
+        await controller.setVolume(0);
+        await controller.setPlaybackSpeed(_onboardingPlaybackSpeed);
+      } catch (_) {
+        // Keep the existing image fallback when video playback is unavailable.
+      }
     }
 
     if (!mounted) {

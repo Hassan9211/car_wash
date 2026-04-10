@@ -817,7 +817,7 @@ class _BookingTextField extends StatelessWidget {
       style: const TextStyle(
         fontSize: 13.2,
         fontWeight: FontWeight.w500,
-        color: Color(0xFF1F1F1F),
+        color: AppColors.textPrimary,
       ),
       validator: validator,
       decoration: InputDecoration(
@@ -901,10 +901,19 @@ class _BookingDropdownField extends StatelessWidget {
         errorStyle: const TextStyle(fontSize: 12),
       ),
       style: const TextStyle(fontSize: 12.5, color: AppColors.textPrimary),
-      dropdownColor: Colors.white,
+      dropdownColor: AppColors.surfaceElevated,
       items: items
           .map((item) {
-            return DropdownMenuItem<String>(value: item, child: Text(item));
+            return DropdownMenuItem<String>(
+              value: item,
+              child: Text(
+                item,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            );
           })
           .toList(growable: false),
       onChanged: onChanged,

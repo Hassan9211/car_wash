@@ -135,7 +135,8 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
           promoCode: 'FR2412357435WER',
           expectedDeliveryTime: bookingTime,
           amount: amount,
-          deliveryCharge: 5,
+          tipAmount: _selectedTip.toDouble(),
+          deliveryCharge: 0,
           tax: 0,
           discount: 0,
           totalAmount: totalAmount,
@@ -172,7 +173,6 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     final tipAmountLabel = _formatCurrency(_selectedTip.toDouble());
     final totalAmountLabel = _formatCurrency(totalAmount);
     final paymentMethodSubtitle = _selectedPaymentMethod.displaySubtitle;
-
     return Scaffold(
       backgroundColor: AppColors.appBackground,
       body: SafeArea(
@@ -324,7 +324,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.black,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -369,8 +369,9 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                               width: double.infinity,
                               padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFDCE7DC),
+                                color: AppColors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.border),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -745,13 +746,23 @@ class _TipOptionChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? AppButtonColors.primaryBackground
-              : Colors.white,
+              : AppColors.inputFill,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
                 ? AppButtonColors.primaryBackground
-                : const Color(0xFFE2E2E2),
+                : AppColors.border,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppButtonColors.primaryBackground
+                        .withValues(alpha: 0.26),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
@@ -759,8 +770,8 @@ class _TipOptionChip extends StatelessWidget {
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             color: isSelected
-                ? const Color(0xFF0C2817)
-                : const Color(0xFF1B1B1B),
+                ? Colors.white
+                : AppColors.textSecondary,
           ),
         ),
       ),
@@ -805,7 +816,7 @@ class _CheckoutDetailRow extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF1E1E1E),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 )
@@ -817,7 +828,7 @@ class _CheckoutDetailRow extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF1E1E1E),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 1),
@@ -825,7 +836,7 @@ class _CheckoutDetailRow extends StatelessWidget {
                       value,
                       style: const TextStyle(
                         fontSize: 9.5,
-                        color: Color(0xFF8A8A8A),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -854,12 +865,12 @@ class _CheckoutAmountRow extends StatelessWidget {
     final labelStyle = TextStyle(
       fontSize: 13,
       fontWeight: isBold ? FontWeight.w600 : FontWeight.w400,
-      color: const Color(0xFF2A2A2A),
+      color: isBold ? AppColors.textPrimary : AppColors.textSecondary,
     );
     final amountStyle = TextStyle(
       fontSize: 13,
       fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
-      color: amountColor ?? const Color(0xFF2A2A2A),
+      color: amountColor ?? AppColors.textPrimary,
     );
 
     return Row(

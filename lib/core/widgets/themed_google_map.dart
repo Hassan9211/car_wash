@@ -1,3 +1,4 @@
+import 'package:car_wash/core/services/app_maps_config_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -50,12 +51,49 @@ class ThemedGoogleMap extends StatefulWidget {
 }
 
 class _ThemedGoogleMapState extends State<ThemedGoogleMap> {
+  bool? _hasUsableApiKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMapsConfig();
+  }
+
+  Future<void> _loadMapsConfig() async {
+    final hasUsableApiKey =
+        await AppMapsConfigService.hasUsableGoogleMapsApiKey();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _hasUsableApiKey = hasUsableApiKey;
+    });
+  }
+
   void _handleMapCreated(GoogleMapController controller) {
     widget.onMapCreated?.call(controller);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_hasUsableApiKey == null) {
+      return const ColoredBox(
+        color: Color(0xFF0B1411),
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+
+    if (_hasUsableApiKey == false) {
+      return const _GoogleMapsUnavailableState();
+    }
+
     return GoogleMap(
       initialCameraPosition: widget.initialCameraPosition,
       markers: widget.markers,
@@ -76,6 +114,61 @@ class _ThemedGoogleMapState extends State<ThemedGoogleMap> {
       onTap: widget.onTap,
       onCameraMove: widget.onCameraMove,
       onCameraIdle: widget.onCameraIdle,
+    );
+  }
+}
+
+class _GoogleMapsUnavailableState extends StatelessWidget {
+  const _GoogleMapsUnavailableState();
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: const Color(0xFF0B1411),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320),
+          child: Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+            decoration: BoxDecoration(
+              color: const Color(0xFF12201B),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFF274238)),
+            ),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.map_outlined,
+                  size: 34,
+                  color: Color(0xFF8FD3AF),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Google Map is not configured yet',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Add GOOGLE_MAPS_API_KEY to android/local.properties, then fully restart the app.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12.8,
+                    height: 1.45,
+                    color: Color(0xFFC1D5CA),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

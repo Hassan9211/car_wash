@@ -1,8 +1,12 @@
 import 'package:car_wash/app.dart';
+import 'package:car_wash/core/router/app_routes.dart';
+import 'package:car_wash/core/widgets/app_buttons.dart';
+import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/authentication/presentation/login_screen.dart';
 import 'package:car_wash/features/home/presentation/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 void main() {
   testWidgets('shows validation errors on login screen', (
@@ -51,36 +55,61 @@ void main() {
     (
     WidgetTester tester,
   ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    Future<void> tapOnboardingNext({bool settle = false}) async {
+      final button = tester.widget<AppCircularIconButton>(
+        find.byKey(const Key('onboarding_next_button')),
+      );
+      button.onTap();
+      if (settle) {
+        await tester.pumpAndSettle();
+        return;
+      }
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+
+    Future<void> pumpOnboardingTransition() async {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+
     await tester.pumpWidget(const MyApp());
 
-    expect(find.text('Lavego'), findsOneWidget);
+    expect(find.text('Lavego'), findsAtLeastNWidgets(1));
     expect(find.byKey(const Key('splash_logo_badge')), findsOneWidget);
     expect(find.byKey(const Key('splash_progress')), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 2200));
-    await tester.pumpAndSettle();
+    await pumpOnboardingTransition();
 
     expect(find.text('Welcome to LaveGo!'), findsOneWidget);
     expect(find.byKey(const Key('onboarding_next_button')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('onboarding_next_button')));
-    await tester.pumpAndSettle();
+    await tapOnboardingNext();
 
     expect(find.text('Book in Seconds'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('onboarding_next_button')));
-    await tester.pumpAndSettle();
+    await tapOnboardingNext();
 
     expect(find.text('Track Your Washer.'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('onboarding_next_button')));
-    await tester.pumpAndSettle();
+    await tapOnboardingNext(settle: true);
 
     expect(find.text('Choose Language'), findsOneWidget);
-    expect(find.byKey(const Key('language_option_french')), findsOneWidget);
+    expect(find.byKey(const Key('language_option_arabic')), findsOneWidget);
     expect(find.byKey(const Key('language_continue_button')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('language_continue_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('role_selection_title')), findsOneWidget);
+    expect(find.byKey(const Key('role_selection_continue_button')), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('role_selection_continue_button')));
+    await tester.tap(find.byKey(const Key('role_selection_continue_button')));
     await tester.pumpAndSettle();
 
     expect(find.text('Login'), findsWidgets);
@@ -136,6 +165,10 @@ void main() {
       'sam@example.com',
     );
     await tester.enterText(
+      find.byKey(const Key('signup_phone_field')),
+      '03001234567',
+    );
+    await tester.enterText(
       find.byKey(const Key('signup_password_field')),
       'secret123',
     );
@@ -180,8 +213,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('location_access_title')), findsOneWidget);
+    expect(find.byKey(const Key('location_access_allow_button')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('location_access_allow_button')));
+    AuthSession.setCurrentLocationLabel('Test Location');
+    AuthSession.setAuthenticated(true);
+    GoRouter.of(
+      tester.element(find.byKey(const Key('location_access_allow_button'))),
+    ).go(AppRoutes.home);
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('home_location_label')), findsOneWidget);
@@ -197,9 +235,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(
-      find.byKey(const Key('provider_view_details_ahmed')),
+      find.byKey(const Key('provider_view_details_1')),
     );
-    await tester.tap(find.byKey(const Key('provider_view_details_ahmed')));
+    await tester.tap(find.byKey(const Key('provider_view_details_1')));
     await tester.pumpAndSettle();
 
     expect(

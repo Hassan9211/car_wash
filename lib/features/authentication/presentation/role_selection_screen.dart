@@ -79,140 +79,150 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               color: AppColors.border,
             ),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            AppColors.surfaceHighlight,
-                            AppColors.surface,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'How would you like to continue?',
-                            key: Key('role_selection_title'),
-                            style: TextStyle(
-                              fontSize: 25,
-                              height: 1.15,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                              letterSpacing: -0.8,
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            'Choose your app experience. You can continue as a customer to book services or as a service provider to manage jobs and earnings.',
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              height: 1.45,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    _RoleOptionCard(
-                      key: const Key('role_selection_customer_option'),
-                      role: AppUserRole.customer,
-                      title: 'Customer',
-                      subtitle:
-                          'Book washes, track arrivals, and manage orders.',
-                      icon: Icons.directions_car_filled_rounded,
-                      iconTint: AppColors.brandGreen,
-                      iconBackground: const Color(0xFFEAF7EE),
-                      highlights: const [
-                        'Book services',
-                        'Track washer',
-                        'Pay securely',
-                      ],
-                      isSelected: _selectedRole == AppUserRole.customer,
-                      onTap: () => _selectRole(AppUserRole.customer),
-                    ),
-                    const SizedBox(height: 14),
-                    _RoleOptionCard(
-                      key: const Key('role_selection_service_provider_option'),
-                      role: AppUserRole.serviceProvider,
-                      title: 'Service Provider',
-                      subtitle:
-                          'Accept requests, manage active jobs, and monitor earnings.',
-                      icon: Icons.local_shipping_rounded,
-                      iconTint: const Color(0xFF176B87),
-                      iconBackground: const Color(0xFFE8F5FA),
-                      highlights: const [
-                        'New requests',
-                        'Live jobs',
-                        'Earnings view',
-                      ],
-                      isSelected: _selectedRole == AppUserRole.serviceProvider,
-                      onTap: () => _selectRole(AppUserRole.serviceProvider),
-                    ),
-                    const Spacer(),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceElevated,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              color: AppColors.warningSurface,
-                              borderRadius: BorderRadius.circular(11),
-                            ),
-                            child: const Icon(
-                              Icons.info_outline_rounded,
-                              color: Color(0xFFF0C56A),
-                              size: 18,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Selected role: ${_selectedRole.label}. We will use this later to show the right dashboard and features.',
-                              style: const TextStyle(
-                                fontSize: 12.8,
-                                height: 1.45,
-                                color: AppColors.textSecondary,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    AppColors.surfaceHighlight,
+                                    AppColors.surface,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(22),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'How would you like to continue?',
+                                    key: Key('role_selection_title'),
+                                    style: TextStyle(
+                                      fontSize: 25,
+                                      height: 1.15,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                      letterSpacing: -0.8,
+                                    ),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    'Choose your app experience. You can continue as a customer to book services or as a service provider to manage jobs and earnings.',
+                                    style: TextStyle(
+                                      fontSize: 14.5,
+                                      height: 1.45,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 20),
+                            _RoleOptionCard(
+                              key: const Key('role_selection_customer_option'),
+                              role: AppUserRole.customer,
+                              title: 'Customer',
+                              subtitle:
+                                  'Book washes, track arrivals, and manage orders.',
+                              icon: Icons.directions_car_filled_rounded,
+                              iconTint: AppColors.brandGreen,
+                              iconBackground: const Color(0xFFEAF7EE),
+                              highlights: const [
+                                'Book services',
+                                'Track washer',
+                                'Pay securely',
+                              ],
+                              isSelected: _selectedRole == AppUserRole.customer,
+                              onTap: () => _selectRole(AppUserRole.customer),
+                            ),
+                            const SizedBox(height: 14),
+                            _RoleOptionCard(
+                              key: const Key('role_selection_service_provider_option'),
+                              role: AppUserRole.serviceProvider,
+                              title: 'Service Provider',
+                              subtitle:
+                                  'Accept requests, manage active jobs, and monitor earnings.',
+                              icon: Icons.local_shipping_rounded,
+                              iconTint: const Color(0xFF176B87),
+                              iconBackground: const Color(0xFFE8F5FA),
+                              highlights: const [
+                                'New requests',
+                                'Live jobs',
+                                'Earnings view',
+                              ],
+                              isSelected:
+                                  _selectedRole == AppUserRole.serviceProvider,
+                              onTap: () => _selectRole(AppUserRole.serviceProvider),
+                            ),
+                            const Spacer(),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceElevated,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 34,
+                                    height: 34,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.warningSurface,
+                                      borderRadius: BorderRadius.circular(11),
+                                    ),
+                                    child: const Icon(
+                                      Icons.info_outline_rounded,
+                                      color: Color(0xFFF0C56A),
+                                      size: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Selected role: ${_selectedRole.label}. We will use this later to show the right dashboard and features.',
+                                      style: const TextStyle(
+                                        fontSize: 12.8,
+                                        height: 1.45,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            AppPrimaryButton(
+                              key: const Key('role_selection_continue_button'),
+                              label: 'Continue',
+                              onPressed: _continue,
+                              height: 52,
+                              textStyle: const TextStyle(
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    AppPrimaryButton(
-                      key: const Key('role_selection_continue_button'),
-                      label: 'Continue',
-                      onPressed: _continue,
-                      height: 52,
-                      textStyle: const TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ],

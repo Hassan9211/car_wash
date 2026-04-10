@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:car_wash/core/location/app_location_details.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
@@ -62,6 +63,7 @@ class _ServiceProviderSetupScreenState
   int _currentStepIndex = 0;
   String _selectedExperience = _experienceOptions[1];
   String? _idCardImagePath;
+  String? _idCardValidationMessage;
   List<String> _galleryImagePaths = const [];
   bool _isPickingImage = false;
   bool _isSubmitting = false;
@@ -191,10 +193,20 @@ class _ServiceProviderSetupScreenState
   }
 
   Future<void> _pickIdCardImage() async {
+    FocusScope.of(context).unfocus();
+
+    final source = await _showImageSourceSheet();
+    if (!mounted || source == null) {
+      return;
+    }
+
     await _pickSingleImage(
+      source: source,
+      validateAsIdCard: true,
       onImagePicked: (path) {
         setState(() {
           _idCardImagePath = path;
+          _idCardValidationMessage = null;
         });
       },
     );
@@ -265,7 +277,9 @@ class _ServiceProviderSetupScreenState
   }
 
   Future<void> _pickSingleImage({
+    required ImageSource source,
     required ValueChanged<String> onImagePicked,
+    bool validateAsIdCard = false,
   }) async {
     if (_isPickingImage) {
       return;
@@ -276,16 +290,18 @@ class _ServiceProviderSetupScreenState
     });
 
     try {
-      final permissionStatus =
-          await AppPermissionService.requestGalleryPermission();
+      final permissionStatus = source == ImageSource.camera
+          ? await AppPermissionService.requestCameraPermission()
+          : await AppPermissionService.requestGalleryPermission();
 
       if (!mounted) {
         return;
       }
 
       if (permissionStatus == AppPermissionStatus.denied) {
-        _showMessage(
-          'Gallery access allow karein taake image choose kar saken.',
+        _showImagePermissionMessage(
+          source: source,
+          openSettings: false,
         );
         return;
       }
@@ -295,20 +311,37 @@ class _ServiceProviderSetupScreenState
         if (!mounted) {
           return;
         }
-        _showMessage(
-          'Gallery access settings mein allow karein taake image choose kar saken.',
+        _showImagePermissionMessage(
+          source: source,
+          openSettings: true,
         );
         return;
       }
 
       final pickedFile = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
+        source: source,
         imageQuality: 85,
         maxWidth: 1400,
       );
 
       if (!mounted || pickedFile == null) {
         return;
+      }
+
+      if (validateAsIdCard) {
+        final validationMessage = await _validatePickedIdCard(pickedFile.path);
+        if (!mounted) {
+          return;
+        }
+
+        if (validationMessage != null) {
+          setState(() {
+            _idCardImagePath = null;
+            _idCardValidationMessage = validationMessage;
+          });
+          _showMessage(validationMessage);
+          return;
+        }
       }
 
       onImagePicked(pickedFile.path);
@@ -323,6 +356,127 @@ class _ServiceProviderSetupScreenState
           _isPickingImage = false;
         });
       }
+    }
+  }
+
+  Future<ImageSource?> _showImageSourceSheet() {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.surfaceElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (bottomSheetContext) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Center(
+                  child: SizedBox(
+                    width: 46,
+                    child: Divider(
+                      thickness: 4,
+                      color: AppColors.border,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Choose ID Card Image',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Choose a clear close-up photo of your original ID card only.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.35,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _ImageSourceTile(
+                  icon: Icons.photo_library_outlined,
+                  title: 'Choose from Gallery',
+                  onTap: () => Navigator.of(
+                    bottomSheetContext,
+                  ).pop(ImageSource.gallery),
+                ),
+                const SizedBox(height: 10),
+                _ImageSourceTile(
+                  icon: Icons.photo_camera_outlined,
+                  title: 'Open Camera',
+                  onTap: () => Navigator.of(
+                    bottomSheetContext,
+                  ).pop(ImageSource.camera),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showImagePermissionMessage({
+    required ImageSource source,
+    required bool openSettings,
+  }) {
+    final message = switch ((source, openSettings)) {
+      (ImageSource.camera, true) =>
+        'Allow camera access in settings so you can capture your ID card.',
+      (ImageSource.camera, false) =>
+        'Allow camera access to capture your ID card.',
+      (_, true) =>
+        'Allow gallery access in settings so you can choose your ID card image.',
+      _ => 'Allow gallery access to choose your ID card image.',
+    };
+
+    _showMessage(message);
+  }
+
+  Future<String?> _validatePickedIdCard(String imagePath) async {
+    try {
+      final imageFile = File(imagePath);
+      final fileSize = await imageFile.length();
+      if (fileSize < 45 * 1024) {
+        return 'Upload a clear ID card image. The file looks too small.';
+      }
+
+      final imageBytes = await imageFile.readAsBytes();
+      final buffer = await ui.ImmutableBuffer.fromUint8List(imageBytes);
+      final descriptor = await ui.ImageDescriptor.encoded(buffer);
+
+      final width = descriptor.width.toDouble();
+      final height = descriptor.height.toDouble();
+
+      buffer.dispose();
+      descriptor.dispose();
+
+      if (width < 700 || height < 420) {
+        return 'Upload a clear close-up image of your ID card.';
+      }
+
+      if (width <= height) {
+        return 'Capture the ID card straight and in landscape view.';
+      }
+
+      final aspectRatio = width / height;
+      if (aspectRatio < 1.38 || aspectRatio > 1.72) {
+        return 'Upload only a close-up photo of the ID card. Other pictures will not be accepted.';
+      }
+
+      return null;
+    } catch (_) {
+      return 'We could not verify the ID card image. Please upload a clear close-up photo again.';
     }
   }
 
@@ -580,6 +734,7 @@ class _ServiceProviderSetupScreenState
         return _IdCardStep(
           key: const ValueKey(_SetupStep.idCard),
           imagePath: _idCardImagePath,
+          validationMessage: _idCardValidationMessage,
           isUploading: _isPickingImage,
           onUpload: _pickIdCardImage,
         );
@@ -1066,11 +1221,13 @@ class _IdCardStep extends StatelessWidget {
   const _IdCardStep({
     super.key,
     required this.imagePath,
+    required this.validationMessage,
     required this.isUploading,
     required this.onUpload,
   });
 
   final String? imagePath;
+  final String? validationMessage;
   final bool isUploading;
   final VoidCallback onUpload;
 
@@ -1157,10 +1314,72 @@ class _IdCardStep extends StatelessWidget {
                   child: Text(hasImage ? 'Replace' : 'Upload'),
                 ),
               ),
+              const SizedBox(height: 12),
+              Text(
+                validationMessage ??
+                    'Upload only a clear close-up ID card image from your gallery or camera.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11.8,
+                  height: 1.35,
+                  color: validationMessage == null
+                      ? AppColors.textSecondary
+                      : const Color(0xFFFF8A80),
+                ),
+              ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ImageSourceTile extends StatelessWidget {
+  const _ImageSourceTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Ink(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.inputFill,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: AppColors.brandGreen),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: AppColors.textMuted,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

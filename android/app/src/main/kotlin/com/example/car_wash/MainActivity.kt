@@ -17,6 +17,7 @@ import io.flutter.plugins.GeneratedPluginRegistrant
 class MainActivity : FlutterActivity() {
     private val logTag = "CarWashPermissions"
     private val permissionChannelName = "com.example.car_wash/permissions"
+    private val mapsConfigChannelName = "com.example.car_wash/maps_config"
     private val requestLocationPermissionCode = 1000
     private val requestGalleryPermissionCode = 1001
     private val requestCameraPermissionCode = 1002
@@ -63,6 +64,35 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            mapsConfigChannelName,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "hasUsableGoogleMapsApiKey" -> result.success(hasUsableGoogleMapsApiKey())
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun hasUsableGoogleMapsApiKey(): Boolean {
+        val apiKey = googleMapsApiKey()
+        return !apiKey.isNullOrBlank() && apiKey != "YOUR_GOOGLE_MAPS_API_KEY"
+    }
+
+    private fun googleMapsApiKey(): String? {
+        val applicationInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageManager.getApplicationInfo(
+                packageName,
+                PackageManager.ApplicationInfoFlags.of(PackageManager.GET_META_DATA.toLong()),
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+        }
+
+        return applicationInfo.metaData?.getString("com.google.android.geo.API_KEY")
     }
 
     private fun requestPermissions(
