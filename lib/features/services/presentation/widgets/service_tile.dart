@@ -3,11 +3,7 @@ import 'package:car_wash/features/services/model/service_item.dart';
 import 'package:flutter/material.dart';
 
 class ServiceTile extends StatelessWidget {
-  const ServiceTile({
-    super.key,
-    required this.service,
-    this.width = 58,
-  });
+  const ServiceTile({super.key, required this.service, this.width = 58});
 
   final ServiceItem service;
   final double width;
@@ -21,19 +17,13 @@ class ServiceTile extends StatelessWidget {
         children: [
           Container(
             width: 52,
-            height: 40,
+            height: 52,
             decoration: BoxDecoration(
               color: AppColors.surfaceElevated,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: AppColors.border,
-              ),
+              border: Border.all(color: AppColors.border),
             ),
-            child: Icon(
-              service.icon,
-              color: service.iconColor,
-              size: 22,
-            ),
+            child: Icon(service.icon, color: service.iconColor, size: 22),
           ),
           const SizedBox(height: 8),
           Text(

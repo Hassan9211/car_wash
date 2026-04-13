@@ -1,5 +1,6 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -865,13 +866,10 @@ class _SupportContactCard extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: onPrivacyTap,
-                  style: OutlinedButton.styleFrom(
+                  style: AppButtonStyles.outlined(
                     foregroundColor: AppColors.brandGreen,
-                    side: const BorderSide(color: AppColors.brandGreen),
-                    minimumSize: const Size.fromHeight(44),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    borderColor: AppColors.brandGreen,
+                    height: 44,
                   ),
                   child: const Text(
                     'Privacy Policy',
@@ -886,14 +884,7 @@ class _SupportContactCard extends StatelessWidget {
               Expanded(
                 child: FilledButton(
                   onPressed: onTermsTap,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.brandGreen,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(44),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                  style: AppButtonStyles.filled(height: 44),
                   child: const Text(
                     'Terms & Conditions',
                     style: TextStyle(

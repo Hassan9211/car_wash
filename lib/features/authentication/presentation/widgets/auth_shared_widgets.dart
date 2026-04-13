@@ -9,14 +9,18 @@ class AuthScreenShell extends StatelessWidget {
     required this.onBack,
     required this.child,
     this.footer,
+    this.footerReservedHeight = 92,
     this.backgroundColor = AppColors.authSoftBackground,
+    this.titleTextStyle,
   });
 
   final String title;
   final VoidCallback onBack;
   final Widget child;
   final Widget? footer;
+  final double footerReservedHeight;
   final Color backgroundColor;
+  final TextStyle? titleTextStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -63,11 +67,13 @@ class AuthScreenShell extends StatelessWidget {
                             title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 24 / 1.4,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
+                            style:
+                                titleTextStyle ??
+                                const TextStyle(
+                                  fontSize: 24 / 1.4,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textPrimary,
+                                ),
                           ),
                         ),
                       ),
@@ -89,7 +95,7 @@ class AuthScreenShell extends StatelessWidget {
                           18,
                           18,
                           18,
-                          footer != null ? 92 : 20,
+                          footer != null ? footerReservedHeight : 20,
                         ),
                         child: child,
                       ),
@@ -167,17 +173,17 @@ class AuthBrandBadge extends StatelessWidget {
       children: [
         Icon(
           Icons.local_car_wash_rounded,
-          size: 22,
+          size: 30,
           color: AppColors.brandGreenLight,
         ),
-        SizedBox(height: 2),
+        SizedBox(height: 4),
         Text(
           'Lavego',
           style: TextStyle(
-            fontSize: 9,
+            fontSize: 11,
             height: 1,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
           ),
         ),
       ],

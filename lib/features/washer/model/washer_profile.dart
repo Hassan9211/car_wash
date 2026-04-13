@@ -88,7 +88,9 @@ class WasherProfile {
       email: email,
       searchTerms: provider.searchTerms,
       categoryLabel: provider.categoryLabel,
-      supportedServices: supportedServices,
+      supportedServices: supportedServices.isNotEmpty
+          ? supportedServices
+          : provider.supportedServices,
       completedJobs: completedJobs,
       pendingRequests: pendingRequests,
       activeOrders: activeOrders,

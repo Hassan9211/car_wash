@@ -7,6 +7,8 @@ import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:car_wash/features/home/data/provider_catalog.dart';
+import 'package:car_wash/features/services/data/service_catalog.dart';
+import 'package:car_wash/features/services/model/service_item.dart';
 import 'package:car_wash/features/washer/model/washer_profile.dart';
 import 'package:car_wash/features/washer/presentation/widgets/service_provider_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
@@ -62,7 +64,7 @@ class _ServiceProviderProfileScreenState
                     child: TabBarView(
                       children: [
                         _ProfileDetailsTab(profile: profile),
-                        _ProfileGalleryTab(profile: profile),
+                        _ProfileServicesTab(profile: profile),
                         _ProfileReviewsTab(profile: profile),
                       ],
                     ),
@@ -89,7 +91,7 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 332,
+      height: 350,
       child: Stack(
         children: [
           SizedBox(
@@ -115,8 +117,10 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+                Positioned(
+                  top: 0,
+                  left: 14,
+                  right: 14,
                   child: Row(
                     children: [
                       const SizedBox(width: 42),
@@ -126,7 +130,7 @@ class _ProfileHeader extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
                         ),
@@ -135,11 +139,18 @@ class _ProfileHeader extends StatelessWidget {
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: onEditTap,
-                          customBorder: const CircleBorder(),
-                          child: const SizedBox(
+                          borderRadius: BorderRadius.circular(999),
+                          child: Ink(
                             width: 42,
                             height: 42,
-                            child: Icon(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.22),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.22),
+                              ),
+                            ),
+                            child: const Icon(
                               Icons.edit_outlined,
                               size: 21,
                               color: Colors.white,
@@ -159,9 +170,18 @@ class _ProfileHeader extends StatelessWidget {
             top: 188,
             bottom: 0,
             child: DecoratedBox(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.surfaceElevated,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 18,
+                    offset: const Offset(0, -6),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,7 +236,7 @@ class _ProfileHeader extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 20),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 10),
                     child: _ProfileTabBar(),
@@ -236,22 +256,44 @@ class _ProfileTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const TabBar(
-      labelColor: AppColors.brandGreen,
-      unselectedLabelColor: AppColors.textMuted,
-      indicatorColor: AppColors.brandGreen,
-      indicatorWeight: 1.6,
-      indicatorSize: TabBarIndicatorSize.tab,
-      labelStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-      unselectedLabelStyle: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderSoft),
       ),
-      tabs: [
-        Tab(text: 'Details'),
-        Tab(text: 'Gallery'),
-        Tab(text: 'Reviews'),
-      ],
+      child: TabBar(
+        labelPadding: EdgeInsets.zero,
+        labelColor: AppColors.textPrimary,
+        unselectedLabelColor: AppColors.textMuted,
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        indicator: BoxDecoration(
+          color: AppColors.surfaceHighlight,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        tabs: const [
+          Tab(text: 'Details'),
+          Tab(text: 'Services'),
+          Tab(text: 'Reviews'),
+        ],
+      ),
     );
   }
 }
@@ -264,73 +306,90 @@ class _ProfileDetailsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'About',
-            style: TextStyle(
-              fontSize: 15.5,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            profile.description,
-            style: const TextStyle(
-              fontSize: 13.4,
-              height: 1.6,
-              color: AppColors.textSecondary,
+          _ProfileSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'About',
+                  style: TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  profile.description,
+                  style: const TextStyle(
+                    fontSize: 13.4,
+                    height: 1.7,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _InfoChip(
+                      icon: Icons.work_outline_rounded,
+                      label: profile.experienceLabel,
+                    ),
+                    _InfoChip(
+                      icon: Icons.access_time_rounded,
+                      label: profile.availability,
+                    ),
+                    _InfoChip(
+                      icon: Icons.verified_rounded,
+                      label: profile.isVerified
+                          ? 'Verified'
+                          : 'Pending Verification',
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _InfoChip(
-                icon: Icons.work_outline_rounded,
-                label: profile.experienceLabel,
-              ),
-              _InfoChip(
-                icon: Icons.access_time_rounded,
-                label: profile.availability,
-              ),
-              _InfoChip(
-                icon: Icons.verified_rounded,
-                label: profile.isVerified ? 'Verified' : 'Pending Verification',
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          const Text(
-            'Location',
-            style: TextStyle(
-              fontSize: 15.5,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+          _ProfileSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Location',
+                  style: TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  profile.location,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    height: 1.5,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  height: 246,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceMuted,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: _ProfileLocationMap(profile: profile),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            profile.location,
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            height: 246,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceMuted,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: _ProfileLocationMap(profile: profile),
           ),
         ],
       ),
@@ -338,36 +397,99 @@ class _ProfileDetailsTab extends StatelessWidget {
   }
 }
 
-class _ProfileGalleryTab extends StatelessWidget {
-  const _ProfileGalleryTab({required this.profile});
+class _ProfileServicesTab extends StatelessWidget {
+  const _ProfileServicesTab({required this.profile});
 
   final WasherProfile profile;
 
   @override
   Widget build(BuildContext context) {
-    final galleryImages = _expandedGallery(profile.galleryImageUrls);
+    if (profile.supportedServices.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text(
+            'No services selected.',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    final servicesList = ServiceCatalog.allServices
+        .where((service) => profile.supportedServices.contains(service.label))
+        .toList(growable: false);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(10, 14, 10, 22),
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: galleryImages.length,
+        itemCount: servicesList.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          crossAxisSpacing: 4,
-          mainAxisSpacing: 4,
-          childAspectRatio: 1,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+          childAspectRatio: 1.0,
         ),
         itemBuilder: (context, index) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: _ProviderNetworkImage(
-              imageUrl: galleryImages[index],
-              fallbackAssetPath: profile.imagePath,
-            ),
-          );
+          final service = servicesList[index];
+          return _ProviderServiceChip(service: service);
         },
+      ),
+    );
+  }
+}
+
+class _ProviderServiceChip extends StatelessWidget {
+  const _ProviderServiceChip({required this.service});
+
+  final ServiceItem service;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.brandGreen,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              service.icon,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Expanded(
+            child: Center(
+              child: Text(
+                service.label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  height: 1.15,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -386,9 +508,9 @@ class _ProfileReviewsTab extends StatelessWidget {
         final reviews = _buildReviews(orders, profile);
 
         return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 22),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
           itemCount: reviews.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 14),
+          separatorBuilder: (_, _) => const SizedBox(height: 16),
           itemBuilder: (context, index) {
             return _ReviewCard(review: reviews[index]);
           },
@@ -407,19 +529,24 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.surfaceMuted,
+        border: Border.all(color: AppColors.borderSoft),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: AppColors.brandGreen),
-          const SizedBox(width: 6),
+          Icon(icon, size: 16, color: AppColors.brandGreen),
+          const SizedBox(width: 7),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),
@@ -435,67 +562,79 @@ class _ReviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            radius: 14,
+            radius: 18,
             backgroundColor: AppColors.surfaceMuted,
             child: Text(
               _initials(review.customerName),
               style: const TextStyle(
-                fontSize: 10.5,
+                fontSize: 11.5,
                 fontWeight: FontWeight.w700,
                 color: AppColors.brandGreenLight,
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        review.customerName,
+                        style: const TextStyle(
+                          fontSize: 13.2,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      review.dateLabel,
+                      style: const TextStyle(
+                        fontSize: 10.8,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 Row(
                   children: List.generate(5, (index) {
                     return Icon(
                       index < review.rating
                           ? Icons.star_rounded
                           : Icons.star_border_rounded,
-                      size: 14,
+                      size: 15,
                       color: const Color(0xFFFFB423),
                     );
                   }),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
                 Text(
                   review.message,
                   style: const TextStyle(
                     fontSize: 13.2,
-                    height: 1.52,
+                    height: 1.6,
                     color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  review.customerName,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  review.dateLabel,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    color: AppColors.textMuted,
                   ),
                 ),
               ],
@@ -503,6 +642,33 @@ class _ReviewCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ProfileSectionCard extends StatelessWidget {
+  const _ProfileSectionCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 }
@@ -606,17 +772,21 @@ class _ProviderReview {
 }
 
 WasherProfile _buildCurrentProviderProfile() {
+  final provider = ProviderCatalog.currentProviderProfile();
+
   final baseProfile = WasherProfile.fromServiceProvider(
-    ProviderCatalog.currentProviderProfile(),
+    provider,
     id: 'service_provider_profile',
     phoneNumber: AuthSession.displayPhoneNumber,
     email: AuthSession.displayEmail,
-    supportedServices: const [
-      'Exterior Wash',
-      'Interior Cleaning',
-      'Foam Wash',
-      'Wax Polish',
-    ],
+    supportedServices: provider.supportedServices.isNotEmpty
+        ? provider.supportedServices
+        : const [
+            'Exterior Wash',
+            'Interior Cleaning',
+            'Foam Wash',
+            'Wax Polish',
+          ],
     completedJobs: 248,
     pendingRequests: 4,
     activeOrders: 2,

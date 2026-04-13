@@ -314,6 +314,7 @@ class _RoleOptionCard extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           role.description,
+                          maxLines: 2,
                           style: const TextStyle(
                             fontSize: 12.5,
                             color: AppColors.textMuted,
@@ -322,6 +323,7 @@ class _RoleOptionCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 14),
                   _RoleRadio(isSelected: isSelected),
                 ],
               ),
@@ -335,29 +337,34 @@ class _RoleOptionCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              Row(
                 children: [
-                  for (final item in highlights)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: iconBackground,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        item,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: iconTint,
+                  for (var index = 0; index < highlights.length; index++) ...[
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: iconBackground,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          highlights[index],
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: iconTint,
+                          ),
                         ),
                       ),
                     ),
+                    if (index != highlights.length - 1)
+                      const SizedBox(width: 10),
+                  ],
                 ],
               ),
             ],

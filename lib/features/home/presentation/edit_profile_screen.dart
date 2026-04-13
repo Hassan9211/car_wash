@@ -1,4 +1,5 @@
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/services/app_permission_service.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
@@ -417,14 +418,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     onPressed: _isPickingImage
                                         ? null
                                         : _showPhotoSourceSheet,
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: AppColors.brandGreen,
-                                      foregroundColor: Colors.white,
-                                      minimumSize: const Size.fromHeight(42),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                    ),
+                                    style: AppButtonStyles.filled(height: 42),
                                     icon: const Icon(
                                       Icons.edit_rounded,
                                       size: 16,

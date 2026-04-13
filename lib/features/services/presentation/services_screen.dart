@@ -71,11 +71,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 ],
               ),
             ),
-            Divider(
-              height: 1,
-              thickness: 0.8,
-              color: AppColors.border,
-            ),
+            Divider(height: 1, thickness: 0.8, color: AppColors.border),
             Expanded(
               child: ValueListenableBuilder<List<ServiceItem>>(
                 valueListenable: ServiceCatalog.listenable,
@@ -91,7 +87,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                             crossAxisCount: 5,
                             mainAxisSpacing: 12,
                             crossAxisSpacing: 10,
-                            childAspectRatio: 0.68,
+                            childAspectRatio: 1,
                           ),
                       itemBuilder: (context, index) {
                         return ServiceTile(

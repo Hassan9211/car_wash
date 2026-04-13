@@ -16,7 +16,7 @@ enum AppUserRole {
       case AppUserRole.customer:
         return 'Book washes, track providers, and manage payments.';
       case AppUserRole.serviceProvider:
-        return 'Manage requests, track jobs, and handle your earnings.';
+        return 'Manage requests, track jobs,\nhandle your earnings.';
     }
   }
 }

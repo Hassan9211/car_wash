@@ -1,3 +1,5 @@
+import 'package:car_wash/core/scheduling/business_hours.dart';
+
 class ServiceProviderProfile {
   const ServiceProviderProfile({
     this.id = '',
@@ -10,6 +12,7 @@ class ServiceProviderProfile {
     required this.galleryImageUrls,
     required this.description,
     required this.searchTerms,
+    this.supportedServices = const [],
     required this.location,
     required this.availability,
     this.categoryLabel = 'Car Washer',
@@ -29,6 +32,7 @@ class ServiceProviderProfile {
   final List<String> galleryImageUrls;
   final String description;
   final List<String> searchTerms;
+  final List<String> supportedServices;
   final String location;
   final String availability;
   final String categoryLabel;
@@ -87,6 +91,13 @@ class ServiceProviderProfile {
         .map((item) => item.toString())
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
+    final supportedServices = _readList(json, [
+      'supported_services',
+      'services',
+      'service_labels',
+    ]).map((item) => item.toString()).where((item) => item.isNotEmpty).toList(
+      growable: false,
+    );
 
     return ServiceProviderProfile(
       id: _readString(json, ['id', 'provider_id', 'user_id']),
@@ -112,6 +123,7 @@ class ServiceProviderProfile {
                 .where((item) => item.isNotEmpty)
                 .take(8)
                 .toList(growable: false),
+      supportedServices: supportedServices,
       location: _readString(
         json,
         ['location', 'address', 'city'],
@@ -120,7 +132,7 @@ class ServiceProviderProfile {
       availability: _readString(
         json,
         ['availability', 'working_hours', 'availability_label'],
-        fallback: '9:00 AM - 6:00 PM',
+        fallback: BusinessHours.label,
       ),
       categoryLabel: _readString(
         json,
@@ -154,6 +166,7 @@ class ServiceProviderProfile {
     List<String>? galleryImageUrls,
     String? description,
     List<String>? searchTerms,
+    List<String>? supportedServices,
     String? location,
     String? availability,
     String? categoryLabel,
@@ -173,6 +186,7 @@ class ServiceProviderProfile {
       galleryImageUrls: galleryImageUrls ?? this.galleryImageUrls,
       description: description ?? this.description,
       searchTerms: searchTerms ?? this.searchTerms,
+      supportedServices: supportedServices ?? this.supportedServices,
       location: location ?? this.location,
       availability: availability ?? this.availability,
       categoryLabel: categoryLabel ?? this.categoryLabel,
@@ -195,6 +209,7 @@ class ServiceProviderProfile {
       'gallery_urls': galleryImageUrls,
       'description': description,
       'search_terms': searchTerms,
+      'supported_services': supportedServices,
       'location': location,
       'availability': availability,
       'category_label': categoryLabel,

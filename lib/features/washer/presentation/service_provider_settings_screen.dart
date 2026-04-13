@@ -1,12 +1,22 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
+import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ServiceProviderSettingsScreen extends StatelessWidget {
   const ServiceProviderSettingsScreen({super.key});
+  static const _pushNotificationsPrefsKey =
+      'service_provider_settings.push_notifications';
+  static const _mailNotificationsPrefsKey =
+      'service_provider_settings.mail_notifications';
+  static const _dangerButtonColor = Color(0xFFD34A4A);
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +39,7 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
       _SettingsActionItem(
         title: 'Notification',
         icon: Icons.notifications_none_rounded,
-        onTap: () => context.pushToNotifications(),
+        onTap: () => _showNotificationSettings(context),
       ),
       _SettingsActionItem(
         title: 'Delete Account',
@@ -39,7 +49,7 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
       _SettingsActionItem(
         title: 'Logout',
         icon: Icons.logout_rounded,
-        onTap: () => _logout(context),
+        onTap: () => _showLogoutDialog(context),
       ),
     ];
 
@@ -50,17 +60,30 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const _SettingsTopBar(),
-            Divider(
-              height: 1,
-              thickness: 0.8,
-              color: AppColors.border,
-            ),
+            Divider(height: 1, thickness: 0.8, color: AppColors.border),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 18, 16, 22),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text(
+                      'Account',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _SettingsActionTile(
+                      item: _SettingsActionItem(
+                        title: 'Switch to Customer Account',
+                        icon: Icons.swap_horiz_rounded,
+                        onTap: () => _switchRole(context),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     const Text(
                       'Support',
                       style: TextStyle(
@@ -72,7 +95,7 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     for (var index = 0; index < items.length; index++) ...[
                       _SettingsActionTile(item: items[index]),
-                      if (index != items.length - 1) const SizedBox(height: 8),
+                      if (index != items.length - 1) const SizedBox(height: 12),
                     ],
                   ],
                 ),
@@ -84,6 +107,39 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
     );
   }
 
+
+  static Future<void> _switchRole(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.58),
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          child: _AccountActionDialog(
+            icon: Icons.swap_horiz_rounded,
+            title: 'Switch to Customer?',
+            description: 'Are you sure you want to switch to your customer account?',
+            confirmLabel: 'Yes, Switch',
+            cancelLabel: 'Cancel',
+            confirmColor: AppColors.brandGreen,
+            confirmTextColor: Colors.white,
+            cancelColor: AppColors.surfaceMuted,
+            cancelTextColor: AppColors.textSecondary,
+            onCancel: () => Navigator.of(dialogContext).pop(),
+            onConfirm: () {
+              Navigator.of(dialogContext).pop();
+              AuthSession.setCurrentRole(AppUserRole.customer);
+              if (context.mounted) {
+                context.goToHome();
+              }
+            },
+          ),
+        );
+      },
+    );
+  }
+
   static Future<void> _showDeleteAccountDialog(BuildContext context) async {
     await showDialog<void>(
       context: context,
@@ -92,7 +148,17 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.symmetric(horizontal: 28),
-          child: _DeleteAccountDialog(
+          child: _AccountActionDialog(
+            icon: Icons.delete_rounded,
+            title: 'Are you sure you want to delete this account?',
+            description:
+                'This will clear your saved provider profile data from the app and sign you out of the current session.',
+            confirmLabel: 'Yes',
+            cancelLabel: 'No',
+            confirmColor: _dangerButtonColor,
+            confirmTextColor: Colors.white,
+            cancelColor: AppColors.brandGreen,
+            cancelTextColor: Colors.white,
             onCancel: () => Navigator.of(dialogContext).pop(),
             onConfirm: () {
               Navigator.of(dialogContext).pop();
@@ -107,9 +173,179 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
     );
   }
 
-  static void _logout(BuildContext context) {
-    AuthSession.clear();
-    context.goToLogin();
+  static Future<void> _showNotificationSettings(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const _NotificationSettingsSheet(),
+    );
+  }
+
+  static Future<void> _showLogoutDialog(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.58),
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          child: _AccountActionDialog(
+            icon: Icons.logout_rounded,
+            title: 'Are you sure you want to log out?',
+            description:
+                'You will be signed out of the current session and returned to the login screen.',
+            confirmLabel: 'Yes',
+            cancelLabel: 'No',
+            confirmColor: _dangerButtonColor,
+            confirmTextColor: Colors.white,
+            cancelColor: AppColors.brandGreen,
+            cancelTextColor: Colors.white,
+            onCancel: () => Navigator.of(dialogContext).pop(),
+            onConfirm: () {
+              Navigator.of(dialogContext).pop();
+              AuthSession.clear();
+              if (context.mounted) {
+                context.goToLogin();
+              }
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _NotificationSettingsSheet extends StatefulWidget {
+  const _NotificationSettingsSheet();
+
+  @override
+  State<_NotificationSettingsSheet> createState() =>
+      _NotificationSettingsSheetState();
+}
+
+class _NotificationSettingsSheetState extends State<_NotificationSettingsSheet> {
+  bool _pushNotificationsEnabled = true;
+  bool _mailNotificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _restorePreferences();
+  }
+
+  Future<void> _restorePreferences() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _pushNotificationsEnabled = preferences.getBool(
+            ServiceProviderSettingsScreen._pushNotificationsPrefsKey,
+          ) ??
+          true;
+      _mailNotificationsEnabled = preferences.getBool(
+            ServiceProviderSettingsScreen._mailNotificationsPrefsKey,
+          ) ??
+          true;
+    });
+  }
+
+  Future<void> _updatePushNotifications(bool value) async {
+    setState(() {
+      _pushNotificationsEnabled = value;
+    });
+
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(
+      ServiceProviderSettingsScreen._pushNotificationsPrefsKey,
+      value,
+    );
+  }
+
+  Future<void> _updateMailNotifications(bool value) async {
+    setState(() {
+      _mailNotificationsEnabled = value;
+    });
+
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(
+      ServiceProviderSettingsScreen._mailNotificationsPrefsKey,
+      value,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: 16 + MediaQuery.of(context).viewPadding.bottom,
+        ),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.28),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Notifications',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 14),
+              _NotificationToggleTile(
+                title: 'Push notifications',
+                subtitle: 'Receive booking updates and app alerts.',
+                icon: Icons.notifications_active_outlined,
+                value: _pushNotificationsEnabled,
+                onChanged: _updatePushNotifications,
+              ),
+              const SizedBox(height: 10),
+              const Divider(height: 1, thickness: 0.8, color: AppColors.border),
+              const SizedBox(height: 10),
+              _NotificationToggleTile(
+                title: 'Mail notifications',
+                subtitle: 'Receive important updates by email.',
+                icon: Icons.mail_outline_rounded,
+                value: _mailNotificationsEnabled,
+                onChanged: _updateMailNotifications,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -157,6 +393,74 @@ class _SettingsTopBar extends StatelessWidget {
   }
 }
 
+class _NotificationToggleTile extends StatelessWidget {
+  const _NotificationToggleTile({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceMuted,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: AppColors.brandGreen, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  height: 1.4,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+          activeColor: Colors.white,
+          activeTrackColor: AppColors.brandGreen,
+          inactiveThumbColor: Colors.white,
+          inactiveTrackColor: AppColors.textMuted.withValues(alpha: 0.4),
+        ),
+      ],
+    );
+  }
+}
+
 class _SettingsActionTile extends StatelessWidget {
   const _SettingsActionTile({required this.item});
 
@@ -171,7 +475,7 @@ class _SettingsActionTile extends StatelessWidget {
         onTap: item.onTap,
         borderRadius: BorderRadius.circular(12),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.border),
@@ -231,9 +535,30 @@ class _SettingsActionItem {
   final VoidCallback onTap;
 }
 
-class _DeleteAccountDialog extends StatelessWidget {
-  const _DeleteAccountDialog({required this.onCancel, required this.onConfirm});
+class _AccountActionDialog extends StatelessWidget {
+  const _AccountActionDialog({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.confirmLabel,
+    required this.cancelLabel,
+    required this.confirmColor,
+    required this.confirmTextColor,
+    required this.cancelColor,
+    required this.cancelTextColor,
+    required this.onCancel,
+    required this.onConfirm,
+  });
 
+  final IconData icon;
+  final String title;
+  final String description;
+  final String confirmLabel;
+  final String cancelLabel;
+  final Color confirmColor;
+  final Color confirmTextColor;
+  final Color cancelColor;
+  final Color cancelTextColor;
   final VoidCallback onCancel;
   final VoidCallback onConfirm;
 
@@ -263,17 +588,13 @@ class _DeleteAccountDialog extends StatelessWidget {
               color: AppColors.surfaceMuted,
               borderRadius: BorderRadius.circular(24),
             ),
-            child: const Icon(
-              Icons.delete_rounded,
-              size: 54,
-              color: AppColors.brandGreen,
-            ),
+            child: Icon(icon, size: 54, color: confirmColor),
           ),
           const SizedBox(height: 18),
-          const Text(
-            'Are you sure you want to delete this account?',
+          Text(
+            title,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               height: 1.3,
               fontWeight: FontWeight.w600,
@@ -281,10 +602,10 @@ class _DeleteAccountDialog extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
-            'This will clear your saved provider profile data from the app and sign you out of the current session.',
+          Text(
+            description,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12.5,
               height: 1.4,
               color: AppColors.textSecondary,
@@ -298,15 +619,13 @@ class _DeleteAccountDialog extends StatelessWidget {
                   height: 44,
                   child: FilledButton(
                     onPressed: onCancel,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.brandGreen,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                    style: AppButtonStyles.filled(
+                      backgroundColor: cancelColor,
+                      foregroundColor: cancelTextColor,
+                      height: 44,
                     ),
-                    child: const Text(
-                      'No',
+                    child: Text(
+                      cancelLabel,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -319,18 +638,15 @@ class _DeleteAccountDialog extends StatelessWidget {
               Expanded(
                 child: SizedBox(
                   height: 44,
-                  child: OutlinedButton(
+                  child: FilledButton(
                     onPressed: onConfirm,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.brandGreen,
-                      side: const BorderSide(color: AppColors.border),
-                      backgroundColor: AppColors.surfaceMuted,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                    style: AppButtonStyles.filled(
+                      backgroundColor: confirmColor,
+                      foregroundColor: confirmTextColor,
+                      height: 44,
                     ),
-                    child: const Text(
-                      'Yes',
+                    child: Text(
+                      confirmLabel,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,

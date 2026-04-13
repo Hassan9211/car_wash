@@ -92,11 +92,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   void _handleOtpChange(String value, int index) {
-    if (_showInvalidCode) {
-      setState(() {
-        _showInvalidCode = false;
-      });
-    }
+    setState(() {
+      _showInvalidCode = false;
+    });
 
     if (value.isNotEmpty && index < _focusNodes.length - 1) {
       _focusNodes[index + 1].requestFocus();
@@ -104,13 +102,26 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   Widget _buildOtpField(int index, double boxWidth) {
+    final hasValue = _controllers[index].text.trim().isNotEmpty;
     final borderColor = _showInvalidCode
         ? AppButtonColors.destructiveForeground
-        : AppButtonColors.primaryBackground;
+        : hasValue
+        ? AppColors.brandGreen
+        : AppColors.border;
+    final fillColor = _showInvalidCode
+        ? const Color(0xFFFFF4F4)
+        : hasValue
+        ? AppColors.brandGreen
+        : Colors.white;
+    final textColor = _showInvalidCode
+        ? AppButtonColors.destructiveForeground
+        : hasValue
+        ? Colors.white
+        : AppColors.deepInk;
 
     return SizedBox(
       width: boxWidth,
-      height: 40,
+      height: 52,
       child: TextField(
         key: Key('otp_digit_$index'),
         controller: _controllers[index],
@@ -118,36 +129,34 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         textAlign: TextAlign.center,
         textAlignVertical: TextAlignVertical.center,
         keyboardType: TextInputType.number,
-        cursorColor: AppButtonColors.primaryBackground,
+        cursorColor: textColor,
         inputFormatters: [
           FilteringTextInputFormatter.digitsOnly,
           LengthLimitingTextInputFormatter(1),
         ],
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-        ).copyWith(
-          color: _showInvalidCode
-              ? AppButtonColors.destructiveForeground
-              : AppColors.textPrimary,
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          height: 1,
+          color: textColor,
         ),
         decoration: InputDecoration(
           filled: true,
-          fillColor: AppColors.inputFill,
-          isDense: true,
+          fillColor: fillColor,
           counterText: '',
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          contentPadding: EdgeInsets.zero,
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: borderColor,
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(
               color: borderColor,
               width: 1.2,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: borderColor,
+              width: 1.5,
             ),
           ),
         ),
@@ -199,11 +208,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           const SizedBox(height: 18),
           LayoutBuilder(
             builder: (context, constraints) {
-              const spacing = 8.0;
+              const spacing = 10.0;
               final boxWidth = ((constraints.maxWidth -
                           (spacing * (_controllers.length - 1))) /
                       _controllers.length)
-                  .clamp(38.0, 42.0)
+                  .clamp(44.0, 50.0)
                   .toDouble();
 
               return Row(

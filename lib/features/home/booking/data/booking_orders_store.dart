@@ -28,7 +28,7 @@ class BookingOrdersStore {
       providerLatitude: 40.7581,
       providerLongitude: -73.9856,
       paymentStatus: BookingPaymentStatus.paid,
-      bookingTime: '07:00 PM',
+      bookingTime: '09:00 AM',
       showInWallet: true,
     ),
     BookingOrderItem(
@@ -49,7 +49,7 @@ class BookingOrdersStore {
       providerLatitude: 40.7178,
       providerLongitude: -73.9560,
       paymentStatus: BookingPaymentStatus.paid,
-      bookingTime: '08:00 PM',
+      bookingTime: '10:00 AM',
       showInWallet: true,
     ),
     BookingOrderItem(
@@ -70,7 +70,7 @@ class BookingOrdersStore {
       providerLatitude: 40.7644,
       providerLongitude: -73.9235,
       paymentStatus: BookingPaymentStatus.paid,
-      bookingTime: '06:00 PM',
+      bookingTime: '11:00 AM',
       showInWallet: true,
     ),
     BookingOrderItem(
@@ -132,7 +132,7 @@ class BookingOrdersStore {
       customerLongitude: -73.9334,
       providerLatitude: 40.7644,
       providerLongitude: -73.9235,
-      bookingTime: '09:00 PM',
+      bookingTime: '03:00 PM',
     ),
   ];
 

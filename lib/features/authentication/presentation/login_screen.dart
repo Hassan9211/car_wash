@@ -6,6 +6,7 @@ import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/authentication/presentation/widgets/auth_shared_widgets.dart';
 import 'package:car_wash/features/authentication/utils/auth_validators.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,6 +16,9 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  static const _rememberedEmailKey = 'login_screen.remembered_email';
+  static const _rememberedPasswordKey = 'login_screen.remembered_password';
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -22,6 +26,12 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _rememberMe = true;
   bool _obscurePassword = true;
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreRememberedCredentials();
+  }
 
   void _goBack() {
     context.goToRoleSelection();
@@ -35,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
     context.goToForgotPassword();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
     if (!(_formKey.currentState?.validate() ?? false)) {
@@ -47,7 +57,67 @@ class _LoginScreenState extends State<LoginScreen> {
 
     AuthSession.setCurrentUser(email: _emailController.text.trim());
     AuthSession.setAuthenticated(true);
+    await _persistRememberedCredentials();
+    if (!mounted) {
+      return;
+    }
     context.goToHome();
+  }
+
+  Future<void> _restoreRememberedCredentials() async {
+    final preferences = await SharedPreferences.getInstance();
+    final rememberedEmail = preferences.getString(_rememberedEmailKey)?.trim();
+    final rememberedPassword =
+        preferences.getString(_rememberedPasswordKey)?.trim();
+
+    if (!mounted) {
+      return;
+    }
+
+    if ((rememberedEmail == null || rememberedEmail.isEmpty) &&
+        (rememberedPassword == null || rememberedPassword.isEmpty)) {
+      return;
+    }
+
+    setState(() {
+      _rememberMe = true;
+      _emailController.text = rememberedEmail ?? '';
+      _passwordController.text = rememberedPassword ?? '';
+    });
+  }
+
+  Future<void> _persistRememberedCredentials() async {
+    final preferences = await SharedPreferences.getInstance();
+
+    if (!_rememberMe) {
+      await preferences.remove(_rememberedEmailKey);
+      await preferences.remove(_rememberedPasswordKey);
+      return;
+    }
+
+    await preferences.setString(
+      _rememberedEmailKey,
+      _emailController.text.trim(),
+    );
+    await preferences.setString(
+      _rememberedPasswordKey,
+      _passwordController.text,
+    );
+  }
+
+  Future<void> _toggleRememberMe() async {
+    final nextValue = !_rememberMe;
+    setState(() {
+      _rememberMe = nextValue;
+    });
+
+    if (nextValue) {
+      return;
+    }
+
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.remove(_rememberedEmailKey);
+    await preferences.remove(_rememberedPasswordKey);
   }
 
   @override
@@ -62,11 +132,65 @@ class _LoginScreenState extends State<LoginScreen> {
     return AuthScreenShell(
       title: 'Login',
       onBack: _goBack,
-      footer: AuthBottomPrompt(
-        prefixText: 'Don\'t have an account? ',
-        actionText: 'Signup',
-        onTap: _goToSignup,
-        actionKey: const Key('login_to_signup_link'),
+      titleTextStyle: const TextStyle(
+        fontSize: 24 / 1.4,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+      ),
+      footerReservedHeight: 220,
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppPrimaryButton(
+            key: const Key('login_submit_button'),
+            label: 'Login',
+            onPressed: _submit,
+            textStyle: const TextStyle(
+              fontSize: 16.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Divider(
+                  color: AppColors.border,
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'or continue with',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Divider(
+                  color: AppColors.border,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: const [
+              Expanded(child: AppSocialButton(child: AppGoogleLogo())),
+              SizedBox(width: 10),
+              Expanded(child: AppSocialButton(child: AppGmailLogo())),
+            ],
+          ),
+          const SizedBox(height: 18),
+          AuthBottomPrompt(
+            prefixText: 'Don\'t have an account? ',
+            actionText: 'Signup',
+            onTap: _goToSignup,
+            actionKey: const Key('login_to_signup_link'),
+          ),
+        ],
       ),
       child: Form(
         key: _formKey,
@@ -74,27 +198,35 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AuthBrandBadge(),
-            const SizedBox(height: 14),
-            const Text(
-              'Login',
-              key: Key('login_screen_title'),
-              style: TextStyle(
-                fontSize: 23,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+            const SizedBox(height: 42),
+            const Center(child: AuthBrandBadge()),
+            const SizedBox(height: 16),
+            const Center(
+              child: Text(
+                'Login',
+                key: Key('login_screen_title'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 23,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Login to your account to discover and book the best car wash effortlessly.',
-              style: TextStyle(
-                fontSize: 14.5,
-                height: 1.2,
-                color: AppColors.textSecondary,
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                'Login to your account to discover and book the best car wash effortlessly.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  height: 1.35,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 52),
             AuthInputField(
               key: const Key('login_email_field'),
               controller: _emailController,
@@ -104,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
               keyboardType: TextInputType.emailAddress,
               validator: AuthValidators.validateEmail,
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             AuthInputField(
               key: const Key('login_password_field'),
               controller: _passwordController,
@@ -127,16 +259,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
             Row(
               children: [
                 InkWell(
                   key: const Key('login_remember_me'),
-                  onTap: () {
-                    setState(() {
-                      _rememberMe = !_rememberMe;
-                    });
-                  },
+                  onTap: _toggleRememberMe,
                   borderRadius: BorderRadius.circular(4),
                   child: Row(
                     children: [
@@ -168,6 +296,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         'Remember me',
                         style: TextStyle(
                           fontSize: 11,
+                          fontWeight: FontWeight.w600,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -181,49 +310,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: _goToForgotPassword,
                   foregroundColor: AppButtonColors.destructiveForeground,
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            AppPrimaryButton(
-              key: const Key('login_submit_button'),
-              label: 'Login',
-              onPressed: _submit,
-              textStyle: const TextStyle(
-                fontSize: 16.5,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Divider(
-                    color: AppColors.border,
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    'or continue with',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Divider(
-                    color: AppColors.border,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: const [
-                Expanded(child: AppSocialButton(child: AppGoogleLogo())),
-                SizedBox(width: 10),
-                Expanded(child: AppSocialButton(child: AppGmailLogo())),
               ],
             ),
           ],

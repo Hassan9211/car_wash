@@ -1,4 +1,5 @@
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
@@ -8,8 +9,8 @@ class AppPrimaryButton extends StatefulWidget {
     super.key,
     required this.label,
     required this.onPressed,
-    this.height = 46,
-    this.borderRadius = 6,
+    this.height = AppButtonStyles.primaryHeight,
+    this.borderRadius = AppButtonStyles.borderRadius,
     this.textStyle,
   });
 
@@ -32,7 +33,7 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
     final resolvedTextStyle =
         (widget.textStyle ??
                 const TextStyle(
-                  fontSize: 15.5,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ))
             .copyWith(color: AppButtonColors.primaryForeground);
@@ -55,26 +56,18 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
               child: Ink(
                 height: widget.height,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF2ADB77),
-                      AppColors.brandGreen,
-                      Color(0xFF0F6D35),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: AppColors.brandGreen,
                   borderRadius: BorderRadius.circular(widget.borderRadius),
                   border: Border.all(
-                    color: AppColors.brandGreenLight.withValues(alpha: 0.35),
+                    color: AppColors.brandGreenLight.withValues(alpha: 0.2),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.brandGreen.withValues(
-                        alpha: _isPressed ? 0.18 : 0.34,
+                      color: Colors.black.withValues(
+                        alpha: _isPressed ? 0.1 : 0.18,
                       ),
-                      blurRadius: _isPressed ? 10 : 22,
-                      offset: Offset(0, _isPressed ? 5 : 12),
+                      blurRadius: _isPressed ? 8 : 14,
+                      offset: Offset(0, _isPressed ? 4 : 8),
                     ),
                   ],
                 ),
@@ -222,7 +215,10 @@ class AppActionTextButton extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: fontSize),
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

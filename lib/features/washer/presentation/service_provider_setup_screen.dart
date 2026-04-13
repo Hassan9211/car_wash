@@ -1,16 +1,22 @@
+// ignore_for_file: unnecessary_underscores
+
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:car_wash/core/location/app_location_details.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/scheduling/business_hours.dart';
 import 'package:car_wash/core/services/app_permission_service.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/core/widgets/themed_google_map.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/data/provider_catalog.dart';
 import 'package:car_wash/features/home/model/service_provider_profile.dart';
+import 'package:car_wash/features/services/data/service_catalog.dart';
+import 'package:car_wash/features/services/model/service_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -34,12 +40,18 @@ class _ServiceProviderSetupScreenState
     '2-4 years',
     '5+ years',
   ];
+  static const _experienceChargeLimits = <String, double>{
+    'Less than 1 year': 20,
+    '1-2 years': 30,
+    '2-4 years': 40,
+    '5+ years': 50,
+  };
 
   static const _steps = <_SetupStep>[
     _SetupStep.experience,
     _SetupStep.location,
     _SetupStep.idCard,
-    _SetupStep.gallery,
+    _SetupStep.services,
     _SetupStep.availability,
   ];
 
@@ -52,9 +64,9 @@ class _ServiceProviderSetupScreenState
   late final Map<_WeekDay, _DayAvailability> _weeklyAvailability = {
     for (final day in _WeekDay.values)
       day: _DayAvailability(
-        isClosed: false,
-        startTime: const TimeOfDay(hour: 9, minute: 30),
-        endTime: const TimeOfDay(hour: 13, minute: 30),
+        isClosed: true,
+        startTime: BusinessHours.openingTime,
+        endTime: BusinessHours.closingTime,
       ),
   };
 
@@ -64,7 +76,7 @@ class _ServiceProviderSetupScreenState
   String _selectedExperience = _experienceOptions[1];
   String? _idCardImagePath;
   String? _idCardValidationMessage;
-  List<String> _galleryImagePaths = const [];
+  List<String> _selectedServiceLabels = const [];
   bool _isPickingImage = false;
   bool _isSubmitting = false;
 
@@ -72,8 +84,18 @@ class _ServiceProviderSetupScreenState
 
   _SetupStep get _currentStep => _steps[_currentStepIndex];
 
+  double get _selectedExperienceChargeLimit =>
+      _experienceChargeLimits[_selectedExperience] ?? 50;
+
+  @override
+  void initState() {
+    super.initState();
+    _serviceChargeController.addListener(_handleServiceChargeChanged);
+  }
+
   @override
   void dispose() {
+    _serviceChargeController.removeListener(_handleServiceChargeChanged);
     _addressController.dispose();
     _serviceChargeController.dispose();
     super.dispose();
@@ -115,6 +137,7 @@ class _ServiceProviderSetupScreenState
         }
         await ProviderCatalog.saveOrUpdateProvider(_buildProviderProfile());
         AuthSession.setAuthenticated(true);
+        AuthSession.setProviderSetupCompleted(true);
 
         if (!mounted) {
           return;
@@ -146,8 +169,12 @@ class _ServiceProviderSetupScreenState
         if (_selectedExperience.trim().isEmpty) {
           return 'Please select your experience.';
         }
-        if (_parseServiceCharge() == null) {
+        final serviceCharge = _parseServiceCharge();
+        if (serviceCharge == null) {
           return 'Please enter valid service charges.';
+        }
+        if (serviceCharge > _selectedExperienceChargeLimit) {
+          return 'For $_selectedExperience, service charges cannot be more than ${_formatCurrencyLabel(_selectedExperienceChargeLimit)}.';
         }
         return null;
       case _SetupStep.location:
@@ -160,9 +187,9 @@ class _ServiceProviderSetupScreenState
           return 'Please upload your ID card.';
         }
         return null;
-      case _SetupStep.gallery:
-        if (_galleryImagePaths.isEmpty) {
-          return 'Please upload at least one work image.';
+      case _SetupStep.services:
+        if (_selectedServiceLabels.isEmpty) {
+          return 'Please select at least one service.';
         }
         return null;
       case _SetupStep.availability:
@@ -192,6 +219,49 @@ class _ServiceProviderSetupScreenState
     return endMinutes > startMinutes;
   }
 
+  void _handleServiceChargeChanged() {
+    final didClamp = _enforceServiceChargeLimit();
+    if (!didClamp && mounted) {
+      setState(() {});
+    }
+  }
+
+  bool _enforceServiceChargeLimit() {
+    final serviceCharge = _parseServiceCharge();
+    if (serviceCharge == null ||
+        serviceCharge <= _selectedExperienceChargeLimit) {
+      return false;
+    }
+
+    final limitedValue = _selectedExperienceChargeLimit % 1 == 0
+        ? _selectedExperienceChargeLimit.toStringAsFixed(0)
+        : _selectedExperienceChargeLimit.toStringAsFixed(2);
+
+    _serviceChargeController.value = TextEditingValue(
+      text: limitedValue,
+      selection: TextSelection.collapsed(offset: limitedValue.length),
+    );
+
+    if (mounted) {
+      setState(() {});
+    }
+
+    return true;
+  }
+
+  void _handleExperienceChanged(String value) {
+    setState(() {
+      _selectedExperience = value;
+    });
+
+    final didClamp = _enforceServiceChargeLimit();
+    if (didClamp) {
+      _showMessage(
+        'For $value, maximum service charge is ${_formatCurrencyLabel(_selectedExperienceChargeLimit)}.',
+      );
+    }
+  }
+
   Future<void> _pickIdCardImage() async {
     FocusScope.of(context).unfocus();
 
@@ -210,70 +280,6 @@ class _ServiceProviderSetupScreenState
         });
       },
     );
-  }
-
-  Future<void> _pickGalleryImages() async {
-    if (_isPickingImage) {
-      return;
-    }
-
-    setState(() {
-      _isPickingImage = true;
-    });
-
-    try {
-      final permissionStatus =
-          await AppPermissionService.requestGalleryPermission();
-
-      if (!mounted) {
-        return;
-      }
-
-      if (permissionStatus == AppPermissionStatus.denied) {
-        _showMessage(
-          'Gallery access allow karein taake images choose kar saken.',
-        );
-        return;
-      }
-
-      if (permissionStatus == AppPermissionStatus.permanentlyDenied) {
-        await AppPermissionService.openAppSettings();
-        if (!mounted) {
-          return;
-        }
-        _showMessage(
-          'Gallery access settings mein allow karein taake images choose kar saken.',
-        );
-        return;
-      }
-
-      final pickedFiles = await _imagePicker.pickMultiImage(
-        imageQuality: 85,
-        maxWidth: 1400,
-      );
-
-      if (!mounted || pickedFiles.isEmpty) {
-        return;
-      }
-
-      setState(() {
-        _galleryImagePaths = {
-          ..._galleryImagePaths,
-          ...pickedFiles.map((file) => file.path),
-        }.toList(growable: false);
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      _showMessage('Images upload nahi ho sakin. Dubara try karein.');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isPickingImage = false;
-        });
-      }
-    }
   }
 
   Future<void> _pickSingleImage({
@@ -299,10 +305,7 @@ class _ServiceProviderSetupScreenState
       }
 
       if (permissionStatus == AppPermissionStatus.denied) {
-        _showImagePermissionMessage(
-          source: source,
-          openSettings: false,
-        );
+        _showImagePermissionMessage(source: source, openSettings: false);
         return;
       }
 
@@ -311,10 +314,7 @@ class _ServiceProviderSetupScreenState
         if (!mounted) {
           return;
         }
-        _showImagePermissionMessage(
-          source: source,
-          openSettings: true,
-        );
+        _showImagePermissionMessage(source: source, openSettings: true);
         return;
       }
 
@@ -378,10 +378,7 @@ class _ServiceProviderSetupScreenState
                 const Center(
                   child: SizedBox(
                     width: 46,
-                    child: Divider(
-                      thickness: 4,
-                      color: AppColors.border,
-                    ),
+                    child: Divider(thickness: 4, color: AppColors.border),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -406,17 +403,15 @@ class _ServiceProviderSetupScreenState
                 _ImageSourceTile(
                   icon: Icons.photo_library_outlined,
                   title: 'Choose from Gallery',
-                  onTap: () => Navigator.of(
-                    bottomSheetContext,
-                  ).pop(ImageSource.gallery),
+                  onTap: () =>
+                      Navigator.of(bottomSheetContext).pop(ImageSource.gallery),
                 ),
                 const SizedBox(height: 10),
                 _ImageSourceTile(
                   icon: Icons.photo_camera_outlined,
                   title: 'Open Camera',
-                  onTap: () => Navigator.of(
-                    bottomSheetContext,
-                  ).pop(ImageSource.camera),
+                  onTap: () =>
+                      Navigator.of(bottomSheetContext).pop(ImageSource.camera),
                 ),
               ],
             ),
@@ -486,31 +481,42 @@ class _ServiceProviderSetupScreenState
         ? currentAvailability.startTime
         : currentAvailability.endTime;
 
-    final pickedTime = await showTimePicker(
+    final selectedTime = await showTimePicker(
       context: context,
       initialTime: initialTime,
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(
-              context,
-            ).colorScheme.copyWith(primary: AppColors.brandGreen),
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.brandGreen,
+              onSurface: AppColors.textPrimary,
+            ),
           ),
           child: child!,
         );
       },
     );
 
-    if (pickedTime == null) {
-      return;
-    }
+    if (selectedTime != null && mounted) {
+      final int pickedMinutes = selectedTime.hour * 60 + selectedTime.minute;
+      final int minMinutes = 9 * 60; // 9:00 AM
+      final int maxMinutes = 17 * 60; // 5:00 PM
 
-    setState(() {
-      _weeklyAvailability[day] = currentAvailability.copyWith(
-        startTime: isStartTime ? pickedTime : currentAvailability.startTime,
-        endTime: isStartTime ? currentAvailability.endTime : pickedTime,
-      );
-    });
+      if (pickedMinutes < minMinutes || pickedMinutes > maxMinutes) {
+        _showMessage('You can only select a time between 9:00 AM and 5:00 PM.');
+        return;
+      }
+
+      setState(() {
+        if (isStartTime) {
+          _weeklyAvailability[day] =
+              currentAvailability.copyWith(startTime: selectedTime);
+        } else {
+          _weeklyAvailability[day] =
+              currentAvailability.copyWith(endTime: selectedTime);
+        }
+      });
+    }
   }
 
   void _toggleClosed(_WeekDay day, bool isClosed) {
@@ -526,6 +532,18 @@ class _ServiceProviderSetupScreenState
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _toggleSelectedService(String serviceLabel) {
+    setState(() {
+      if (_selectedServiceLabels.contains(serviceLabel)) {
+        _selectedServiceLabels = _selectedServiceLabels
+            .where((label) => label != serviceLabel)
+            .toList(growable: false);
+      } else {
+        _selectedServiceLabels = [..._selectedServiceLabels, serviceLabel];
+      }
+    });
   }
 
   double? _parseServiceCharge() {
@@ -546,9 +564,7 @@ class _ServiceProviderSetupScreenState
 
   ServiceProviderProfile _buildProviderProfile() {
     final joinedAt = DateTime.now();
-    final providerImagePath = _galleryImagePaths.isNotEmpty
-        ? _galleryImagePaths.first
-        : _defaultProviderImagePath;
+    final providerImagePath = _defaultProviderImagePath;
     final availabilityLabel = _buildAvailabilityLabel();
     final serviceCharge = _parseServiceCharge() ?? 24;
 
@@ -560,11 +576,10 @@ class _ServiceProviderSetupScreenState
       reviews: 'New',
       imagePath: providerImagePath,
       mainImageUrl: providerImagePath,
-      galleryImageUrls: _galleryImagePaths.isNotEmpty
-          ? List<String>.from(_galleryImagePaths)
-          : const [_defaultProviderImagePath],
+      galleryImageUrls: const [_defaultProviderImagePath],
       description: _buildProviderDescription(),
       searchTerms: _buildSearchTerms(),
+      supportedServices: List<String>.from(_selectedServiceLabels),
       location: _addressController.text.trim(),
       availability: availabilityLabel,
       latitude: AuthSession.currentLatitude,
@@ -579,8 +594,11 @@ class _ServiceProviderSetupScreenState
     final area = _addressController.text.trim().isNotEmpty
         ? _addressController.text.trim()
         : AuthSession.displayLocationLabel;
+    final servicesSummary = _selectedServiceLabels.isEmpty
+        ? 'general car wash services'
+        : _selectedServiceLabels.join(', ');
 
-    return '$displayName is a newly joined service provider offering careful exterior washing, neat finishing, and doorstep support for customers in $area. ${_selectedExperience.toLowerCase()} experience on record.';
+    return '$displayName is a newly joined service provider offering $servicesSummary with careful finishing and doorstep support for customers in $area. ${_selectedExperience.toLowerCase()} experience on record.';
   }
 
   List<String> _buildSearchTerms() {
@@ -598,6 +616,10 @@ class _ServiceProviderSetupScreenState
       'service provider',
       'detail',
       'foam',
+      ..._selectedServiceLabels
+          .map((label) => label.toLowerCase())
+          .expand((label) => label.split(RegExp(r'[^a-z0-9]+')))
+          .where((item) => item.isNotEmpty),
     };
 
     return terms.toList(growable: false);
@@ -612,22 +634,7 @@ class _ServiceProviderSetupScreenState
       return 'Availability updates soon';
     }
 
-    final firstDay = openDays.first.value;
-    final firstStart = _formatTimeLabel(firstDay.startTime);
-    final firstEnd = _formatTimeLabel(firstDay.endTime);
-    final sameHours = openDays.every(
-      (entry) =>
-          entry.value.startTime.hour == firstDay.startTime.hour &&
-          entry.value.startTime.minute == firstDay.startTime.minute &&
-          entry.value.endTime.hour == firstDay.endTime.hour &&
-          entry.value.endTime.minute == firstDay.endTime.minute,
-    );
-
-    if (sameHours) {
-      return '$firstStart - $firstEnd';
-    }
-
-    return '${openDays.length} days available each week';
+    return BusinessHours.label;
   }
 
   String _formatServiceChargeLabel(double amount) {
@@ -637,11 +644,11 @@ class _ServiceProviderSetupScreenState
         : '\$${amount.toStringAsFixed(2)}';
   }
 
-  String _formatTimeLabel(TimeOfDay time) {
-    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
-    return '$hour:$minute $period';
+  String _formatCurrencyLabel(double amount) {
+    final wholeAmount = amount.roundToDouble() == amount;
+    return wholeAmount
+        ? '\$${amount.toStringAsFixed(0)}'
+        : '\$${amount.toStringAsFixed(2)}';
   }
 
   Future<void> _showCompletionDialog() async {
@@ -716,12 +723,9 @@ class _ServiceProviderSetupScreenState
           key: const ValueKey(_SetupStep.experience),
           selectedExperience: _selectedExperience,
           serviceChargeController: _serviceChargeController,
+          maxChargeLimit: _selectedExperienceChargeLimit,
           options: _experienceOptions,
-          onChanged: (value) {
-            setState(() {
-              _selectedExperience = value;
-            });
-          },
+          onChanged: _handleExperienceChanged,
         );
       case _SetupStep.location:
         return _LocationStep(
@@ -738,12 +742,12 @@ class _ServiceProviderSetupScreenState
           isUploading: _isPickingImage,
           onUpload: _pickIdCardImage,
         );
-      case _SetupStep.gallery:
-        return _GalleryStep(
-          key: const ValueKey(_SetupStep.gallery),
-          imagePaths: _galleryImagePaths,
-          isUploading: _isPickingImage,
-          onUpload: _pickGalleryImages,
+      case _SetupStep.services:
+        return _ServicesStep(
+          key: const ValueKey(_SetupStep.services),
+          services: ServiceCatalog.allServices,
+          selectedServices: _selectedServiceLabels,
+          onToggleService: _toggleSelectedService,
         );
       case _SetupStep.availability:
         return _AvailabilityStep(
@@ -760,13 +764,13 @@ enum _SetupStep {
   experience,
   location,
   idCard,
-  gallery,
+  services,
   availability;
 
   String get topBarTitle {
     switch (this) {
-      case _SetupStep.gallery:
-        return 'Upload Image';
+      case _SetupStep.services:
+        return 'Services';
       case _SetupStep.experience:
       case _SetupStep.location:
       case _SetupStep.idCard:
@@ -998,12 +1002,14 @@ class _ExperienceStep extends StatelessWidget {
     super.key,
     required this.selectedExperience,
     required this.serviceChargeController,
+    required this.maxChargeLimit,
     required this.options,
     required this.onChanged,
   });
 
   final String selectedExperience;
   final TextEditingController serviceChargeController;
+  final double maxChargeLimit;
   final List<String> options;
   final ValueChanged<String> onChanged;
 
@@ -1089,6 +1095,7 @@ class _ExperienceStep extends StatelessWidget {
               color: AppColors.textPrimary,
             ),
             decoration: const InputDecoration(
+              filled: false,
               prefixText: '\$ ',
               prefixStyle: TextStyle(
                 fontSize: 13.8,
@@ -1096,18 +1103,18 @@ class _ExperienceStep extends StatelessWidget {
                 color: AppColors.brandGreenLight,
               ),
               hintText: '24',
-              hintStyle: TextStyle(
-                fontSize: 13.5,
-                color: AppColors.textMuted,
-              ),
+              hintStyle: TextStyle(fontSize: 13.5, color: AppColors.textMuted),
               border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(vertical: 14),
             ),
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Customers will see this amount on your profile before booking.',
-          style: TextStyle(
+        Text(
+          'Customers will see this amount on your profile before booking. Max allowed for $selectedExperience is ${_formatCurrencyLabel(maxChargeLimit)}.',
+          style: const TextStyle(
             fontSize: 12.2,
             height: 1.35,
             color: AppColors.textSecondary,
@@ -1115,6 +1122,13 @@ class _ExperienceStep extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _formatCurrencyLabel(double amount) {
+    final wholeAmount = amount.roundToDouble() == amount;
+    return wholeAmount
+        ? '\$${amount.toStringAsFixed(0)}'
+        : '\$${amount.toStringAsFixed(2)}';
   }
 }
 
@@ -1304,13 +1318,7 @@ class _IdCardStep extends StatelessWidget {
                 width: 132,
                 child: FilledButton(
                   onPressed: isUploading ? null : onUpload,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.brandGreen,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+                  style: AppButtonStyles.filled(),
                   child: Text(hasImage ? 'Replace' : 'Upload'),
                 ),
               ),
@@ -1384,123 +1392,162 @@ class _ImageSourceTile extends StatelessWidget {
   }
 }
 
-class _GalleryStep extends StatelessWidget {
-  const _GalleryStep({
+class _ServicesStep extends StatelessWidget {
+  const _ServicesStep({
     super.key,
-    required this.imagePaths,
-    required this.isUploading,
-    required this.onUpload,
+    required this.services,
+    required this.selectedServices,
+    required this.onToggleService,
   });
 
-  final List<String> imagePaths;
-  final bool isUploading;
-  final VoidCallback onUpload;
+  final List<ServiceItem> services;
+  final List<String> selectedServices;
+  final ValueChanged<String> onToggleService;
 
   @override
   Widget build(BuildContext context) {
-    final previewImagePath = imagePaths.isNotEmpty ? imagePaths.first : null;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Upload your work images *',
+          'Select the services you provide *',
           style: TextStyle(
             fontSize: 14.5,
             fontWeight: FontWeight.w500,
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          height: 250,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceMuted,
-            borderRadius: BorderRadius.circular(16),
+        const SizedBox(height: 8),
+        const Text(
+          'Choose all services you want customers to book from your profile.',
+          style: TextStyle(
+            fontSize: 12,
+            height: 1.4,
+            color: AppColors.textSecondary,
           ),
-          child: previewImagePath == null
-              ? const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.photo_library_outlined,
-                        size: 42,
-                        color: AppColors.textMuted,
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Upload service images',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.file(
-                    File(previewImagePath),
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            const Text(
-              'Gallery',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+        const SizedBox(height: 14),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              itemCount: services.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 14,
+                crossAxisSpacing: 14,
+                childAspectRatio: 1.0,
               ),
-            ),
-            const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              size: 18,
-              color: AppColors.textMuted,
-            ),
-            const Spacer(),
-            OutlinedButton.icon(
-              onPressed: isUploading ? null : onUpload,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.brandGreen,
-                side: const BorderSide(color: AppColors.brandGreen),
-              ),
-              icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
-              label: const Text('Add photos'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        if (imagePaths.isNotEmpty)
-          SizedBox(
-            height: 86,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: imagePaths.length,
-              separatorBuilder: (context, index) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(
-                    File(imagePaths[index]),
-                    width: 86,
-                    height: 86,
-                    fit: BoxFit.cover,
-                  ),
+                final service = services[index];
+                return _ServiceSelectionChip(
+                  service: service,
+                  isSelected: selectedServices.contains(service.label),
+                  onTap: () => onToggleService(service.label),
                 );
               },
+            );
+          },
+        ),
+        if (selectedServices.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          Text(
+            "Selected: ${selectedServices.join(', ')}",
+            style: const TextStyle(
+              fontSize: 12.4,
+              height: 1.35,
+              color: AppColors.textSecondary,
             ),
           ),
+        ],
       ],
+    );
+  }
+}
+
+class _ServiceSelectionChip extends StatelessWidget {
+  const _ServiceSelectionChip({
+    required this.service,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final ServiceItem service;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.surfaceHighlight
+              : AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.brandGreen : AppColors.border,
+            width: isSelected ? 1.3 : 1,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.brandGreen
+                      : AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  service.icon,
+                  color: isSelected ? Colors.white : service.iconColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Expanded(
+                child: Center(
+                  child: Text(
+                    service.label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      height: 1.15,
+                      color: isSelected
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Icon(
+                isSelected
+                    ? Icons.check_circle_rounded
+                    : Icons.add_circle_outline_rounded,
+                size: 18,
+                color: isSelected
+                    ? AppColors.brandGreenLight
+                    : AppColors.textMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1528,6 +1575,15 @@ class _AvailabilityStep extends StatelessWidget {
             fontSize: 14.5,
             fontWeight: FontWeight.w500,
             color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Service providers are available from 9:00 AM to 5:00 PM. Select the days you are available for booking.',
+          style: TextStyle(
+            fontSize: 12,
+            height: 1.4,
+            color: AppColors.textSecondary,
           ),
         ),
         const SizedBox(height: 14),
@@ -1590,24 +1646,24 @@ class _AvailabilityDayRow extends StatelessWidget {
                   width: 16,
                   height: 16,
                   decoration: BoxDecoration(
-                    color: availability.isClosed
+                    color: !availability.isClosed
                         ? AppColors.brandGreen
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(2),
                     border: Border.all(
-                      color: availability.isClosed
+                      color: !availability.isClosed
                           ? AppColors.brandGreen
                           : AppColors.border,
                     ),
                   ),
-                  child: availability.isClosed
+                  child: !availability.isClosed
                       ? const Icon(Icons.check, size: 11, color: Colors.white)
                       : null,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  'Closed',
-                  style: TextStyle(
+                Text(
+                  !availability.isClosed ? 'Open' : 'Closed',
+                  style: const TextStyle(
                     fontSize: 12.5,
                     color: AppColors.textSecondary,
                   ),

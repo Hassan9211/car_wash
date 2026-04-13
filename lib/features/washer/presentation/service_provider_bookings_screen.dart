@@ -1,4 +1,5 @@
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
@@ -121,6 +122,15 @@ class _ServiceProviderBookingsScreenState
   }
 
   Future<void> _acceptPendingBooking(_ProviderPendingBooking booking) async {
+    if (booking.email == AuthSession.displayEmail) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('You cannot accept your own booking!')),
+        );
+      return;
+    }
+
     try {
       await BookingOrdersStore.instance.updateStatus(
         booking.orderId,
@@ -606,13 +616,11 @@ class _ProviderPendingBookingCard extends StatelessWidget {
               Expanded(
                 child: FilledButton(
                   onPressed: onAccept,
-                  style: FilledButton.styleFrom(
+                  style: AppButtonStyles.filled(
                     backgroundColor: AppColors.surfaceHighlight,
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: AppColors.brandGreen),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    height: 44,
                   ),
                   child: const Text('Accept'),
                 ),
@@ -621,13 +629,11 @@ class _ProviderPendingBookingCard extends StatelessWidget {
               Expanded(
                 child: FilledButton(
                   onPressed: onDecline,
-                  style: FilledButton.styleFrom(
+                  style: AppButtonStyles.filled(
                     backgroundColor: AppColors.surfaceMuted,
                     foregroundColor: AppColors.textSecondary,
                     side: const BorderSide(color: AppColors.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    height: 44,
                   ),
                   child: const Text('Decline'),
                 ),

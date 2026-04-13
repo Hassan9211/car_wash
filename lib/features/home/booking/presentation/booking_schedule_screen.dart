@@ -1,4 +1,5 @@
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/scheduling/business_hours.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
@@ -20,25 +21,20 @@ class BookingScheduleScreen extends StatefulWidget {
 
 class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
   static const _weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  static const _timeSlots = [
-    '04:00 PM',
-    '05:00 PM',
-    '06:00 PM',
-    '07:00 PM',
-    '08:00 PM',
-    '09:00 PM',
-  ];
+  static const _timeSlots = BusinessHours.timeSlotLabels;
 
   late DateTime _displayedMonth;
   late DateTime _selectedDate;
-  String _selectedTime = _timeSlots.last;
+  String _selectedTime = BusinessHours.defaultBookingTimeLabel;
 
   @override
   void initState() {
     super.initState();
     _selectedDate = widget.details.bookingDate ?? DateTime.now();
     _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month);
-    _selectedTime = widget.details.bookingTime ?? _timeSlots.last;
+    _selectedTime = BusinessHours.normalizeBookingTimeLabel(
+      widget.details.bookingTime,
+    );
   }
 
   void _changeMonth(int delta) {
@@ -272,6 +268,27 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
                       starColor: Color(0xFFE53935),
                     ),
                     const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Text(
+                        'Customers can book only during service hours: 9:00 AM to 5:00 PM.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.4,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 12,
                       runSpacing: 12,

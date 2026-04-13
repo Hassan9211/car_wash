@@ -90,18 +90,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           message: 'No services match your search.',
                         )
                       else
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              for (var i = 0; i < filteredServices.length; i++)
-                                ...[
-                                  ServiceTile(service: filteredServices[i]),
-                                  if (i != filteredServices.length - 1)
-                                    const SizedBox(width: 10),
-                                ],
-                            ],
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            for (final service in filteredServices)
+                              ServiceTile(service: service),
+                          ],
                         ),
                       const SizedBox(height: 18),
                       const _SectionHeader(
@@ -109,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         actionLabel: 'See all',
                         titleKey: Key('home_popular_providers_title'),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 0),
                       if (filteredProviders.isEmpty)
                         _EmptyResults(
                           message: hasQuery
@@ -117,25 +111,28 @@ class _HomeScreenState extends State<HomeScreen> {
                               : 'No providers available right now.',
                         )
                       else
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: filteredProviders.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                mainAxisExtent: 290,
-                              ),
-                          itemBuilder: (context, index) {
-                            return _ProviderCard(
-                              provider: filteredProviders[index],
-                              onViewDetails: () => context.pushToServiceDetail(
-                                filteredProviders[index],
-                              ),
-                            );
-                          },
+                        Transform.translate(
+                          offset: const Offset(0, -20),
+                          child: GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: filteredProviders.length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                  mainAxisExtent: 290,
+                                ),
+                            itemBuilder: (context, index) {
+                              return _ProviderCard(
+                                provider: filteredProviders[index],
+                                onViewDetails: () => context.pushToServiceDetail(
+                                  filteredProviders[index],
+                                ),
+                              );
+                            },
+                          ),
                         ),
                     ],
                   ),

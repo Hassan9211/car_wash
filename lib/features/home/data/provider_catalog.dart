@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:car_wash/features/authentication/data/auth_session.dart';
+import 'package:car_wash/core/scheduling/business_hours.dart';
 import 'package:car_wash/features/home/model/service_provider_profile.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,7 +27,7 @@ class ProviderCatalog {
         'Professional car wash service provider available near you.',
     searchTerms: ['ahmed', 'car wash'],
     location: 'Midtown, New York, USA',
-    availability: '8:00 AM - 11:00 PM',
+    availability: BusinessHours.label,
     latitude: 40.7581,
     longitude: -73.9856,
   );
@@ -53,7 +54,7 @@ class ProviderCatalog {
           'Ahmed delivers a polished doorstep wash with rich foam coverage, wheel cleaning, and a smooth finishing shine that works great for daily cars and SUVs.',
       searchTerms: ['ahmed', 'foam', 'wash', 'car washer', 'detail'],
       location: 'Midtown, New York, USA',
-      availability: '8:00 AM - 11:00 PM',
+      availability: BusinessHours.label,
       latitude: 40.7581,
       longitude: -73.9856,
     ),
@@ -78,7 +79,7 @@ class ProviderCatalog {
           'Youssef focuses on exterior shine packages, tire dressing, and quick response bookings for customers who want a clean car without long waiting times.',
       searchTerms: ['youssef', 'exterior', 'shine', 'detail'],
       location: 'Williamsburg, Brooklyn, USA',
-      availability: '8:00 AM - 11:00 PM',
+      availability: BusinessHours.label,
       latitude: 40.7178,
       longitude: -73.9560,
     ),
@@ -103,7 +104,7 @@ class ProviderCatalog {
           'Samir is known for interior vacuuming, dashboard detailing, and tidy cabin finishing that leaves family cars feeling fresh, clean, and organized.',
       searchTerms: ['samir', 'interior', 'vacuum', 'detail'],
       location: 'Astoria, Queens, USA',
-      availability: '8:00 AM - 11:00 PM',
+      availability: BusinessHours.label,
       latitude: 40.7644,
       longitude: -73.9235,
     ),
@@ -128,7 +129,7 @@ class ProviderCatalog {
           'Omar handles premium deep-clean sessions with wax polish, careful exterior treatment, and a strong finish for customers who want showroom-style results.',
       searchTerms: ['omar', 'engine', 'premium', 'detail'],
       location: 'Lower Manhattan, New York, USA',
-      availability: '8:00 AM - 11:00 PM',
+      availability: BusinessHours.label,
       latitude: 40.7075,
       longitude: -74.0113,
     ),
@@ -254,13 +255,19 @@ class ProviderCatalog {
 
   static List<ServiceProviderProfile> get _allProviders {
     final mergedProviders = <ServiceProviderProfile>[
-      ..._storedProviders,
-      ..._seedProviders.where(
-        (seedProvider) =>
-            _storedProviders.every(
-              (storedProvider) => storedProvider.id != seedProvider.id,
-            ),
+      ..._storedProviders.map(
+        (provider) => provider.copyWith(availability: BusinessHours.label),
       ),
+      ..._seedProviders
+          .where(
+            (seedProvider) =>
+                _storedProviders.every(
+                  (storedProvider) => storedProvider.id != seedProvider.id,
+                ),
+          )
+          .map(
+            (provider) => provider.copyWith(availability: BusinessHours.label),
+          ),
     ];
 
     mergedProviders.sort((first, second) {

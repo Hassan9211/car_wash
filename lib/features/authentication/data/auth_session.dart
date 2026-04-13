@@ -29,6 +29,7 @@ class AuthSession {
       'auth_session.is_authenticated';
   static const String _prefsTokenKey = 'auth_session.token';
   static const String _prefsUserIdKey = 'auth_session.user_id';
+  static const String _prefsProviderSetupCompletedKey = 'auth_session.provider_setup_completed';
   static final DateTime _defaultDateOfBirth = DateTime(2000, 9, 20);
 
   static String? _currentToken;
@@ -43,6 +44,7 @@ class AuthSession {
   static double? _currentLongitude;
   static AppUserRole? _currentRole;
   static bool _isAuthenticated = false;
+  static bool _isProviderSetupCompleted = false;
 
   static ValueNotifier<int> get listenable => _listenable;
 
@@ -58,6 +60,7 @@ class AuthSession {
   static double? get currentLongitude => _currentLongitude;
   static AppUserRole? get currentRole => _currentRole;
   static bool get isAuthenticated => _isAuthenticated;
+  static bool get isProviderSetupCompleted => _isProviderSetupCompleted;
   static AppLocationDetails? get currentLocationDetails {
     final latitude = _currentLatitude;
     final longitude = _currentLongitude;
@@ -255,6 +258,12 @@ class AuthSession {
     _notifyListeners();
   }
 
+  static void setProviderSetupCompleted(bool value) {
+    _isProviderSetupCompleted = value;
+    _persistSessionAsync();
+    _notifyListeners();
+  }
+
   static void clear() {
     _currentToken = null;
     _currentUserId = null;
@@ -268,6 +277,7 @@ class AuthSession {
     _currentLongitude = null;
     _currentRole = null;
     _isAuthenticated = false;
+    _isProviderSetupCompleted = false;
     _persistSessionAsync();
     _notifyListeners();
   }
@@ -292,6 +302,7 @@ class AuthSession {
       _currentLatitude = preferences.getDouble(_prefsLatitudeKey);
       _currentLongitude = preferences.getDouble(_prefsLongitudeKey);
       _isAuthenticated = preferences.getBool(_prefsIsAuthenticatedKey) ?? false;
+      _isProviderSetupCompleted = preferences.getBool(_prefsProviderSetupCompletedKey) ?? false;
 
       final savedDateOfBirth = preferences.getInt(_prefsDateOfBirthKey);
       _currentDateOfBirth = savedDateOfBirth == null
@@ -313,6 +324,7 @@ class AuthSession {
       _currentLongitude = null;
       _currentRole = null;
       _isAuthenticated = false;
+      _isProviderSetupCompleted = false;
     }
 
     _notifyListeners();
@@ -417,6 +429,7 @@ class AuthSession {
       );
       await _setOrRemoveString(preferences, _prefsRoleKey, _currentRole?.name);
       await preferences.setBool(_prefsIsAuthenticatedKey, _isAuthenticated);
+      await preferences.setBool(_prefsProviderSetupCompletedKey, _isProviderSetupCompleted);
     } catch (_) {
       // Ignore local persistence failures and keep the in-memory session active.
     }

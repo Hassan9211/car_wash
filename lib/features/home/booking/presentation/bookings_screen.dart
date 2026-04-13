@@ -1,5 +1,7 @@
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/scheduling/business_hours.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
+import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
@@ -89,31 +91,23 @@ class _BookingsScreenState extends State<BookingsScreen> {
       return;
     }
 
-    final selectedTime = await showTimePicker(
+    final selectedTime = await showModalBottomSheet<String>(
       context: context,
-      initialTime: _parseInitialTime(order.bookingTime),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: AppButtonColors.primaryBackground,
-            ),
-          ),
-          child: child!,
-        );
-      },
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _BusinessHoursSheet(
+        selectedTime: BusinessHours.normalizeBookingTimeLabel(order.bookingTime),
+      ),
     );
 
     if (!mounted || selectedTime == null) {
       return;
     }
 
-    final formattedTime = _formatTimeOfDay(selectedTime);
-
     await BookingOrdersStore.instance.rescheduleOrder(
       orderId: order.id,
       bookingDate: selectedDate,
-      bookingTime: formattedTime,
+      bookingTime: selectedTime,
     );
 
     if (!mounted) {
@@ -129,7 +123,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
       ..showSnackBar(
         SnackBar(
           content: Text(
-            'Booking re-scheduled for ${_formatRescheduleDate(selectedDate)} at $formattedTime',
+            'Booking re-scheduled for ${_formatRescheduleDate(selectedDate)} at $selectedTime',
           ),
         ),
       );
@@ -261,35 +255,6 @@ class _BookingsScreenState extends State<BookingsScreen> {
   }
 }
 
-TimeOfDay _parseInitialTime(String? value) {
-  final normalized = value?.trim() ?? '';
-  final match = RegExp(r'^(\d{1,2}):(\d{2})\s*([AP]M)$').firstMatch(
-    normalized.toUpperCase(),
-  );
-
-  if (match == null) {
-    return const TimeOfDay(hour: 19, minute: 0);
-  }
-
-  final hour = int.tryParse(match.group(1) ?? '') ?? 7;
-  final minute = int.tryParse(match.group(2) ?? '') ?? 0;
-  final period = match.group(3) ?? 'PM';
-
-  var normalizedHour = hour % 12;
-  if (period == 'PM') {
-    normalizedHour += 12;
-  }
-
-  return TimeOfDay(hour: normalizedHour, minute: minute);
-}
-
-String _formatTimeOfDay(TimeOfDay time) {
-  final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
-  final minute = time.minute.toString().padLeft(2, '0');
-  final suffix = time.period == DayPeriod.am ? 'AM' : 'PM';
-  return '$hour:$minute $suffix';
-}
-
 String _formatRescheduleDate(DateTime value) {
   const monthNames = [
     'Jan',
@@ -307,6 +272,168 @@ String _formatRescheduleDate(DateTime value) {
   ];
 
   return '${value.day} ${monthNames[value.month - 1]} ${value.year}';
+}
+
+class _BusinessHoursSheet extends StatefulWidget {
+  const _BusinessHoursSheet({
+    required this.selectedTime,
+  });
+
+  final String selectedTime;
+
+  @override
+  State<_BusinessHoursSheet> createState() => _BusinessHoursSheetState();
+}
+
+class _BusinessHoursSheetState extends State<_BusinessHoursSheet> {
+  late String _selectedTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTime = widget.selectedTime;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: 16 + MediaQuery.of(context).viewPadding.bottom,
+        ),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.28),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Select Time',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Available booking hours are 9:00 AM to 5:00 PM.',
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.4,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: BusinessHours.timeSlotLabels
+                    .map(
+                      (time) => _RescheduleTimeSlotButton(
+                        label: time,
+                        isSelected: _selectedTime == time,
+                        onTap: () {
+                          setState(() {
+                            _selectedTime = time;
+                          });
+                        },
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(_selectedTime),
+                  style: AppButtonStyles.filled(height: 44),
+                  child: const Text('Confirm'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RescheduleTimeSlotButton extends StatelessWidget {
+  const _RescheduleTimeSlotButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 84,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Ink(
+          height: 30,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppButtonColors.primaryBackground
+                : Colors.white,
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: isSelected
+                ? null
+                : const [
+                    BoxShadow(
+                      color: Color(0x12000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _BookingsTabBar extends StatelessWidget {
@@ -605,12 +732,10 @@ class _BookingActionButton extends StatelessWidget {
       child: isPrimary
           ? FilledButton(
               onPressed: onTap,
-              style: FilledButton.styleFrom(
+              style: AppButtonStyles.filled(
                 backgroundColor: AppButtonColors.primaryBackground,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                height: 42,
               ),
               child: Text(label),
             )

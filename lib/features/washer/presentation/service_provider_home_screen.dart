@@ -78,6 +78,9 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                 final recentOrders = _filteredOrders(orders);
                 final ordersCount = orders.length;
                 final revenueThisWeek = _calculateRevenue(orders);
+                final monthlyRevenueHistory = _buildMonthlyRevenueHistory(
+                  orders,
+                );
                 final lastWeekRevenue = revenueThisWeek;
                 final ordersTrend = 'Showing local demo orders';
                 final revenueTrend = 'Showing local demo payments';
@@ -87,35 +90,40 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _MetricCard(
-                              title: 'Number of orders',
-                              value: ordersCount.toString(),
-                              trendLabel: ordersTrend,
-                              icon: Icons.receipt_long_rounded,
-                              iconBackground: Color(0xFFFFF6DE),
-                              iconColor: Color(0xFFE1A900),
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: _MetricCard(
+                                title: 'Number of orders',
+                                value: ordersCount.toString(),
+                                trendLabel: ordersTrend,
+                                icon: Icons.receipt_long_rounded,
+                                iconBackground: Color(0xFFFFF6DE),
+                                iconColor: Color(0xFFE1A900),
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: _MetricCard(
-                              title: 'Revenue this week',
-                              value: _formatCurrency(revenueThisWeek),
-                              trendLabel: revenueTrend,
-                              icon: Icons.monetization_on_outlined,
-                              iconBackground: Color(0xFFF0ECFF),
-                              iconColor: Color(0xFF7A5AF8),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: _MetricCard(
+                                title: 'Revenue this week',
+                                value: _formatCurrency(revenueThisWeek),
+                                trendLabel: revenueTrend,
+                                icon: Icons.monetization_on_outlined,
+                                iconBackground: Color(0xFFF0ECFF),
+                                iconColor: Color(0xFF7A5AF8),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 14),
                       _OrdersOverviewCard(
                         revenueLabel: _formatCurrency(lastWeekRevenue),
                         ordersLabel: ordersCount.toString(),
+                        onRevenueHistoryTap: () =>
+                            _showRevenueHistorySheet(monthlyRevenueHistory),
                       ),
                       const SizedBox(height: 18),
                       const _RecentOrdersHeader(),
@@ -148,15 +156,341 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
 
   double _calculateRevenue(List<BookingOrderItem> orders) {
     return orders.fold<double>(0, (sum, order) {
-      final parsed = double.tryParse(
-        order.totalPayment.replaceAll(RegExp(r'[^0-9.]'), ''),
-      );
-      return sum + (parsed ?? 0);
+      return sum + _parsePaymentAmount(order.totalPayment);
     });
   }
 
   String _formatCurrency(double value) {
     return '\$${value.toStringAsFixed(2)}';
+  }
+
+  double _parsePaymentAmount(String rawAmount) {
+    final parsed = double.tryParse(
+      rawAmount.replaceAll(RegExp(r'[^0-9.]'), ''),
+    );
+    return parsed ?? 0;
+  }
+
+  List<_MonthlyRevenuePoint> _buildMonthlyRevenueHistory(
+    List<BookingOrderItem> orders,
+  ) {
+    final referenceDate = _resolveRevenueReferenceDate(orders);
+    final monthlyTotals = <String, double>{};
+
+    for (final order in orders) {
+      final amount = _parsePaymentAmount(order.totalPayment);
+      if (amount <= 0) {
+        continue;
+      }
+
+      final monthDate = DateTime(
+        order.paymentDate.year,
+        order.paymentDate.month,
+      );
+      final key = _monthKey(monthDate);
+      monthlyTotals[key] = (monthlyTotals[key] ?? 0) + amount;
+    }
+
+    final history = <_MonthlyRevenuePoint>[
+      for (var offset = 5; offset >= 0; offset--)
+        _MonthlyRevenuePoint(
+          label: _monthLabel(
+            DateTime(referenceDate.year, referenceDate.month - offset),
+          ),
+          amount:
+              monthlyTotals[_monthKey(
+                DateTime(referenceDate.year, referenceDate.month - offset),
+              )] ??
+              0,
+          isHighlighted: offset == 0,
+        ),
+    ];
+
+    final populatedMonths = history.where((point) => point.amount > 0).length;
+    if (populatedMonths >= 2) {
+      return history;
+    }
+
+    final fallbackAmounts = _buildFallbackRevenueHistory(
+      seedRevenue: history.last.amount > 0
+          ? history.last.amount
+          : _calculateRevenue(orders),
+    );
+
+    return [
+      for (var index = 0; index < history.length; index++)
+        _MonthlyRevenuePoint(
+          label: history[index].label,
+          amount: history[index].amount > 0
+              ? history[index].amount
+              : fallbackAmounts[index],
+          isHighlighted: history[index].isHighlighted,
+        ),
+    ];
+  }
+
+  DateTime _resolveRevenueReferenceDate(List<BookingOrderItem> orders) {
+    if (orders.isEmpty) {
+      return DateTime.now();
+    }
+
+    return orders
+        .map((order) => order.paymentDate)
+        .reduce(
+          (latest, current) => current.isAfter(latest) ? current : latest,
+        );
+  }
+
+  List<double> _buildFallbackRevenueHistory({required double seedRevenue}) {
+    final safeRevenue = seedRevenue <= 0 ? 240 : seedRevenue;
+    const ratios = <double>[0.44, 0.56, 0.63, 0.74, 0.86, 1];
+
+    return [
+      for (final ratio in ratios)
+        double.parse((safeRevenue * ratio).toStringAsFixed(2)),
+    ];
+  }
+
+  String _monthKey(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}';
+  }
+
+  String _monthLabel(DateTime date) {
+    const months = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    return months[date.month - 1];
+  }
+
+  Future<void> _showRevenueHistorySheet(
+    List<_MonthlyRevenuePoint> revenueHistory,
+  ) async {
+    if (!mounted || revenueHistory.isEmpty) {
+      return;
+    }
+
+    final totalRevenue = revenueHistory.fold<double>(
+      0,
+      (sum, point) => sum + point.amount,
+    );
+    final averageRevenue = totalRevenue / revenueHistory.length;
+    final bestMonth = revenueHistory.reduce(
+      (best, point) => point.amount > best.amount ? point : best,
+    );
+    final latestRevenue = revenueHistory.last.amount;
+    final previousRevenue = revenueHistory.length > 1
+        ? revenueHistory[revenueHistory.length - 2].amount
+        : 0.0;
+    final monthlyChange = previousRevenue <= 0
+        ? null
+        : ((latestRevenue - previousRevenue) / previousRevenue) * 100;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetContext) {
+        final sheetHeight =
+            MediaQuery.of(bottomSheetContext).size.height * 0.82;
+
+        return SafeArea(
+          top: false,
+          child: Container(
+            height: sheetHeight,
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 20),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  '6-Month Revenue',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Last 6 months ka revenue chart. Is mein recent payment activity ka view dikh raha hai.',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    height: 1.45,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _RevenueSummaryCard(
+                        title: 'Total revenue',
+                        value: _formatCurrency(totalRevenue),
+                        subtitle: '6 months total',
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _RevenueSummaryCard(
+                        title: 'Average / month',
+                        value: _formatCurrency(averageRevenue),
+                        subtitle: bestMonth.label == revenueHistory.last.label
+                            ? 'Best month is current'
+                            : 'Best month: ${bestMonth.label}',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  width: double.infinity,
+                  height: 308,
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Revenue performance',
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: monthlyChange == null
+                                  ? AppColors.surfaceMuted
+                                  : monthlyChange >= 0
+                                  ? AppColors.successSurface
+                                  : AppColors.dangerSurface,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              monthlyChange == null
+                                  ? 'No comparison'
+                                  : '${monthlyChange >= 0 ? '+' : ''}${monthlyChange.toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: monthlyChange == null
+                                    ? AppColors.textSecondary
+                                    : monthlyChange >= 0
+                                    ? AppColors.brandGreenLight
+                                    : const Color(0xFFFF9E9E),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: _MonthlyRevenueChart(data: revenueHistory),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: revenueHistory.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final point = revenueHistory[index];
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: point.isHighlighted
+                                ? AppColors.brandGreen.withValues(alpha: 0.34)
+                                : AppColors.border,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                point.label,
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: point.isHighlighted
+                                      ? FontWeight.w700
+                                      : FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              _formatCurrency(point.amount),
+                              style: TextStyle(
+                                fontSize: 13.2,
+                                fontWeight: FontWeight.w700,
+                                color: point.isHighlighted
+                                    ? AppColors.brandGreen
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -191,61 +525,100 @@ class _ProviderHomeHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: ValueListenableBuilder<int>(
-                      valueListenable: AuthSession.listenable,
-                      builder: (context, _, child) {
-                        return Column(
+              ValueListenableBuilder<int>(
+                valueListenable: AuthSession.listenable,
+                builder: (context, _, __) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Avatar – tapping goes to SP profile
+                      GestureDetector(
+                        onTap: context.goToServiceProviderProfile,
+                        child: Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              width: 2,
+                            ),
+                          ),
+                          child: ClipOval(
+                            child: Image(
+                              image: AuthSession.avatarImage,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: Colors.white.withValues(alpha: 0.18),
+                                child: Center(
+                                  child: Text(
+                                    AuthSession.initials,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // Name + location
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Location',
-                              style: TextStyle(
+                            Text(
+                              'Hi, ${AuthSession.displayName.split(' ').first} 👋',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Row(
                               children: [
                                 const Icon(
                                   Icons.location_on_rounded,
                                   color: Color(0xFFFF3B30),
-                                  size: 18,
+                                  size: 14,
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
                                     AuthSession.displayLocationLabel,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
-                                      fontSize: 13.5,
-                                      color: Colors.white,
+                                      fontSize: 12,
+                                      color: Colors.white70,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                           ],
-                        );
-                      },
-                    ),
-                  ),
-                  _HeaderIconButton(
-                    icon: Icons.notifications_active_outlined,
-                    onTap: onNotificationTap,
-                  ),
-                  const SizedBox(width: 8),
-                  _HeaderIconButton(
-                    icon: Icons.settings_outlined,
-                    onTap: onSettingsTap,
-                  ),
-                ],
+                        ),
+                      ),
+                      // Action buttons
+                      _HeaderIconButton(
+                        icon: Icons.notifications_active_outlined,
+                        onTap: onNotificationTap,
+                      ),
+                      const SizedBox(width: 8),
+                      _HeaderIconButton(
+                        icon: Icons.settings_outlined,
+                        onTap: onSettingsTap,
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 18),
               Container(
@@ -337,6 +710,7 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: const BoxConstraints(minHeight: 118),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
         color: AppColors.surfaceElevated,
@@ -414,10 +788,12 @@ class _OrdersOverviewCard extends StatelessWidget {
   const _OrdersOverviewCard({
     required this.revenueLabel,
     required this.ordersLabel,
+    required this.onRevenueHistoryTap,
   });
 
   final String revenueLabel;
   final String ordersLabel;
+  final VoidCallback onRevenueHistoryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -466,25 +842,104 @@ class _OrdersOverviewCard extends StatelessWidget {
                   ],
                 ),
               ),
-              _ChangeChip(
-                label: '42%',
-                caption: 'Than last week',
-                backgroundColor: AppColors.dangerSurface,
-                foregroundColor: Color(0xFFFF9E9E),
-                icon: Icons.arrow_downward_rounded,
-              ),
-              SizedBox(width: 8),
-              _ChangeChip(
-                label: '12%',
-                caption: 'Order',
-                backgroundColor: AppColors.successSurface,
-                foregroundColor: AppColors.brandGreenLight,
-                icon: Icons.arrow_upward_rounded,
+              SizedBox(
+                width: 168,
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _ChangeChip(
+                          label: '42%',
+                          caption: 'Than last week',
+                          backgroundColor: AppColors.dangerSurface,
+                          foregroundColor: Color(0xFFFF9E9E),
+                          icon: Icons.arrow_downward_rounded,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: _ChangeChip(
+                          label: '12%',
+                          caption: 'Order',
+                          backgroundColor: AppColors.successSurface,
+                          foregroundColor: AppColors.brandGreenLight,
+                          icon: Icons.arrow_upward_rounded,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 18),
-          const _WeeklyOrdersChart(),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onRevenueHistoryTap,
+              borderRadius: BorderRadius.circular(16),
+              child: Ink(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Weekly activity',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.show_chart_rounded,
+                          size: 18,
+                          color: AppColors.brandGreen,
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 14),
+                    _WeeklyOrdersChart(),
+                    SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.touch_app_rounded,
+                          size: 14,
+                          color: AppColors.brandGreen,
+                        ),
+                        SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Tap chart to view last 6 months revenue',
+                            style: TextStyle(
+                              fontSize: 10.8,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 12,
+                          color: AppColors.textMuted,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 14),
           Center(
             child: Container(
@@ -537,12 +992,14 @@ class _ChangeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: const BoxConstraints(minHeight: 56),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -562,6 +1019,9 @@ class _ChangeChip extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             caption,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 8.5,
               color: foregroundColor.withValues(alpha: 0.88),
@@ -909,4 +1369,169 @@ class _WeeklyOrderBar {
   final String label;
   final double value;
   final bool isHighlighted;
+}
+
+class _MonthlyRevenuePoint {
+  const _MonthlyRevenuePoint({
+    required this.label,
+    required this.amount,
+    this.isHighlighted = false,
+  });
+
+  final String label;
+  final double amount;
+  final bool isHighlighted;
+}
+
+class _RevenueSummaryCard extends StatelessWidget {
+  const _RevenueSummaryCard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String value;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 11.5,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppColors.brandGreen,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: const TextStyle(fontSize: 10.5, color: AppColors.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MonthlyRevenueChart extends StatelessWidget {
+  const _MonthlyRevenueChart({required this.data});
+
+  final List<_MonthlyRevenuePoint> data;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxRevenue = data.fold<double>(
+      0,
+      (highest, point) => point.amount > highest ? point.amount : highest,
+    );
+    final safeMaxRevenue = maxRevenue <= 0 ? 1.0 : maxRevenue;
+
+    return SizedBox(
+      height: 220,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (var index = 0; index < data.length; index++) ...[
+            Expanded(
+              child: _MonthlyRevenueBar(
+                point: data[index],
+                maxRevenue: safeMaxRevenue,
+              ),
+            ),
+            if (index != data.length - 1) const SizedBox(width: 10),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MonthlyRevenueBar extends StatelessWidget {
+  const _MonthlyRevenueBar({required this.point, required this.maxRevenue});
+
+  final _MonthlyRevenuePoint point;
+  final double maxRevenue;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedHeight = (point.amount / maxRevenue).clamp(0.0, 1.0);
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Text(
+          _compactCurrencyLabel(point.amount),
+          style: TextStyle(
+            fontSize: 9.5,
+            fontWeight: FontWeight.w600,
+            color: point.isHighlighted
+                ? AppColors.brandGreenLight
+                : AppColors.textMuted,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              width: 20,
+              height: 130 * normalizedHeight + 14,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: point.isHighlighted
+                      ? const [Color(0xFFE8C968), AppColors.brandGreen]
+                      : [
+                          AppColors.brandGreenLight.withValues(alpha: 0.88),
+                          AppColors.brandGreen.withValues(alpha: 0.76),
+                        ],
+                ),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          point.label,
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: point.isHighlighted ? FontWeight.w700 : FontWeight.w600,
+            color: point.isHighlighted
+                ? AppColors.textPrimary
+                : AppColors.textMuted,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _compactCurrencyLabel(double amount) {
+  if (amount >= 1000) {
+    return '\$${(amount / 1000).toStringAsFixed(1)}k';
+  }
+
+  return '\$${amount.toStringAsFixed(0)}';
 }

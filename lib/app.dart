@@ -1,4 +1,5 @@
 import 'package:car_wash/core/router/app_router.dart';
+import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
@@ -77,37 +78,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
         filledButtonTheme: FilledButtonThemeData(
-          style: ButtonStyle(
-            backgroundColor: const WidgetStatePropertyAll(
-              AppColors.brandGreen,
-            ),
-            foregroundColor: const WidgetStatePropertyAll(Colors.white),
-            minimumSize: const WidgetStatePropertyAll(Size.fromHeight(48)),
-            animationDuration: const Duration(milliseconds: 110),
-            overlayColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.pressed)) {
-                return Colors.white.withValues(alpha: 0.12);
-              }
-              if (states.contains(WidgetState.hovered)) {
-                return Colors.white.withValues(alpha: 0.04);
-              }
-              return null;
-            }),
-            elevation: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.pressed)) {
-                return 1.5;
-              }
-              return 0.0;
-            }),
-            shadowColor: WidgetStatePropertyAll(
-              Colors.black.withValues(alpha: 0.18),
-            ),
-            shape: WidgetStatePropertyAll(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
+          style: AppButtonStyles.filled(),
         ),
         textButtonTheme: TextButtonThemeData(
           style: ButtonStyle(
@@ -124,25 +95,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
-          style: ButtonStyle(
-            foregroundColor: const WidgetStatePropertyAll(
-              AppColors.brandGreenLight,
-            ),
-            side: const WidgetStatePropertyAll(
-              BorderSide(color: AppColors.border),
-            ),
-            animationDuration: const Duration(milliseconds: 110),
-            overlayColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.pressed)) {
-                return AppColors.brandGreen.withValues(alpha: 0.12);
-              }
-              return null;
-            }),
-            shape: WidgetStatePropertyAll(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+          style: AppButtonStyles.outlined(
+            foregroundColor: AppColors.brandGreenLight,
           ),
         ),
         snackBarTheme: const SnackBarThemeData(

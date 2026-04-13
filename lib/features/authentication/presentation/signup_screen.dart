@@ -89,11 +89,77 @@ class _SignupScreenState extends State<SignupScreen> {
       title: 'Sign Up',
       onBack: _goBack,
       backgroundColor: AppColors.authSoftBackground,
-      footer: AuthBottomPrompt(
-        prefixText: 'Already have an account? ',
-        actionText: 'Login',
-        onTap: _goToLogin,
-        actionKey: const Key('signup_to_login_link'),
+      titleTextStyle: const TextStyle(
+        fontSize: 24 / 1.4,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+      ),
+      footerReservedHeight: 244,
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppPrimaryButton(
+            key: const Key('signup_submit_button'),
+            label: 'Signup',
+            onPressed: _submit,
+            textStyle: const TextStyle(
+              fontSize: 16.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Divider(
+                  color: AppColors.border,
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'or continue with',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Divider(
+                  color: AppColors.border,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: const [
+              Expanded(
+                child: AppSocialButton(
+                  height: 38,
+                  borderRadius: 5,
+                  child: AppGoogleLogo(),
+                ),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: AppSocialButton(
+                  height: 38,
+                  borderRadius: 5,
+                  child: AppGmailLogo(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          AuthBottomPrompt(
+            prefixText: 'Already have an account? ',
+            actionText: 'Login',
+            onTap: _goToLogin,
+            actionKey: const Key('signup_to_login_link'),
+          ),
+        ],
       ),
       child: Form(
         key: _formKey,
@@ -101,27 +167,35 @@ class _SignupScreenState extends State<SignupScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AuthBrandBadge(),
-            const SizedBox(height: 14),
-            const Text(
-              'Signup',
-              key: Key('signup_screen_title'),
-              style: TextStyle(
-                fontSize: 23,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+            const SizedBox(height: 30),
+            const Center(child: AuthBrandBadge()),
+            const SizedBox(height: 16),
+            const Center(
+              child: Text(
+                'Signup',
+                key: Key('signup_screen_title'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 23,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Create your account to discover the app effortlessly',
-              style: TextStyle(
-                fontSize: 14.5,
-                height: 1.2,
-                color: AppColors.textSecondary,
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                'Create your account to discover the app effortlessly',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  height: 1.35,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             AuthInputField(
               key: const Key('signup_name_field'),
               controller: _nameController,
@@ -129,7 +203,7 @@ class _SignupScreenState extends State<SignupScreen> {
               hintText: 'Full Name',
               validator: AuthValidators.validateName,
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             AuthInputField(
               key: const Key('signup_email_field'),
               controller: _emailController,
@@ -138,7 +212,7 @@ class _SignupScreenState extends State<SignupScreen> {
               keyboardType: TextInputType.emailAddress,
               validator: AuthValidators.validateEmail,
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             AuthInputField(
               key: const Key('signup_phone_field'),
               controller: _phoneController,
@@ -147,7 +221,7 @@ class _SignupScreenState extends State<SignupScreen> {
               keyboardType: TextInputType.phone,
               validator: _validatePhoneNumber,
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             AuthInputField(
               key: const Key('signup_password_field'),
               controller: _passwordController,
@@ -170,7 +244,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             AuthInputField(
               key: const Key('signup_repeat_password_field'),
               controller: _repeatPasswordController,
@@ -262,69 +336,6 @@ class _SignupScreenState extends State<SignupScreen> {
                   ],
                 ],
               ),
-            ),
-            const SizedBox(height: 18),
-            AppPrimaryButton(
-              key: const Key('signup_submit_button'),
-              label: 'Signup',
-              onPressed: _submit,
-              textStyle: const TextStyle(
-                fontSize: 16.5,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Divider(
-                    color: AppColors.border,
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    'or continue with',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Divider(
-                    color: AppColors.border,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Row(
-              children: [
-                Expanded(
-                  child: AppSocialButton(
-                    height: 38,
-                    borderRadius: 5,
-                    child: AppGoogleLogo(),
-                  ),
-                ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: AppSocialButton(
-                    height: 38,
-                    borderRadius: 5,
-                    child: AppAppleLogo(),
-                  ),
-                ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: AppSocialButton(
-                    height: 38,
-                    borderRadius: 5,
-                    child: AppFacebookLogo(),
-                  ),
-                ),
-              ],
             ),
           ],
         ),
