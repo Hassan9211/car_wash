@@ -1,6 +1,8 @@
+import 'package:car_wash/core/localization/app_localizations.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
+import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:flutter/material.dart';
 
 class LanguageScreen extends StatefulWidget {
@@ -11,15 +13,22 @@ class LanguageScreen extends StatefulWidget {
 }
 
 class _LanguageScreenState extends State<LanguageScreen> {
-  String _selectedLanguage = 'English';
+  late String _selectedLanguageCode;
 
-  void _selectLanguage(String value) {
+  @override
+  void initState() {
+    super.initState();
+    _selectedLanguageCode = AuthSession.currentLocale;
+  }
+
+  void _selectLanguage(String languageCode) {
     setState(() {
-      _selectedLanguage = value;
+      _selectedLanguageCode = languageCode;
     });
   }
 
   void _continue() {
+    AuthSession.setCurrentLocale(_selectedLanguageCode);
     context.goToRoleSelection();
   }
 
@@ -33,10 +42,10 @@ class _LanguageScreenState extends State<LanguageScreen> {
           child: Column(
             children: [
               const Spacer(flex: 5),
-              const Text(
-                'Choose Language',
-                key: Key('language_title'),
-                style: TextStyle(
+              Text(
+                context.translate('choose_language'),
+                key: const Key('language_title'),
+                style: const TextStyle(
                   fontSize: 27,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -47,20 +56,20 @@ class _LanguageScreenState extends State<LanguageScreen> {
               _LanguageOptionTile(
                 key: const Key('language_option_english'),
                 label: 'English',
-                isSelected: _selectedLanguage == 'English',
-                onTap: () => _selectLanguage('English'),
+                isSelected: _selectedLanguageCode == 'en',
+                onTap: () => _selectLanguage('en'),
               ),
               const SizedBox(height: 12),
               _LanguageOptionTile(
                 key: const Key('language_option_arabic'),
-                label: 'Arabic',
-                isSelected: _selectedLanguage == 'Arabic',
-                onTap: () => _selectLanguage('Arabic'),
+                label: 'العربية',
+                isSelected: _selectedLanguageCode == 'ar',
+                onTap: () => _selectLanguage('ar'),
               ),
               const Spacer(flex: 7),
               AppPrimaryButton(
                 key: const Key('language_continue_button'),
-                label: 'Continue',
+                label: context.translate('continue'),
                 onPressed: _continue,
                 height: 52,
                 textStyle: const TextStyle(

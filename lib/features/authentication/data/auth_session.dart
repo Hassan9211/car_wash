@@ -2,12 +2,30 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:car_wash/core/location/app_location_details.dart';
+import 'package:car_wash/features/authentication/data/mock_user_store.dart';
 import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthSession {
   AuthSession._();
+
+  static Future<void> deleteAccount() async {
+    final email = _currentEmail;
+    if (email != null && email.trim().isNotEmpty) {
+      await MockUserStore.instance.deleteUser(email);
+    }
+    clear();
+  }
+
+  static void setGuestMode() {
+    _currentName = 'Guest User';
+    _currentRole = AppUserRole.guest;
+    _isAuthenticated = true;
+    _isProviderSetupCompleted = false;
+    _persistSessionAsync();
+    _notifyListeners();
+  }
 
   static final ValueNotifier<int> _listenable = ValueNotifier<int>(0);
 
@@ -29,11 +47,13 @@ class AuthSession {
       'auth_session.is_authenticated';
   static const String _prefsTokenKey = 'auth_session.token';
   static const String _prefsUserIdKey = 'auth_session.user_id';
+  static const String _prefsLocaleKey = 'auth_session.locale';
   static const String _prefsProviderSetupCompletedKey = 'auth_session.provider_setup_completed';
   static final DateTime _defaultDateOfBirth = DateTime(2000, 9, 20);
 
   static String? _currentToken;
   static String? _currentUserId;
+  static String _currentLocale = 'en';
   static String? _currentEmail;
   static String? _currentName;
   static String? _currentPhoneNumber;
@@ -61,6 +81,8 @@ class AuthSession {
   static AppUserRole? get currentRole => _currentRole;
   static bool get isAuthenticated => _isAuthenticated;
   static bool get isProviderSetupCompleted => _isProviderSetupCompleted;
+  static bool get isGuest => _currentRole == AppUserRole.guest;
+  static String get currentLocale => _currentLocale;
   static AppLocationDetails? get currentLocationDetails {
     final latitude = _currentLatitude;
     final longitude = _currentLongitude;
@@ -252,6 +274,12 @@ class AuthSession {
     _notifyListeners();
   }
 
+  static void setCurrentLocale(String languageCode) {
+    _currentLocale = languageCode;
+    _persistSessionAsync();
+    _notifyListeners();
+  }
+
   static void setAuthenticated(bool value) {
     _isAuthenticated = value;
     _persistSessionAsync();
@@ -303,6 +331,7 @@ class AuthSession {
       _currentLongitude = preferences.getDouble(_prefsLongitudeKey);
       _isAuthenticated = preferences.getBool(_prefsIsAuthenticatedKey) ?? false;
       _isProviderSetupCompleted = preferences.getBool(_prefsProviderSetupCompletedKey) ?? false;
+      _currentLocale = preferences.getString(_prefsLocaleKey) ?? 'en';
 
       final savedDateOfBirth = preferences.getInt(_prefsDateOfBirthKey);
       _currentDateOfBirth = savedDateOfBirth == null
@@ -430,6 +459,7 @@ class AuthSession {
       await _setOrRemoveString(preferences, _prefsRoleKey, _currentRole?.name);
       await preferences.setBool(_prefsIsAuthenticatedKey, _isAuthenticated);
       await preferences.setBool(_prefsProviderSetupCompletedKey, _isProviderSetupCompleted);
+      await _setOrRemoveString(preferences, _prefsLocaleKey, _currentLocale);
     } catch (_) {
       // Ignore local persistence failures and keep the in-memory session active.
     }

@@ -24,6 +24,7 @@ class BookingOrderItem {
     this.reviewRating,
     this.reviewText = '',
     this.showInWallet = false,
+    this.workPhotos = const [],
   });
 
   final String id;
@@ -50,12 +51,14 @@ class BookingOrderItem {
   final int? reviewRating;
   final String reviewText;
   final bool showInWallet;
+  final List<String> workPhotos;
 
   bool get isActive {
     return status == BookingOrderStatus.pending ||
         status == BookingOrderStatus.accepted ||
         status == BookingOrderStatus.orderPlaced ||
-        status == BookingOrderStatus.inProgress;
+        status == BookingOrderStatus.inProgress ||
+        status == BookingOrderStatus.awaitingApproval;
   }
 
   bool get hasReview {
@@ -99,6 +102,7 @@ class BookingOrderItem {
     int? reviewRating,
     String? reviewText,
     bool? showInWallet,
+    List<String>? workPhotos,
   }) {
     return BookingOrderItem(
       id: id,
@@ -125,6 +129,7 @@ class BookingOrderItem {
       reviewRating: reviewRating ?? this.reviewRating,
       reviewText: reviewText ?? this.reviewText,
       showInWallet: showInWallet ?? this.showInWallet,
+      workPhotos: workPhotos ?? this.workPhotos,
     );
   }
 
@@ -231,6 +236,10 @@ class BookingOrderItem {
           : int.tryParse(review['rating'].toString()),
       reviewText: (review['review_text'] ?? review['text'] ?? '').toString(),
       showInWallet: (booking['payment_status'] ?? '').toString() == 'paid',
+      workPhotos: (booking['work_photos'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
     );
   }
 
@@ -273,6 +282,7 @@ enum BookingOrderStatus {
   accepted,
   orderPlaced,
   inProgress,
+  awaitingApproval,
   completed,
   cancelled,
 }
@@ -297,6 +307,8 @@ extension BookingOrderStatusX on BookingOrderStatus {
         return BookingOrderStatus.completed;
       case 'cancelled':
         return BookingOrderStatus.cancelled;
+      case 'awaiting_approval':
+        return BookingOrderStatus.awaitingApproval;
       default:
         return BookingOrderStatus.pending;
     }
@@ -316,6 +328,8 @@ extension BookingOrderStatusX on BookingOrderStatus {
         return 'completed';
       case BookingOrderStatus.cancelled:
         return 'cancelled';
+      case BookingOrderStatus.awaitingApproval:
+        return 'awaiting_approval';
     }
   }
 }

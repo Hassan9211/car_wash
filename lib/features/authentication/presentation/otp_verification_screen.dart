@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:car_wash/core/localization/app_localizations.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
@@ -180,26 +181,26 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthScreenShell(
-      title: 'Account Verification',
+      title: context.translate('account_verification'),
       onBack: _goBack,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const AuthBrandBadge(),
           const SizedBox(height: 18),
-          const Text(
-            'OTP Verification',
-            key: Key('otp_screen_title'),
-            style: TextStyle(
+          Text(
+            context.translate('otp_verification'),
+            key: const Key('otp_screen_title'),
+            style: const TextStyle(
               fontSize: 23,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
-            'Enter OTP sent to your email to verify your account.',
-            style: TextStyle(
+          Text(
+            context.translate('otp_instruction'),
+            style: const TextStyle(
               fontSize: 14.5,
               height: 1.2,
               color: AppColors.textSecondary,
@@ -216,34 +217,29 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   .toDouble();
 
               return Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(_controllers.length, (index) {
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      right: index == _controllers.length - 1 ? 0 : spacing,
-                    ),
-                    child: _buildOtpField(index, boxWidth),
-                  );
+                  return _buildOtpField(index, boxWidth);
                 }),
               );
             },
           ),
           if (_showInvalidCode) ...[
             const SizedBox(height: 10),
-            const Center(
+            Center(
               child: Row(
-                key: Key('otp_invalid_code_message'),
+                key: const Key('otp_invalid_code_message'),
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.error_outline_rounded,
                     size: 14,
                     color: AppButtonColors.destructiveForeground,
                   ),
-                  SizedBox(width: 4),
+                  const SizedBox(width: 4),
                   Text(
-                    'Invalid Code',
-                    style: TextStyle(
+                    context.translate('invalid_code'),
+                    style: const TextStyle(
                       fontSize: 13,
                       color: AppButtonColors.destructiveForeground,
                       fontWeight: FontWeight.w500,
@@ -268,9 +264,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 GestureDetector(
                   key: const Key('otp_resend_button'),
                   onTap: _resendCode,
-                  child: const Text(
-                    'Resend',
-                    style: TextStyle(
+                  child: Text(
+                    context.translate('resend'),
+                    style: const TextStyle(
                       fontSize: 14,
                       color: AppButtonColors.actionForeground,
                       fontWeight: FontWeight.w500,
@@ -283,7 +279,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           const SizedBox(height: 18),
           AppPrimaryButton(
             key: const Key('otp_confirm_button'),
-            label: 'Confirm',
+            label: context.translate('confirm'),
             onPressed: _confirm,
             textStyle: const TextStyle(
               fontSize: 16,

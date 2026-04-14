@@ -3,6 +3,8 @@ import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
+import 'package:car_wash/features/authentication/data/mock_user_store.dart';
+import 'package:car_wash/features/authentication/model/mock_user.dart';
 import 'package:car_wash/features/authentication/presentation/widgets/auth_shared_widgets.dart';
 import 'package:car_wash/features/authentication/utils/auth_validators.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +31,12 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _showTermsError = false;
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
+  @override
+  void initState() {
+    super.initState();
+    MockUserStore.instance.init();
+  }
+
   void _goBack() {
     context.goToLogin();
   }
@@ -37,7 +45,7 @@ class _SignupScreenState extends State<SignupScreen> {
     context.goToLogin();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
     final isFormValid = _formKey.currentState?.validate() ?? false;
@@ -51,11 +59,38 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    AuthSession.setCurrentUser(
-      email: _emailController.text.trim(),
+    final email = _emailController.text.trim();
+    
+    // Check if email is already taken
+    if (MockUserStore.instance.isEmailTaken(email)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This mail has already taken'),
+          backgroundColor: AppColors.dangerSurface,
+        ),
+      );
+      return;
+    }
+
+    // Save new user
+    final newUser = MockUser(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: _nameController.text.trim(),
+      email: email,
       phoneNumber: _phoneController.text.trim(),
+      password: _passwordController.text,
     );
+
+    await MockUserStore.instance.saveUser(newUser);
+
+    AuthSession.setCurrentUser(
+      email: newUser.email,
+      name: newUser.name,
+      phoneNumber: newUser.phoneNumber,
+    );
+    
+    if (!mounted) return;
     context.goToOtpVerification();
   }
 

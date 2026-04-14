@@ -1,4 +1,5 @@
 import 'package:car_wash/core/theme/app_colors.dart';
+import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:car_wash/features/washer/presentation/widgets/service_provider_bottom_navigation_bar.dart';
@@ -50,18 +51,22 @@ class _ServiceProviderPaymentHistoryScreenState
                 animation: BookingOrdersStore.instance.listenable,
                 builder: (context, _) {
                   final orders = BookingOrdersStore.instance.orders;
-                  final paymentOrders =
-                      orders
-                          .where(
-                            (order) =>
-                                order.paymentStatus ==
-                                BookingPaymentStatus.paid,
-                          )
-                          .toList(growable: false)
-                        ..sort(
-                          (first, second) =>
-                              second.paymentDate.compareTo(first.paymentDate),
-                        );
+                  final providerName = AuthSession.displayName.trim().toLowerCase();
+                  final currentUserEmail = AuthSession.displayEmail.trim().toLowerCase();
+
+                  final paymentOrders = orders.where((o) {
+                    final isPaid = o.paymentStatus == BookingPaymentStatus.paid;
+                    final isServiceProvider =
+                        o.serviceProviderName.trim().toLowerCase() == providerName;
+                    final isOwnBooking =
+                        o.customerName.trim().toLowerCase() == providerName ||
+                        o.customerEmail.trim().toLowerCase() == currentUserEmail;
+                    return isPaid && isServiceProvider && !isOwnBooking;
+                  }).toList(growable: false)
+                    ..sort(
+                      (first, second) =>
+                          second.paymentDate.compareTo(first.paymentDate),
+                    );
 
                   if (paymentOrders.isEmpty) {
                     return const _PaymentHistoryEmptyState();

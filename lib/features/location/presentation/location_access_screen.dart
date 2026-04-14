@@ -344,10 +344,7 @@ class _LocationAccessIllustration extends StatelessWidget {
           ),
           const Positioned(
             top: 25,
-            child: CircleAvatar(
-              radius: 13,
-              backgroundColor: AppColors.surface,
-            ),
+            child: CircleAvatar(radius: 13, backgroundColor: AppColors.surface),
           ),
         ],
       ),

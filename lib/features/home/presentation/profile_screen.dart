@@ -1,9 +1,11 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:car_wash/core/localization/app_localizations.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
+import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:car_wash/features/home/presentation/widgets/home_bottom_navigation_bar.dart';
@@ -21,17 +23,23 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = <_ProfileActionSection>[
       _ProfileActionSection(
-        title: 'Account',
+        title: context.translate('account'),
         items: [
           _ProfileActionItem(
-            title: 'Switch to Service Provider',
+            title: context.translate('language'),
+            trailingText: AuthSession.currentLocale == 'en' ? 'English' : 'العربية',
+            icon: Icons.language_rounded,
+            onTap: () => context.goToLanguage(),
+          ),
+          _ProfileActionItem(
+            title: context.translate('switch_to_provider'),
             icon: Icons.swap_horiz_rounded,
             onTap: () => _switchRole(context),
           ),
         ],
       ),
       _ProfileActionSection(
-        title: 'Support',
+        title: context.translate('support'),
         items: [
           _ProfileActionItem(
             title: 'Privacy Policy',
@@ -54,12 +62,12 @@ class ProfileScreen extends StatelessWidget {
             onTap: () => _showNotificationSettings(context),
           ),
           _ProfileActionItem(
-            title: 'Delete Account',
+            title: context.translate('delete_account'),
             icon: Icons.delete_outline_rounded,
             onTap: () => _showDeleteAccountDialog(context),
           ),
           _ProfileActionItem(
-            title: 'Logout',
+            title: context.translate('logout'),
             icon: Icons.logout_rounded,
             onTap: () => _showLogoutDialog(context),
           ),
@@ -78,35 +86,32 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   Positioned(
                     left: 8,
+                    right: 8,
                     top: 0,
                     bottom: 0,
-                    child: IconButton(
-                      key: const Key('profile_back_button'),
-                      onPressed: context.goToHome,
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: AppButtonColors.actionForeground,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                  const Positioned.fill(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 56),
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: Text(
-                          'User Profile',
-                          key: Key('profile_screen_title'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          key: const Key('profile_back_button'),
+                          onPressed: context.goToHome,
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: AppButtonColors.actionForeground,
+                            size: 18,
+                          ),
+                        ),
+                        Text(
+                          context.translate('profile'),
+                          key: const Key('profile_screen_title'),
+                          style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
                             color: AppColors.textPrimary,
                           ),
                         ),
-                      ),
+                        const SizedBox(width: 48),
+                      ],
                     ),
                   ),
                 ],
@@ -123,26 +128,47 @@ class ProfileScreen extends StatelessWidget {
                     children: [
                       _ProfileSummaryCard(
                         name: AuthSession.displayName,
-                        email: AuthSession.displayEmail,
+                        email: AuthSession.isGuest
+                            ? context.translate('browse_as_guest')
+                            : AuthSession.displayEmail,
                         initials: AuthSession.initials,
-                        onEditTap: () => _openEditProfile(context),
+                        onEditTap: AuthSession.isGuest
+                            ? null
+                            : () => _openEditProfile(context),
                       ),
                       const SizedBox(height: 16),
-                      for (final section in items) ...[
+                      if (AuthSession.isGuest) ...[
+                        const SizedBox(height: 20),
                         Text(
-                          section.title,
+                          context.translate('join_community'),
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textPrimary,
+                            fontSize: 14.5,
+                            height: 1.5,
+                            color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        for (final item in section.items) ...[
-                          _ProfileActionTile(item: item),
+                        const SizedBox(height: 32),
+                        AppPrimaryButton(
+                          label: context.translate('signin_signup'),
+                          onPressed: () => context.goToLogin(),
+                        ),
+                      ] else
+                        for (final section in items) ...[
+                          Text(
+                            section.title,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 10),
+                          for (final item in section.items) ...[
+                            _ProfileActionTile(item: item),
+                            const SizedBox(height: 10),
+                          ],
                         ],
-                      ],
                     ],
                   ),
                 ),
@@ -159,53 +185,42 @@ class ProfileScreen extends StatelessWidget {
 
 
   static Future<void> _switchRole(BuildContext context) async {
-    final shouldSwitch = await showDialog<bool>(
+    await showDialog<void>(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.58),
       builder: (dialogContext) {
-        return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              surface: AppColors.surfaceElevated,
-              onSurface: AppColors.textPrimary,
-            ),
-          ),
-          child: AlertDialog(
-            backgroundColor: AppColors.surfaceElevated,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            title: const Text(
-              'Switch Account?',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
-            ),
-            content: const Text(
-              'Are you sure you want to switch to your action Service Provider account?',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13.5, height: 1.4),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('No', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                style: FilledButton.styleFrom(backgroundColor: AppColors.brandGreen, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                child: const Text('Yes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              ),
-            ],
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          child: _AccountActionDialog(
+            icon: Icons.swap_horiz_rounded,
+            title: 'Switch to Service Provider?',
+            description:
+                'Are you sure you want to switch to your Service Provider account?',
+            confirmLabel: 'Yes, Switch',
+            cancelLabel: 'Cancel',
+            confirmColor: AppColors.brandGreen,
+            confirmTextColor: Colors.white,
+            cancelColor: AppColors.surfaceMuted,
+            cancelTextColor: AppColors.textSecondary,
+            onCancel: () => Navigator.of(dialogContext).pop(),
+            onConfirm: () {
+              Navigator.of(dialogContext).pop();
+              if (context.mounted) {
+                if (AuthSession.isProviderSetupCompleted) {
+                  AuthSession.setCurrentRole(AppUserRole.serviceProvider);
+                  context.goToHome();
+                } else {
+                  context.goToServiceProviderSetup();
+                }
+              }
+            },
           ),
         );
       },
     );
-
-    if (shouldSwitch == true && context.mounted) {
-      if (AuthSession.isProviderSetupCompleted) {
-        AuthSession.setCurrentRole(AppUserRole.serviceProvider);
-        context.goToHome();
-      } else {
-        context.goToServiceProviderSetup();
-      }
-    }
   }
+
 
   static void _showMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
@@ -240,9 +255,9 @@ class ProfileScreen extends StatelessWidget {
             cancelColor: AppColors.brandGreen,
             cancelTextColor: Colors.white,
             onCancel: () => Navigator.of(dialogContext).pop(),
-            onConfirm: () {
+            onConfirm: () async {
               Navigator.of(dialogContext).pop();
-              AuthSession.clear();
+              await AuthSession.deleteAccount();
               if (context.mounted) {
                 context.goToLogin();
               }
@@ -307,7 +322,7 @@ class _ProfileSummaryCard extends StatelessWidget {
   final String name;
   final String email;
   final String initials;
-  final VoidCallback onEditTap;
+  final VoidCallback? onEditTap;
 
   @override
   Widget build(BuildContext context) {
@@ -348,20 +363,22 @@ class _ProfileSummaryCard extends StatelessWidget {
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              key: const Key('profile_edit_button'),
-              onPressed: onEditTap,
-              style: AppButtonStyles.filled(height: 44),
-              icon: const Icon(Icons.edit_rounded, size: 16),
-              label: const Text(
-                'Edit Profile',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          if (onEditTap != null) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                key: const Key('profile_edit_button'),
+                onPressed: onEditTap,
+                style: AppButtonStyles.filled(height: 44),
+                icon: const Icon(Icons.edit_rounded, size: 16),
+                label: const Text(
+                  'Edit Profile',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -503,6 +520,17 @@ class _ProfileActionTile extends StatelessWidget {
                   ),
                 ),
               ),
+              if (item.trailingText != null) ...[
+                Text(
+                  item.trailingText!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.brandGreenLight.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(width: 10),
+              ],
               Container(
                 width: 22,
                 height: 22,
@@ -536,11 +564,13 @@ class _ProfileActionItem {
     required this.title,
     required this.icon,
     required this.onTap,
+    this.trailingText,
   });
 
   final String title;
   final IconData icon;
   final VoidCallback onTap;
+  final String? trailingText;
 }
 
 class _NotificationSettingsSheet extends StatefulWidget {

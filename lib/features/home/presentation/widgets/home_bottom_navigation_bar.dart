@@ -1,5 +1,7 @@
+import 'package:car_wash/core/localization/app_localizations.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
+import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:flutter/material.dart';
 
 enum HomeBottomTab {
@@ -19,6 +21,27 @@ class HomeBottomNavigationBar extends StatelessWidget {
 
   void _handleTap(BuildContext context, HomeBottomTab tab) {
     if (tab == selectedTab) {
+      return;
+    }
+
+    if (AuthSession.isGuest &&
+        (tab == HomeBottomTab.bookings || tab == HomeBottomTab.wallet)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.translate('signin_to_access', params: {
+            'tab': context.translate(tab.name),
+          })),
+          action: SnackBarAction(
+            label: context.translate('login'),
+            textColor: AppColors.brandGreenLight,
+            onPressed: () => context.goToLogin(),
+          ),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
       return;
     }
 

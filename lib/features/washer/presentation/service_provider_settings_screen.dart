@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:car_wash/core/localization/app_localizations.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_button_styles.dart';
@@ -22,32 +23,32 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = <_SettingsActionItem>[
       _SettingsActionItem(
-        title: 'Privacy Policy',
+        title: context.translate('privacy_policy'),
         icon: Icons.privacy_tip_outlined,
         onTap: () => context.pushToPrivacyPolicy(),
       ),
       _SettingsActionItem(
-        title: 'Terms & Conditions',
+        title: context.translate('terms_conditions'),
         icon: Icons.article_outlined,
         onTap: () => context.pushToTermsConditions(),
       ),
       _SettingsActionItem(
-        title: 'Help Center',
+        title: context.translate('help_center'),
         icon: Icons.help_outline_rounded,
         onTap: () => context.pushToHelpCenter(),
       ),
       _SettingsActionItem(
-        title: 'Notification',
+        title: context.translate('notifications'),
         icon: Icons.notifications_none_rounded,
         onTap: () => _showNotificationSettings(context),
       ),
       _SettingsActionItem(
-        title: 'Delete Account',
+        title: context.translate('delete_account'),
         icon: Icons.delete_outline_rounded,
         onTap: () => _showDeleteAccountDialog(context),
       ),
       _SettingsActionItem(
-        title: 'Logout',
+        title: context.translate('logout'),
         icon: Icons.logout_rounded,
         onTap: () => _showLogoutDialog(context),
       ),
@@ -67,9 +68,9 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Account',
-                      style: TextStyle(
+                    Text(
+                      context.translate('account'),
+                      style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
@@ -78,15 +79,24 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     _SettingsActionTile(
                       item: _SettingsActionItem(
-                        title: 'Switch to Customer Account',
+                        title: context.translate('language'),
+                        trailingText: AuthSession.currentLocale == 'en' ? 'English' : 'العربية',
+                        icon: Icons.language_rounded,
+                        onTap: () => context.goToLanguage(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _SettingsActionTile(
+                      item: _SettingsActionItem(
+                        title: context.translate('switch_to_customer'),
                         icon: Icons.swap_horiz_rounded,
                         onTap: () => _switchRole(context),
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Support',
-                      style: TextStyle(
+                    Text(
+                      context.translate('support'),
+                      style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
@@ -118,10 +128,10 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
           insetPadding: const EdgeInsets.symmetric(horizontal: 28),
           child: _AccountActionDialog(
             icon: Icons.swap_horiz_rounded,
-            title: 'Switch to Customer?',
-            description: 'Are you sure you want to switch to your customer account?',
-            confirmLabel: 'Yes, Switch',
-            cancelLabel: 'Cancel',
+            title: context.translate('switch_customer_title'),
+            description: context.translate('switch_customer_desc'),
+            confirmLabel: context.translate('yes_switch'),
+            cancelLabel: context.translate('cancel'),
             confirmColor: AppColors.brandGreen,
             confirmTextColor: Colors.white,
             cancelColor: AppColors.surfaceMuted,
@@ -150,11 +160,10 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
           insetPadding: const EdgeInsets.symmetric(horizontal: 28),
           child: _AccountActionDialog(
             icon: Icons.delete_rounded,
-            title: 'Are you sure you want to delete this account?',
-            description:
-                'This will clear your saved provider profile data from the app and sign you out of the current session.',
-            confirmLabel: 'Yes',
-            cancelLabel: 'No',
+            title: context.translate('delete_account_title'),
+            description: context.translate('delete_account_desc'),
+            confirmLabel: context.translate('yes'),
+            cancelLabel: context.translate('no'),
             confirmColor: _dangerButtonColor,
             confirmTextColor: Colors.white,
             cancelColor: AppColors.brandGreen,
@@ -192,11 +201,10 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
           insetPadding: const EdgeInsets.symmetric(horizontal: 28),
           child: _AccountActionDialog(
             icon: Icons.logout_rounded,
-            title: 'Are you sure you want to log out?',
-            description:
-                'You will be signed out of the current session and returned to the login screen.',
-            confirmLabel: 'Yes',
-            cancelLabel: 'No',
+            title: context.translate('logout_title'),
+            description: context.translate('logout_desc'),
+            confirmLabel: context.translate('yes'),
+            cancelLabel: context.translate('no'),
             confirmColor: _dangerButtonColor,
             confirmTextColor: Colors.white,
             cancelColor: AppColors.brandGreen,
@@ -371,14 +379,14 @@ class _SettingsTopBar extends StatelessWidget {
               ),
             ),
           ),
-          const Positioned.fill(
+          Positioned.fill(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 56),
               child: Align(
                 alignment: Alignment.center,
                 child: Text(
-                  'Settings',
-                  style: TextStyle(
+                  context.translate('settings'),
+                  style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
@@ -502,6 +510,17 @@ class _SettingsActionTile extends StatelessWidget {
                   ),
                 ),
               ),
+              if (item.trailingText != null) ...[
+                Text(
+                  item.trailingText!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.brandGreenLight.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(width: 10),
+              ],
               Container(
                 width: 24,
                 height: 24,
@@ -528,11 +547,13 @@ class _SettingsActionItem {
     required this.title,
     required this.icon,
     required this.onTap,
+    this.trailingText,
   });
 
   final String title;
   final IconData icon;
   final VoidCallback onTap;
+  final String? trailingText;
 }
 
 class _AccountActionDialog extends StatelessWidget {

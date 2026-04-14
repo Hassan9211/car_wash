@@ -1436,9 +1436,9 @@ class _ServicesStep extends StatelessWidget {
               itemCount: services.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                mainAxisSpacing: 14,
-                crossAxisSpacing: 14,
-                childAspectRatio: 1.0,
+                mainAxisSpacing: 24,
+                crossAxisSpacing: 18,
+                childAspectRatio: 0.72,
               ),
               itemBuilder: (context, index) {
                 final service = services[index];
@@ -1495,24 +1495,24 @@ class _ServiceSelectionChip extends StatelessWidget {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppColors.brandGreen
                       : AppColors.surfaceMuted,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
                   service.icon,
                   color: isSelected ? Colors.white : service.iconColor,
-                  size: 20,
+                  size: 28,
                 ),
               ),
               const SizedBox(height: 4),
@@ -1524,9 +1524,9 @@ class _ServiceSelectionChip extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 11.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      height: 1.15,
+                      height: 1.2,
                       color: isSelected
                           ? AppColors.textPrimary
                           : AppColors.textSecondary,

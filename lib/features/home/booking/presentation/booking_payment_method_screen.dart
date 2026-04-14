@@ -115,45 +115,37 @@ class _BookingPaymentMethodScreenState extends State<BookingPaymentMethodScreen>
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 18, 12, 16),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: ListView.separated(
-                        itemCount: BookingPaymentMethod.all.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final method = _displayMethod(
-                            BookingPaymentMethod.all[index],
-                          );
-                          return _PaymentMethodOptionTile(
-                            method: method,
-                            isSelected: method == _selectedMethod,
-                            onTap: () {
-                              setState(() {
-                                _selectedMethod = method;
-                              });
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    AppPrimaryButton(
-                      key: const Key('booking_payment_method_add_card_button'),
-                      label: _needsCardDetails
-                          ? 'Add card details'
-                          : 'Continue',
-                      onPressed: _needsCardDetails
-                          ? _openCardDetails
-                          : _submitSelection,
-                      height: 46,
-                      borderRadius: 6,
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                child: ListView.separated(
+                  itemCount: BookingPaymentMethod.all.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final method = _displayMethod(
+                      BookingPaymentMethod.all[index],
+                    );
+                    return _PaymentMethodOptionTile(
+                      method: method,
+                      isSelected: method == _selectedMethod,
+                      onTap: () {
+                        setState(() {
+                          _selectedMethod = method;
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 22),
+              child: AppPrimaryButton(
+                key: const Key('booking_payment_method_add_card_button'),
+                label: _needsCardDetails ? 'Add card details' : 'Continue',
+                onPressed: _needsCardDetails ? _openCardDetails : _submitSelection,
+                height: 46,
+                borderRadius: 6,
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

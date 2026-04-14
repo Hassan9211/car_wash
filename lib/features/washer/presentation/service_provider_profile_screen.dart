@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'dart:io';
 
 import 'package:car_wash/core/router/app_navigation.dart';
@@ -47,9 +49,11 @@ class _ServiceProviderProfileScreenState
       animation: Listenable.merge([
         AuthSession.listenable,
         ProviderCatalog.listenable,
+        BookingOrdersStore.instance.listenable,
       ]),
       builder: (context, child) {
-        final profile = _buildCurrentProviderProfile();
+        final orders = BookingOrdersStore.instance.orders;
+        final profile = _buildCurrentProviderProfile(orders);
 
         return DefaultTabController(
           length: 3,
@@ -100,9 +104,11 @@ class _ProfileHeader extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                _ProviderNetworkImage(
-                  imageUrl: profile.mainImageUrl,
-                  fallbackAssetPath: profile.imagePath,
+                Image(
+                  image: AuthSession.avatarImage,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
                 ),
                 DecoratedBox(
                   decoration: BoxDecoration(
@@ -280,10 +286,7 @@ class _ProfileTabBar extends StatelessWidget {
             ),
           ],
         ),
-        labelStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
         unselectedLabelStyle: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
@@ -466,11 +469,7 @@ class _ProviderServiceChip extends StatelessWidget {
               color: AppColors.brandGreen,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              service.icon,
-              color: Colors.white,
-              size: 20,
-            ),
+            child: Icon(service.icon, color: Colors.white, size: 20),
           ),
           const SizedBox(height: 4),
           Expanded(
@@ -771,8 +770,33 @@ class _ProviderReview {
   final String dateLabel;
 }
 
-WasherProfile _buildCurrentProviderProfile() {
+WasherProfile _buildCurrentProviderProfile(List<BookingOrderItem> orders) {
   final provider = ProviderCatalog.currentProviderProfile();
+
+  // Count completed bookings
+  final completedOrders = orders
+      .where((o) => o.status == BookingOrderStatus.completed)
+      .toList(growable: false);
+  final completedCount = completedOrders.length;
+
+  // Collect all orders that have a review rating
+  final reviewedOrders = completedOrders
+      .where((o) => o.reviewRating != null)
+      .toList(growable: false);
+  final reviewCount = reviewedOrders.length;
+
+  // Rating starts at 1 star for new providers.
+  // As reviews come in, it becomes the running average.
+  final avgRating = reviewedOrders.isEmpty
+      ? 1.0
+      : reviewedOrders.map((o) => o.reviewRating!).reduce((a, b) => a + b) /
+            reviewCount;
+
+  // Verified only when 10+ completed jobs AND average rating >= 4.5
+  final isVerified = completedCount >= 10 && avgRating >= 4.5;
+
+  // Display label: "New" when no reviews yet, else actual count
+  final reviewsLabel = reviewCount == 0 ? 'New' : '$reviewCount';
 
   final baseProfile = WasherProfile.fromServiceProvider(
     provider,
@@ -787,14 +811,14 @@ WasherProfile _buildCurrentProviderProfile() {
             'Foam Wash',
             'Wax Polish',
           ],
-    completedJobs: 248,
+    completedJobs: completedCount,
     pendingRequests: 4,
     activeOrders: 2,
     totalEarnings: '\$2,344.56',
     todayEarnings: '\$180',
     experienceLabel: '1-2 years',
     isOnline: true,
-    isVerified: true,
+    isVerified: isVerified,
   );
 
   final currentName = AuthSession.currentName?.trim();
@@ -810,6 +834,9 @@ WasherProfile _buildCurrentProviderProfile() {
         : baseProfile.location,
     latitude: AuthSession.currentLatitude ?? baseProfile.latitude,
     longitude: AuthSession.currentLongitude ?? baseProfile.longitude,
+    // Dynamic rating: 1 star → grows with real reviews
+    rating: avgRating.toStringAsFixed(1),
+    reviews: reviewsLabel,
   );
 }
 

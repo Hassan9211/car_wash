@@ -4,6 +4,7 @@ import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:car_wash/features/home/presentation/widgets/home_bottom_navigation_bar.dart';
+import 'package:car_wash/features/home/service/pdf_service.dart';
 import 'package:flutter/material.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -162,13 +163,51 @@ class _WalletPaymentTile extends StatelessWidget {
                 ],
               ),
             ),
-            Text(
-              order.totalPayment,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppButtonColors.primaryBackground,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  order.totalPayment,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppButtonColors.primaryBackground,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: () => PdfService.generateAndDownloadReceipt(order),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandGreen.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: AppColors.brandGreen.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.picture_as_pdf_rounded,
+                          size: 12,
+                          color: AppColors.brandGreen,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'PDF',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.brandGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

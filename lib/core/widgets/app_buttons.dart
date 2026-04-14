@@ -11,6 +11,8 @@ class AppPrimaryButton extends StatefulWidget {
     required this.onPressed,
     this.height = AppButtonStyles.primaryHeight,
     this.borderRadius = AppButtonStyles.borderRadius,
+    this.backgroundColor,
+    this.foregroundColor,
     this.textStyle,
   });
 
@@ -18,6 +20,8 @@ class AppPrimaryButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final double height;
   final double borderRadius;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
   final TextStyle? textStyle;
 
   @override
@@ -36,7 +40,7 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ))
-            .copyWith(color: AppButtonColors.primaryForeground);
+            .copyWith(color: widget.foregroundColor ?? AppButtonColors.primaryForeground);
 
     return SizedBox(
       width: double.infinity,
@@ -56,7 +60,7 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
               child: Ink(
                 height: widget.height,
                 decoration: BoxDecoration(
-                  color: AppColors.brandGreen,
+                  color: widget.backgroundColor ?? AppColors.brandGreen,
                   borderRadius: BorderRadius.circular(widget.borderRadius),
                   border: Border.all(
                     color: AppColors.brandGreenLight.withValues(alpha: 0.2),

@@ -19,6 +19,7 @@ class ServiceProviderProfile {
     this.latitude,
     this.longitude,
     this.isNewProvider = false,
+    this.isVerified = false,
     this.joinedAt,
   });
 
@@ -39,6 +40,7 @@ class ServiceProviderProfile {
   final double? latitude;
   final double? longitude;
   final bool isNewProvider;
+  final bool isVerified;
   final DateTime? joinedAt;
 
   factory ServiceProviderProfile.fromJson(Map<String, dynamic> json) {
@@ -147,6 +149,7 @@ class ServiceProviderProfile {
       isNewProvider:
           _readBool(json, ['is_new_provider', 'is_new', 'new_provider']) ??
           false,
+      isVerified: _readBool(json, ['is_verified', 'verified']) ?? false,
       joinedAt: joinedAt,
     );
   }
@@ -173,6 +176,7 @@ class ServiceProviderProfile {
     double? latitude,
     double? longitude,
     bool? isNewProvider,
+    bool? isVerified,
     DateTime? joinedAt,
   }) {
     return ServiceProviderProfile(
@@ -193,6 +197,7 @@ class ServiceProviderProfile {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       isNewProvider: isNewProvider ?? this.isNewProvider,
+      isVerified: isVerified ?? this.isVerified,
       joinedAt: joinedAt ?? this.joinedAt,
     );
   }
@@ -216,6 +221,7 @@ class ServiceProviderProfile {
       'latitude': latitude,
       'longitude': longitude,
       'is_new_provider': isNewProvider,
+      'is_verified': isVerified,
       'joined_at': joinedAt?.toIso8601String(),
     };
   }

@@ -1,6 +1,7 @@
 enum AppUserRole {
   customer,
-  serviceProvider;
+  serviceProvider,
+  guest;
 
   String get label {
     switch (this) {
@@ -8,6 +9,8 @@ enum AppUserRole {
         return 'Customer';
       case AppUserRole.serviceProvider:
         return 'Service Provider';
+      case AppUserRole.guest:
+        return 'Guest';
     }
   }
 
@@ -17,6 +20,8 @@ enum AppUserRole {
         return 'Book washes, track providers, and manage payments.';
       case AppUserRole.serviceProvider:
         return 'Manage requests, track jobs,\nhandle your earnings.';
+      case AppUserRole.guest:
+        return 'Explore services and browse the app without an account.';
     }
   }
 }

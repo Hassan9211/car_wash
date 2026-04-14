@@ -25,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     ServiceCatalog.fetchServices();
+    ProviderCatalog.initialize();
     ProviderCatalog.fetchProviders();
   }
 
@@ -454,13 +455,30 @@ class _ProviderCard extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      provider.name,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            provider.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (provider.isVerified) ...[
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.verified_rounded,
+                            color: Color(0xFF1D9BF0),
+                            size: 13,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   Text(

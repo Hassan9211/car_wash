@@ -1,3 +1,4 @@
+import 'package:car_wash/core/localization/app_localizations.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
@@ -23,6 +24,11 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   }
 
   void _continue() {
+    if (_selectedRole == AppUserRole.guest) {
+      AuthSession.setGuestMode();
+      context.goToHome();
+      return;
+    }
     AuthSession.setCurrentRole(_selectedRole);
     context.goToLogin();
   }
@@ -52,16 +58,16 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       ),
                     ),
                   ),
-                  const Positioned.fill(
+                  Positioned.fill(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 56),
+                      padding: const EdgeInsets.symmetric(horizontal: 56),
                       child: Align(
                         alignment: Alignment.center,
                         child: Text(
-                          'Select Role',
+                          context.translate('select_role'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
@@ -104,13 +110,13 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                                 borderRadius: BorderRadius.circular(22),
                                 border: Border.all(color: AppColors.border),
                               ),
-                              child: const Column(
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'How would you like to continue?',
-                                    key: Key('role_selection_title'),
-                                    style: TextStyle(
+                                    context.translate('how_to_continue'),
+                                    key: const Key('role_selection_title'),
+                                    style: const TextStyle(
                                       fontSize: 25,
                                       height: 1.15,
                                       fontWeight: FontWeight.w700,
@@ -118,10 +124,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                                       letterSpacing: -0.8,
                                     ),
                                   ),
-                                  SizedBox(height: 10),
+                                  const SizedBox(height: 10),
                                   Text(
-                                    'Choose your app experience. You can continue as a customer to book services or as a service provider to manage jobs and earnings.',
-                                    style: TextStyle(
+                                    context.translate('role_description'),
+                                    style: const TextStyle(
                                       fontSize: 14.5,
                                       height: 1.45,
                                       color: AppColors.textSecondary,
@@ -134,9 +140,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                             _RoleOptionCard(
                               key: const Key('role_selection_customer_option'),
                               role: AppUserRole.customer,
-                              title: 'Customer',
-                              subtitle:
-                                  'Book washes, track arrivals, and manage orders.',
+                              title: context.translate('customer'),
+                              subtitle: context.translate('customer_subtitle'),
                               icon: Icons.directions_car_filled_rounded,
                               iconTint: AppColors.brandGreen,
                               iconBackground: const Color(0xFFEAF7EE),
@@ -152,9 +157,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                             _RoleOptionCard(
                               key: const Key('role_selection_service_provider_option'),
                               role: AppUserRole.serviceProvider,
-                              title: 'Service Provider',
-                              subtitle:
-                                  'Accept requests, manage active jobs, and monitor earnings.',
+                              title: context.translate('service_provider'),
+                              subtitle: context.translate('service_provider_subtitle'),
                               icon: Icons.local_shipping_rounded,
                               iconTint: const Color(0xFF176B87),
                               iconBackground: const Color(0xFFE8F5FA),
@@ -166,6 +170,23 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                               isSelected:
                                   _selectedRole == AppUserRole.serviceProvider,
                               onTap: () => _selectRole(AppUserRole.serviceProvider),
+                            ),
+                            const SizedBox(height: 14),
+                            _RoleOptionCard(
+                              key: const Key('role_selection_guest_option'),
+                              role: AppUserRole.guest,
+                              title: context.translate('guest'),
+                              subtitle: context.translate('guest_subtitle'),
+                              icon: Icons.person_search_rounded,
+                              iconTint: const Color(0xFF8B4A96),
+                              iconBackground: const Color(0xFFF6E8FA),
+                              highlights: const [
+                                'View services',
+                                'Check prices',
+                                'Explore app',
+                              ],
+                              isSelected: _selectedRole == AppUserRole.guest,
+                              onTap: () => _selectRole(AppUserRole.guest),
                             ),
                             const Spacer(),
                             Container(
@@ -195,7 +216,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
-                                      'Selected role: ${_selectedRole.label}. We will use this later to show the right dashboard and features.',
+                                      '${context.translate('select_role')}: ${_selectedRole.label}',
                                       style: const TextStyle(
                                         fontSize: 12.8,
                                         height: 1.45,
@@ -209,7 +230,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                             const SizedBox(height: 16),
                             AppPrimaryButton(
                               key: const Key('role_selection_continue_button'),
-                              label: 'Continue',
+                              label: context.translate('continue'),
                               onPressed: _continue,
                               height: 52,
                               textStyle: const TextStyle(

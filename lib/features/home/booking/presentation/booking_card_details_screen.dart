@@ -356,19 +356,21 @@ class _BookingCardDetailsScreenState extends State<BookingCardDetailsScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    AppPrimaryButton(
-                      key: const Key('booking_card_details_submit_button'),
-                      label: 'Proceed to payment',
-                      onPressed: _submit,
-                      height: 46,
-                      borderRadius: 6,
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
                   ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 22),
+              child: AppPrimaryButton(
+                key: const Key('booking_card_details_submit_button'),
+                label: 'Proceed to payment',
+                onPressed: _submit,
+                height: 46,
+                borderRadius: 6,
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

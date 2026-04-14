@@ -1,9 +1,13 @@
 import 'dart:io';
 
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/themed_google_map.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
+import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/model/service_provider_profile.dart';
+import 'package:car_wash/features/services/data/service_catalog.dart';
+import 'package:car_wash/features/services/model/service_item.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -28,7 +32,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
     final provider = widget.provider;
     final tabContent = switch (_selectedTabIndex) {
       0 => _DetailsTab(provider: provider),
-      1 => _GalleryTab(provider: provider),
+      1 => _ServicesTab(provider: provider),
       _ => _ReviewsTab(provider: provider),
     };
 
@@ -74,19 +78,34 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                       fontWeight: FontWeight.w700,
                                       horizontalPadding: 10,
                                     ),
-                                  _RatingSummary(reviews: provider.reviews),
+                                  _RatingSummary(
+                                    rating: provider.rating,
+                                    reviews: provider.reviews,
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 12),
                               if (useStackedPriceLayout) ...[
-                                Text(
-                                  provider.name,
-                                  key: const Key('service_detail_provider_name'),
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black,
-                                  ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      provider.name,
+                                      key: const Key('service_detail_provider_name'),
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    if (provider.isVerified) ...[
+                                      const SizedBox(width: 6),
+                                      const Icon(
+                                        Icons.verified_rounded,
+                                        color: Color(0xFF1D9BF0),
+                                        size: 22,
+                                      ),
+                                    ],
+                                  ],
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
@@ -102,16 +121,30 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Expanded(
-                                      child: Text(
-                                        provider.name,
-                                        key: const Key(
-                                          'service_detail_provider_name',
-                                        ),
-                                        style: const TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.black,
-                                        ),
+                                      child: Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              provider.name,
+                                              key: const Key(
+                                                'service_detail_provider_name',
+                                              ),
+                                              style: const TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                          if (provider.isVerified) ...[
+                                            const SizedBox(width: 8),
+                                            const Icon(
+                                              Icons.verified_rounded,
+                                              color: Color(0xFF1D9BF0),
+                                              size: 24,
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ),
                                     const SizedBox(width: 12),
@@ -205,7 +238,26 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
               child: AppPrimaryButton(
                 key: const Key('service_detail_book_button'),
                 label: 'Book Service Provider',
-                onPressed: () => context.pushToBooking(provider),
+                onPressed: () {
+                  if (AuthSession.isGuest) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Please sign in to book a service.'),
+                        action: SnackBarAction(
+                          label: 'Sign In',
+                          textColor: AppColors.brandGreenLight,
+                          onPressed: () => context.goToLogin(),
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                  context.pushToBooking(provider);
+                },
                 height: 48,
                 borderRadius: 6,
                 textStyle: const TextStyle(
@@ -406,25 +458,32 @@ class _GalleryCountThumb extends StatelessWidget {
 }
 
 class _RatingStars extends StatelessWidget {
-  const _RatingStars();
+  const _RatingStars({required this.rating});
+
+  final String rating;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        Icon(Icons.star_rounded, size: 14, color: Color(0xFF0F7D32)),
-        Icon(Icons.star_rounded, size: 14, color: Color(0xFF0F7D32)),
-        Icon(Icons.star_rounded, size: 14, color: Color(0xFF0F7D32)),
-        Icon(Icons.star_half_rounded, size: 14, color: Color(0xFF0F7D32)),
-        Icon(Icons.star_outline_rounded, size: 14, color: Color(0xFF0F7D32)),
-      ],
+    final ratingValue = double.tryParse(rating) ?? 0.0;
+    return Row(
+      children: List.generate(5, (index) {
+        final starNumber = index + 1;
+        final icon = ratingValue >= starNumber
+            ? Icons.star_rounded
+            : ratingValue >= starNumber - 0.5
+                ? Icons.star_half_rounded
+                : Icons.star_outline_rounded;
+
+        return Icon(icon, size: 14, color: const Color(0xFF0F7D32));
+      }),
     );
   }
 }
 
 class _RatingSummary extends StatelessWidget {
-  const _RatingSummary({required this.reviews});
+  const _RatingSummary({required this.rating, required this.reviews});
 
+  final String rating;
   final String reviews;
 
   @override
@@ -432,7 +491,7 @@ class _RatingSummary extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const _RatingStars(),
+        _RatingStars(rating: rating),
         const SizedBox(width: 8),
         Text(
           reviews,
@@ -497,7 +556,7 @@ class _DetailTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['Details', 'Gallery', 'Reviews'];
+    const labels = ['Details', 'Services', 'Reviews'];
 
     return Row(
       children: List.generate(labels.length, (index) {
@@ -592,8 +651,8 @@ class _DetailsTab extends StatelessWidget {
   }
 }
 
-class _GalleryTab extends StatelessWidget {
-  const _GalleryTab({
+class _ServicesTab extends StatelessWidget {
+  const _ServicesTab({
     required this.provider,
   });
 
@@ -601,25 +660,133 @@ class _GalleryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: provider.galleryImageUrls.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-        childAspectRatio: 1,
-      ),
-      itemBuilder: (context, index) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: _NetworkCarImage(
-            imageUrl: provider.galleryImageUrls[index],
-            fallbackAssetPath: provider.imagePath,
+    final serviceNames = provider.supportedServices.isNotEmpty
+        ? provider.supportedServices
+        : [
+            'Basic wash',
+            'Foam wash',
+            'Interior',
+            'Wax',
+            'Engine',
+            'Vacuum',
+          ];
+
+    final servicesList = ServiceCatalog.allServices
+        .where((service) => serviceNames.any((name) => 
+            name.toLowerCase().contains(service.label.toLowerCase()) ||
+            service.label.toLowerCase().contains(name.toLowerCase())))
+        .toList(growable: false);
+
+    // Fallback if mapping fails
+    final displayList = servicesList.isNotEmpty 
+        ? servicesList 
+        : ServiceCatalog.featuredServices;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Offered Services',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
           ),
-        );
-      },
+        ),
+        const SizedBox(height: 16),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: displayList.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
+            childAspectRatio: 1.0,
+          ),
+          itemBuilder: (context, index) {
+            final service = displayList[index];
+            return _ProviderServiceChip(service: service);
+          },
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF183222),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Row(
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                color: Color(0xFF8BF0AE),
+                size: 20,
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Professional equipment and premium quality soap used for all services.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: Colors.white,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProviderServiceChip extends StatelessWidget {
+  const _ProviderServiceChip({required this.service});
+
+  final ServiceItem service;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9F9F9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEEEEEE)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F7D32),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(service.icon, color: Colors.white, size: 20),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              service.label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                height: 1.15,
+                color: Color(0xFF222222),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -676,7 +843,7 @@ class _ReviewsTab extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const _RatingStars(),
+                    _RatingStars(rating: provider.rating),
                     const SizedBox(height: 6),
                     Text(
                       review.$2,

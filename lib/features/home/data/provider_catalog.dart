@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/core/scheduling/business_hours.dart';
+import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
+import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:car_wash/features/home/model/service_provider_profile.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -226,7 +228,69 @@ class ProviderCatalog {
       return byName.first;
     }
 
-    return providers.isNotEmpty ? providers.first : fallbackProvider;
+    return providers.isNotEmpty
+        ? _enrichProvider(providers.first)
+        : fallbackProvider;
+  }
+
+  static void initialize() {
+    // Refresh providers whenever bookings or session updates
+    BookingOrdersStore.instance.listenable.addListener(() {
+      _providersNotifier.value = _allProviders;
+    });
+    AuthSession.listenable.addListener(() {
+      _providersNotifier.value = _allProviders;
+    });
+  }
+
+  static ServiceProviderProfile _enrichProvider(
+    ServiceProviderProfile provider,
+  ) {
+    final orders = BookingOrdersStore.instance.orders;
+    final providerName = provider.name.trim().toLowerCase();
+
+    final completedOrders =
+        orders
+            .where(
+              (o) =>
+                  o.serviceProviderName.trim().toLowerCase() == providerName &&
+                  o.status == BookingOrderStatus.completed,
+            )
+            .toList(growable: false);
+
+    final reviewedOrders =
+        completedOrders
+            .where((o) => o.reviewRating != null)
+            .toList(growable: false);
+    final reviewCount = reviewedOrders.length;
+
+    // Rating grows from 1.0 (seed) up to real average.
+    final avgRating =
+        reviewedOrders.isEmpty
+            ? 1.0
+            : reviewedOrders
+                    .map((o) => o.reviewRating!)
+                    .reduce((a, b) => a + b) /
+                reviewCount;
+
+    // Verified: 10+ jobs AND 4.5+ average rating
+    final isVerified = completedOrders.length >= 10 && avgRating >= 4.5;
+
+    // Dynamic sync for current logged-in SP
+    final isCurrentUser =
+        AuthSession.displayName.trim().toLowerCase() == providerName;
+
+    return provider.copyWith(
+      rating: avgRating.toStringAsFixed(1),
+      reviews: reviewCount == 0 ? 'New' : '$reviewCount',
+      isVerified: isVerified,
+      imagePath:
+          isCurrentUser
+              ? AuthSession.currentAvatarImagePath ?? provider.imagePath
+              : provider.imagePath,
+      location:
+          isCurrentUser ? AuthSession.displayLocationLabel : provider.location,
+    );
   }
 
   static Future<void> saveOrUpdateProvider(
@@ -256,7 +320,8 @@ class ProviderCatalog {
   static List<ServiceProviderProfile> get _allProviders {
     final mergedProviders = <ServiceProviderProfile>[
       ..._storedProviders.map(
-        (provider) => provider.copyWith(availability: BusinessHours.label),
+        (provider) =>
+            _enrichProvider(provider.copyWith(availability: BusinessHours.label)),
       ),
       ..._seedProviders
           .where(
@@ -266,7 +331,9 @@ class ProviderCatalog {
                 ),
           )
           .map(
-            (provider) => provider.copyWith(availability: BusinessHours.label),
+            (provider) => _enrichProvider(
+              provider.copyWith(availability: BusinessHours.label),
+            ),
           ),
     ];
 

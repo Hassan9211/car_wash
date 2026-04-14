@@ -220,7 +220,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                 BookingOrderStatus.pending ||
                                 BookingOrderStatus.accepted ||
                                 BookingOrderStatus.orderPlaced ||
-                                BookingOrderStatus.inProgress =>
+                                BookingOrderStatus.inProgress ||
+                                BookingOrderStatus.awaitingApproval =>
                                   () => _cancelOrder(order.id),
                                 BookingOrderStatus.completed =>
                                   () => _leaveReview(order),
@@ -230,7 +231,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                 BookingOrderStatus.pending ||
                                 BookingOrderStatus.accepted ||
                                 BookingOrderStatus.orderPlaced ||
-                                BookingOrderStatus.inProgress =>
+                                BookingOrderStatus.inProgress ||
+                                BookingOrderStatus.awaitingApproval =>
                                   () => _trackOrder(order),
                                 BookingOrderStatus.completed =>
                                   () => _rescheduleOrder(order),
@@ -817,6 +819,7 @@ extension on BookingOrderItem {
       case BookingOrderStatus.accepted:
       case BookingOrderStatus.orderPlaced:
       case BookingOrderStatus.inProgress:
+      case BookingOrderStatus.awaitingApproval:
         return 'Track';
       case BookingOrderStatus.completed:
         return 'Re-Schedule';
@@ -831,6 +834,7 @@ extension on BookingOrderItem {
       case BookingOrderStatus.accepted:
       case BookingOrderStatus.orderPlaced:
       case BookingOrderStatus.inProgress:
+      case BookingOrderStatus.awaitingApproval:
         return 'Cancel';
       case BookingOrderStatus.completed:
         return 'Leave Review';
@@ -862,6 +866,8 @@ extension on BookingOrderStatus {
         return 'Order Placed';
       case BookingOrderStatus.inProgress:
         return 'In Progress';
+      case BookingOrderStatus.awaitingApproval:
+        return 'Awaiting Approval';
       case BookingOrderStatus.completed:
         return 'Completed';
       case BookingOrderStatus.cancelled:
@@ -879,6 +885,8 @@ extension on BookingOrderStatus {
         return const Color(0xFFFEF5E6);
       case BookingOrderStatus.inProgress:
         return const Color(0xFFEAF1FF);
+      case BookingOrderStatus.awaitingApproval:
+        return const Color(0xFFFEF5E6);
       case BookingOrderStatus.completed:
         return const Color(0xFFE6FBF4);
       case BookingOrderStatus.cancelled:
@@ -896,6 +904,8 @@ extension on BookingOrderStatus {
         return const Color(0xFFF3B65B);
       case BookingOrderStatus.inProgress:
         return const Color(0xFF79A7FF);
+      case BookingOrderStatus.awaitingApproval:
+        return const Color(0xFFF3B65B);
       case BookingOrderStatus.completed:
         return const Color(0xFF67C8AF);
       case BookingOrderStatus.cancelled:

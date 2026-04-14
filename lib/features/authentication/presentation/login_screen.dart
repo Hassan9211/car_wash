@@ -1,8 +1,10 @@
+import 'package:car_wash/core/localization/app_localizations.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
+import 'package:car_wash/features/authentication/data/mock_user_store.dart';
 import 'package:car_wash/features/authentication/presentation/widgets/auth_shared_widgets.dart';
 import 'package:car_wash/features/authentication/utils/auth_validators.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    MockUserStore.instance.init();
     _restoreRememberedCredentials();
   }
 
@@ -55,7 +58,39 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    AuthSession.setCurrentUser(email: _emailController.text.trim());
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    // Find user in mock database
+    final user = MockUserStore.instance.findUser(email);
+
+    if (user == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No account found with this email'),
+          backgroundColor: AppColors.dangerSurface,
+        ),
+      );
+      return;
+    }
+
+    if (user.password != password) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Incorrect password'),
+          backgroundColor: AppColors.dangerSurface,
+        ),
+      );
+      return;
+    }
+
+    AuthSession.setCurrentUser(
+      email: user.email,
+      name: user.name,
+      phoneNumber: user.phoneNumber,
+    );
     AuthSession.setAuthenticated(true);
     await _persistRememberedCredentials();
     if (!mounted) {

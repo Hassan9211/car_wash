@@ -269,6 +269,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           destination: _NotificationDestination.tracking,
           order: order,
         );
+      case BookingOrderStatus.awaitingApproval:
+        return _NotificationItem(
+          id: '${order.id}_awaiting',
+          title: 'Work Finished - Review Proof',
+          message:
+              '${order.serviceProviderName} has finished the work. Please review the proof photos and approve to release payment.',
+          tag: 'Approval',
+          timestamp: timestamp,
+          icon: Icons.rate_review_outlined,
+          iconColor: AppColors.brandGreen,
+          iconBackground: const Color(0xFFEAF7EE),
+          category: _NotificationCategory.booking,
+          isUnread: isUnread,
+          actionLabel: 'Review',
+          destination: _NotificationDestination.tracking,
+          order: order,
+        );
       case BookingOrderStatus.completed:
         return _NotificationItem(
           id: '${order.id}_payment',

@@ -306,19 +306,21 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
                           )
                           .toList(growable: false),
                     ),
-                    const SizedBox(height: 42),
-                    AppPrimaryButton(
-                      key: const Key('booking_schedule_next_button'),
-                      label: 'Next',
-                      onPressed: _openPaymentScreen,
-                      height: 46,
-                      borderRadius: 6,
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 22),
+              child: AppPrimaryButton(
+                key: const Key('booking_schedule_next_button'),
+                label: 'Next',
+                onPressed: _openPaymentScreen,
+                height: 46,
+                borderRadius: 6,
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

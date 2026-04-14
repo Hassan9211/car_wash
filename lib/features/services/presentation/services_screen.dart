@@ -79,20 +79,22 @@ class _ServicesScreenState extends State<ServicesScreen> {
                   final services = ServiceCatalog.servicesGridList;
 
                   return Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                     child: GridView.builder(
                       itemCount: services.length,
+                      padding: const EdgeInsets.only(bottom: 30),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 5,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 10,
-                            childAspectRatio: 1,
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 32,
+                            crossAxisSpacing: 20,
+                            childAspectRatio: 0.74,
                           ),
                       itemBuilder: (context, index) {
                         return ServiceTile(
                           service: services[index],
                           width: double.infinity,
+                          useGridStyle: true,
                         );
                       },
                     ),

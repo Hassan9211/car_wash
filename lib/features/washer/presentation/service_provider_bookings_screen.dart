@@ -68,7 +68,8 @@ class _ServiceProviderBookingsScreenState
           (order) =>
               order.status == BookingOrderStatus.accepted ||
               order.status == BookingOrderStatus.orderPlaced ||
-              order.status == BookingOrderStatus.inProgress,
+              order.status == BookingOrderStatus.inProgress ||
+              order.status == BookingOrderStatus.awaitingApproval,
         )
         .toList(growable: false)
       ..sort(
@@ -87,7 +88,9 @@ class _ServiceProviderBookingsScreenState
             customerName: order.customerName,
             orderDate: order.orderDate,
             totalPayment: order.totalPayment,
-            status: _ProviderBookingStatus.accepted,
+            status: order.status == BookingOrderStatus.awaitingApproval
+                ? _ProviderBookingStatus.awaiting
+                : _ProviderBookingStatus.accepted,
           ),
         )
         .toList(growable: false);
@@ -233,9 +236,22 @@ class _ServiceProviderBookingsScreenState
               child: ValueListenableBuilder<List<BookingOrderItem>>(
                 valueListenable: BookingOrdersStore.instance.listenable,
                 builder: (context, orders, _) {
-                  final pendingBookings = _buildPendingBookings(orders);
-                  final acceptedBookings = _buildAcceptedBookings(orders);
-                  final completedBookings = _buildCompletedBookings(orders);
+                  final providerName = AuthSession.displayName.trim().toLowerCase();
+                  final currentUserEmail = AuthSession.displayEmail.trim().toLowerCase();
+
+                  // Filter for this provider and exclude own bookings
+                  final filteredOrders = orders.where((o) {
+                    final isServiceProvider =
+                        o.serviceProviderName.trim().toLowerCase() == providerName;
+                    final isOwnBooking =
+                        o.customerName.trim().toLowerCase() == providerName ||
+                        o.customerEmail.trim().toLowerCase() == currentUserEmail;
+                    return isServiceProvider && !isOwnBooking;
+                  }).toList(growable: false);
+
+                  final pendingBookings = _buildPendingBookings(filteredOrders);
+                  final acceptedBookings = _buildAcceptedBookings(filteredOrders);
+                  final completedBookings = _buildCompletedBookings(filteredOrders);
 
                   return switch (_selectedTab) {
                     _ProviderBookingsTab.accepted => _SummaryBookingsList(
@@ -800,6 +816,7 @@ enum _ProviderBookingsTab {
 
 enum _ProviderBookingStatus {
   accepted('Accepted', AppColors.successSurface, AppColors.brandGreenLight),
+  awaiting('Awaiting Approval', AppColors.warningSurface, Color(0xFFF3C96A)),
   completed('Completed', AppColors.infoSurface, Color(0xFF7DD0F3));
 
   const _ProviderBookingStatus(
