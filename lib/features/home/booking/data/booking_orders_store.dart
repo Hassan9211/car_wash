@@ -151,4 +151,20 @@ class BookingOrdersStore {
     nextOrders[existingIndex] = transform(nextOrders[existingIndex]);
     _ordersNotifier.value = nextOrders;
   }
+
+  /// Deletes all orders belonging to [providerId].
+  void deleteOrdersByProvider(String providerId) {
+    _ordersNotifier.value = _ordersNotifier.value
+        .where((order) => order.providerId != providerId)
+        .toList(growable: false);
+  }
+
+  /// Deletes all orders belonging to the current customer email.
+  void deleteOrdersByCustomerEmail(String email) {
+    final normalizedEmail = email.trim().toLowerCase();
+    _ordersNotifier.value = _ordersNotifier.value
+        .where((order) =>
+            order.customerEmail.trim().toLowerCase() != normalizedEmail)
+        .toList(growable: false);
+  }
 }

@@ -2,6 +2,8 @@ import 'package:car_wash/core/router/app_routes.dart';
 import 'package:car_wash/core/location/app_location_details.dart';
 import 'package:car_wash/features/authentication/presentation/check_email_screen.dart';
 import 'package:car_wash/features/authentication/presentation/forgot_password_screen.dart';
+import 'package:car_wash/features/authentication/presentation/reset_password_code_screen.dart';
+import 'package:car_wash/features/authentication/presentation/reset_password_screen.dart';
 import 'package:car_wash/features/authentication/presentation/login_screen.dart';
 import 'package:car_wash/features/authentication/presentation/otp_verification_screen.dart';
 import 'package:car_wash/features/authentication/presentation/role_selection_screen.dart';
@@ -99,6 +101,14 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.checkEmail,
       builder: (context, state) => const CheckEmailScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.resetPasswordCode,
+      builder: (context, state) => const ResetPasswordCodeScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.resetPassword,
+      builder: (context, state) => const ResetPasswordScreen(),
     ),
     GoRoute(
       path: AppRoutes.signup,
@@ -218,16 +228,16 @@ final GoRouter appRouter = GoRouter(
         order: state.extra is BookingOrderItem
             ? state.extra! as BookingOrderItem
             : BookingOrderItem(
-                id: 'fallback_review_order',
+                id: '',
                 status: BookingOrderStatus.completed,
-                orderDate: DateTime(2026, 4, 7),
-                paymentDate: DateTime(2026, 4, 7, 15, 20),
-                rating: '5.0',
-                reviews: '13.7K',
-                totalPayment: '\$45.00',
-                serviceProviderName: 'Ahmed',
-                serviceType: 'Basic wash',
-                customerName: 'Customer',
+                orderDate: DateTime.now(),
+                paymentDate: DateTime.now(),
+                rating: '0',
+                reviews: '0',
+                totalPayment: '\$0',
+                serviceProviderName: '',
+                serviceType: '',
+                customerName: '',
               ),
       ),
     ),
@@ -237,16 +247,16 @@ final GoRouter appRouter = GoRouter(
         order: state.extra is BookingOrderItem
             ? state.extra! as BookingOrderItem
             : BookingOrderItem(
-                id: 'fallback_tracking_order',
+                id: '',
                 status: BookingOrderStatus.inProgress,
-                orderDate: DateTime(2026, 4, 7),
-                paymentDate: DateTime(2026, 4, 7, 15, 20),
-                rating: '5.0',
-                reviews: '13.7K',
-                totalPayment: '\$45.00',
-                serviceProviderName: 'Ahmed',
-                serviceType: 'Basic wash',
-                customerName: 'Customer',
+                orderDate: DateTime.now(),
+                paymentDate: DateTime.now(),
+                rating: '0',
+                reviews: '0',
+                totalPayment: '\$0',
+                serviceProviderName: '',
+                serviceType: '',
+                customerName: '',
               ),
       ),
     ),

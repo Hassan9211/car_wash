@@ -1,9 +1,18 @@
 import 'package:car_wash/app.dart';
+import 'package:car_wash/core/services/app_notification_service.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  await AppNotificationService.initialize();
   await AuthSession.restore();
   runApp(const MyApp());
 }

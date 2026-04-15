@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:car_wash/core/location/app_location_details.dart';
-import 'package:car_wash/features/authentication/data/mock_user_store.dart';
 import 'package:car_wash/features/authentication/model/app_user_role.dart';
+import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
+import 'package:car_wash/features/home/data/provider_catalog.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,15 +13,27 @@ class AuthSession {
   AuthSession._();
 
   static Future<void> deleteAccount() async {
-    final email = _currentEmail;
-    if (email != null && email.trim().isNotEmpty) {
-      await MockUserStore.instance.deleteUser(email);
-    }
+    try {
+      // Delete provider profile and their orders if service provider
+      if (_currentRole == AppUserRole.serviceProvider) {
+        final providerId = _currentUserId ?? _currentEmail ?? '';
+        if (providerId.isNotEmpty) {
+          await ProviderCatalog.deleteProviderData(providerId);
+        }
+      } else {
+        // Delete customer orders
+        final email = _currentEmail ?? '';
+        if (email.isNotEmpty) {
+          BookingOrdersStore.instance.deleteOrdersByCustomerEmail(email);
+        }
+      }
+      await FirebaseAuth.instance.currentUser?.delete();
+    } catch (_) {}
     clear();
   }
 
   static void setGuestMode() {
-    _currentName = 'Guest User';
+    _currentName = '';
     _currentRole = AppUserRole.guest;
     _isAuthenticated = true;
     _isProviderSetupCompleted = false;
@@ -29,9 +43,9 @@ class AuthSession {
 
   static final ValueNotifier<int> _listenable = ValueNotifier<int>(0);
 
-  static const String _defaultEmail = 'guest@carwash.app';
-  static const String _defaultPhoneNumber = '+92 36047678';
-  static const String _defaultLocationLabel = 'New York, USA';
+  static const String _defaultEmail = '';
+  static const String _defaultPhoneNumber = '';
+  static const String _defaultLocationLabel = '';
   static const String _defaultAvatarAssetPath =
       'assets/images/onboarding/pexels-karola-g-4870700.jpg';
   static const String _prefsEmailKey = 'auth_session.email';
@@ -118,8 +132,7 @@ class AuthSession {
     if (trimmedEmail != null && trimmedEmail.isNotEmpty) {
       return trimmedEmail;
     }
-
-    return _defaultEmail;
+    return '';
   }
 
   static String get displayPhoneNumber {
@@ -127,8 +140,7 @@ class AuthSession {
     if (trimmedPhoneNumber != null && trimmedPhoneNumber.isNotEmpty) {
       return trimmedPhoneNumber;
     }
-
-    return _defaultPhoneNumber;
+    return '';
   }
 
   static DateTime get effectiveDateOfBirth =>
@@ -141,8 +153,7 @@ class AuthSession {
     if (trimmedLocation != null && trimmedLocation.isNotEmpty) {
       return trimmedLocation;
     }
-
-    return _defaultLocationLabel;
+    return '';
   }
 
   static ImageProvider<Object> get avatarImage {

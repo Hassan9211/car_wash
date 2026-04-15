@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/services/app_notification_service.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
@@ -124,6 +127,17 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
         showInWallet: true,
       );
       BookingOrdersStore.instance.addOrUpdate(paidOrder);
+
+      // Send push + email notification to provider
+      unawaited(AppNotificationService.sendBookingNotification(
+        providerEmail: widget.details.provider.id.contains('@')
+            ? widget.details.provider.id
+            : '${widget.details.provider.name.toLowerCase().replaceAll(' ', '')}@carwash.app',
+        providerName: widget.details.provider.name,
+        customerName: customerName,
+        serviceType: serviceType,
+        bookingTime: bookingTime,
+      ));
 
       if (!mounted) {
         return;

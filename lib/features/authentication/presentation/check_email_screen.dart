@@ -11,8 +11,8 @@ class CheckEmailScreen extends StatelessWidget {
     context.goToForgotPassword();
   }
 
-  void _goToLogin(BuildContext context) {
-    context.goToLogin();
+  void _goToResetCode(BuildContext context) {
+    context.goToResetPasswordCode();
   }
 
   @override
@@ -52,8 +52,8 @@ class CheckEmailScreen extends StatelessWidget {
             const SizedBox(height: 18),
             AppPrimaryButton(
               key: const Key('check_email_back_to_login_button'),
-              label: 'Back to Login',
-              onPressed: () => _goToLogin(context),
+              label: 'Enter Reset Code',
+              onPressed: () => _goToResetCode(context),
               textStyle: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

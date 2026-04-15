@@ -40,5 +40,7 @@ class AppRoutes {
   static const profileEdit = '/profile-edit';
   static const forgotPassword = '/forgot-password';
   static const checkEmail = '/check-email';
+  static const resetPasswordCode = '/reset-password-code';
+  static const resetPassword = '/reset-password';
   static const home = '/home';
 }

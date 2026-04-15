@@ -100,6 +100,10 @@ extension AppNavigation on BuildContext {
 
   void goToCheckEmail() => go(AppRoutes.checkEmail);
 
+  void goToResetPasswordCode() => go(AppRoutes.resetPasswordCode);
+
+  void goToResetPassword() => go(AppRoutes.resetPassword);
+
   void goToBookings() => go(AppRoutes.bookings);
 
   void goToWallet() => go(AppRoutes.wallet);

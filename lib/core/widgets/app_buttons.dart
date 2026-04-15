@@ -232,6 +232,7 @@ class AppSocialButton extends StatelessWidget {
   const AppSocialButton({
     super.key,
     required this.child,
+    this.onTap,
     this.height = 44,
     this.backgroundColor = AppColors.surfaceElevated,
     this.borderColor = AppButtonColors.socialBorder,
@@ -240,6 +241,7 @@ class AppSocialButton extends StatelessWidget {
   });
 
   final Widget child;
+  final VoidCallback? onTap;
   final double height;
   final Color backgroundColor;
   final Color borderColor;
@@ -248,25 +250,26 @@ class AppSocialButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: height,
-      padding: padding,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: borderColor,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: height,
+        padding: padding,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(borderRadius),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        alignment: Alignment.center,
+        child: child,
       ),
-      alignment: Alignment.center,
-      child: child,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/services/app_current_location_updater.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/data/provider_catalog.dart';
@@ -150,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _HomeHeader extends StatelessWidget {
+class _HomeHeader extends StatefulWidget {
   const _HomeHeader({
     required this.searchController,
     required this.onSearchChanged,
@@ -158,6 +159,20 @@ class _HomeHeader extends StatelessWidget {
 
   final TextEditingController searchController;
   final ValueChanged<String> onSearchChanged;
+
+  @override
+  State<_HomeHeader> createState() => _HomeHeaderState();
+}
+
+class _HomeHeaderState extends State<_HomeHeader> {
+  bool _updatingLocation = false;
+
+  Future<void> _onLocationTap() async {
+    if (_updatingLocation) return;
+    setState(() => _updatingLocation = true);
+    await updateCurrentLocation(context);
+    if (mounted) setState(() => _updatingLocation = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -185,41 +200,69 @@ class _HomeHeader extends StatelessWidget {
                     child: ValueListenableBuilder<int>(
                       valueListenable: AuthSession.listenable,
                       builder: (context, value, child) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Location',
-                              key: Key('home_location_label'),
-                              style: TextStyle(
-                                fontSize: 21,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.location_on_rounded,
-                                  color: Colors.red,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    AuthSession.displayLocationLabel,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 13.5,
-                                      color: Colors.white,
+                        return GestureDetector(
+                          onTap: _onLocationTap,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  _updatingLocation
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.my_location_rounded,
+                                          color: Colors.white,
+                                          size: 22,
+                                        ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      AuthSession.displayName,
+                                      key: const Key('home_location_label'),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on_rounded,
+                                    color: Colors.red,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      AuthSession.displayLocationLabel.isEmpty
+                                          ? 'Tap to set location'
+                                          : AuthSession.displayLocationLabel,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 13.5,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         );
                       },
                     ),
@@ -288,8 +331,8 @@ class _HomeHeader extends StatelessWidget {
                 alignment: Alignment.center,
                 child: TextField(
                   key: const Key('home_search_input'),
-                  controller: searchController,
-                  onChanged: onSearchChanged,
+                  controller: widget.searchController,
+                  onChanged: widget.onSearchChanged,
                   cursorColor: AppColors.brandGreen,
                   style: const TextStyle(
                     color: AppColors.textPrimary,

@@ -1,8 +1,8 @@
 // ignore_for_file: unnecessary_underscores
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
-
 import 'package:car_wash/core/location/app_location_details.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/scheduling/business_hours.dart';
@@ -652,17 +652,21 @@ class _ServiceProviderSetupScreenState
   }
 
   Future<void> _showCompletionDialog() async {
+    if (!mounted) return;
+    final completer = Completer<void>();
+
+    Future<void>.delayed(const Duration(milliseconds: 1700), () {
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      if (!completer.isCompleted) completer.complete();
+    });
+
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black.withValues(alpha: 0.34),
       builder: (dialogContext) {
-        Future<void>.delayed(const Duration(milliseconds: 1700), () {
-          if (dialogContext.mounted) {
-            Navigator.of(dialogContext).pop();
-          }
-        });
-
         return const Dialog(
           backgroundColor: Colors.transparent,
           elevation: 0,

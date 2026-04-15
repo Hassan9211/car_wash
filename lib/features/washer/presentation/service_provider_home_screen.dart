@@ -1,4 +1,5 @@
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/services/app_current_location_updater.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
@@ -19,12 +20,12 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
   String _searchQuery = '';
 
   static const _weeklyChart = <_WeeklyOrderBar>[
-    _WeeklyOrderBar(label: 'SUN', value: 8),
-    _WeeklyOrderBar(label: 'MON', value: 8),
-    _WeeklyOrderBar(label: 'TUE', value: 8),
-    _WeeklyOrderBar(label: 'WED', value: 8),
-    _WeeklyOrderBar(label: 'THU', value: 10, isHighlighted: true),
-    _WeeklyOrderBar(label: 'FRI', value: 8),
+    _WeeklyOrderBar(label: 'SUN', value: 0),
+    _WeeklyOrderBar(label: 'MON', value: 0),
+    _WeeklyOrderBar(label: 'TUE', value: 0),
+    _WeeklyOrderBar(label: 'WED', value: 0),
+    _WeeklyOrderBar(label: 'THU', value: 0),
+    _WeeklyOrderBar(label: 'FRI', value: 0),
   ];
 
   @override
@@ -82,8 +83,8 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                   orders,
                 );
                 final lastWeekRevenue = revenueThisWeek;
-                final ordersTrend = 'Showing local demo orders';
-                final revenueTrend = 'Showing local demo payments';
+                final ordersTrend = orders.isEmpty ? 'No orders yet' : '${orders.length} total';
+                final revenueTrend = revenueThisWeek <= 0 ? 'No revenue yet' : 'This week';
 
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
@@ -494,7 +495,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
   }
 }
 
-class _ProviderHomeHeader extends StatelessWidget {
+class _ProviderHomeHeader extends StatefulWidget {
   const _ProviderHomeHeader({
     required this.searchController,
     required this.onSearchChanged,
@@ -506,6 +507,20 @@ class _ProviderHomeHeader extends StatelessWidget {
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onNotificationTap;
   final VoidCallback onSettingsTap;
+
+  @override
+  State<_ProviderHomeHeader> createState() => _ProviderHomeHeaderState();
+}
+
+class _ProviderHomeHeaderState extends State<_ProviderHomeHeader> {
+  bool _updatingLocation = false;
+
+  Future<void> _onLocationTap() async {
+    if (_updatingLocation) return;
+    setState(() => _updatingLocation = true);
+    await updateCurrentLocation(context);
+    if (mounted) setState(() => _updatingLocation = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -566,55 +581,81 @@ class _ProviderHomeHeader extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      // Name + location
+                      // Name + location (tappable)
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Hi, ${AuthSession.displayName.split(' ').first} 👋',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.location_on_rounded,
-                                  color: Color(0xFFFF3B30),
-                                  size: 14,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    AuthSession.displayLocationLabel,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.white70,
+                        child: GestureDetector(
+                          onTap: _onLocationTap,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  _updatingLocation
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.my_location_rounded,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Hi, ${AuthSession.displayName.split(' ').first} 👋',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on_rounded,
+                                    color: Color(0xFFFF3B30),
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      AuthSession.displayLocationLabel.isEmpty
+                                          ? 'Tap to set location'
+                                          : AuthSession.displayLocationLabel,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       // Action buttons
                       _HeaderIconButton(
                         icon: Icons.notifications_active_outlined,
-                        onTap: onNotificationTap,
+                        onTap: widget.onNotificationTap,
                       ),
                       const SizedBox(width: 8),
                       _HeaderIconButton(
                         icon: Icons.settings_outlined,
-                        onTap: onSettingsTap,
+                        onTap: widget.onSettingsTap,
                       ),
                     ],
                   );
@@ -629,8 +670,8 @@ class _ProviderHomeHeader extends StatelessWidget {
                   border: Border.all(color: AppColors.border),
                 ),
                 child: TextField(
-                  controller: searchController,
-                  onChanged: onSearchChanged,
+                  controller: widget.searchController,
+                  onChanged: widget.onSearchChanged,
                   cursorColor: AppColors.brandGreen,
                   style: const TextStyle(
                     color: AppColors.textPrimary,

@@ -25,20 +25,26 @@ class AuthScreenShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       backgroundColor: backgroundColor,
+      bottomNavigationBar: footer != null
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+                child: footer!,
+              ),
+            )
+          : null,
       body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              backgroundColor,
-              AppColors.appBackground,
-            ],
+            colors: [backgroundColor, AppColors.appBackground],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
         child: SafeArea(
+          bottom: false,
           child: Column(
             children: [
               SizedBox(
@@ -67,8 +73,7 @@ class AuthScreenShell extends StatelessWidget {
                             title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style:
-                                titleTextStyle ??
+                            style: titleTextStyle ??
                                 const TextStyle(
                                   fontSize: 24 / 1.4,
                                   fontWeight: FontWeight.w500,
@@ -81,33 +86,12 @@ class AuthScreenShell extends StatelessWidget {
                   ],
                 ),
               ),
-              const Divider(
-                height: 1,
-                thickness: 0.8,
-                color: AppColors.border,
-              ),
+              const Divider(height: 1, thickness: 0.8, color: AppColors.border),
               Expanded(
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.fromLTRB(
-                          18,
-                          18,
-                          18,
-                          footer != null ? footerReservedHeight : 20,
-                        ),
-                        child: child,
-                      ),
-                    ),
-                    if (footer != null)
-                      Positioned(
-                        left: 18,
-                        right: 18,
-                        bottom: 18,
-                        child: footer!,
-                      ),
-                  ],
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+                  child: child,
                 ),
               ),
             ],
@@ -164,23 +148,26 @@ class AuthBottomPrompt extends StatelessWidget {
 }
 
 class AuthBrandBadge extends StatelessWidget {
-  const AuthBrandBadge({super.key});
+  const AuthBrandBadge({super.key, this.iconSize = 30, this.fontSize = 11});
+
+  final double iconSize;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
           Icons.local_car_wash_rounded,
-          size: 30,
+          size: iconSize,
           color: AppColors.brandGreenLight,
         ),
         SizedBox(height: 4),
         Text(
           'Lavego',
           style: TextStyle(
-            fontSize: 11,
+            fontSize: fontSize,
             height: 1,
             fontWeight: FontWeight.w800,
             color: AppColors.textPrimary,

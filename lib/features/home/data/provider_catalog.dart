@@ -15,127 +15,22 @@ class ProviderCatalog {
 
   static const fallbackProvider = ServiceProviderProfile(
     id: 'fallback_provider',
-    name: 'Ahmed',
-    price: '\$24',
-    rating: '5',
-    reviews: '13.7K',
+    name: 'Provider',
+    price: '\$0',
+    rating: '0',
+    reviews: '0',
     imagePath: 'assets/images/onboarding/pexels-bulat843-1243575272-28995187.jpg',
-    mainImageUrl:
-        'https://images.pexels.com/photos/6873132/pexels-photo-6873132.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    galleryImageUrls: [
-      'https://images.pexels.com/photos/6873132/pexels-photo-6873132.jpeg?auto=compress&cs=tinysrgb&w=900',
-    ],
-    description:
-        'Professional car wash service provider available near you.',
-    searchTerms: ['ahmed', 'car wash'],
-    location: 'Midtown, New York, USA',
+    mainImageUrl: '',
+    galleryImageUrls: [],
+    description: 'Car wash service provider.',
+    searchTerms: ['car wash'],
+    location: '',
     availability: BusinessHours.label,
-    latitude: 40.7581,
-    longitude: -73.9856,
+    latitude: 0,
+    longitude: 0,
   );
 
-  static const _seedProviders = <ServiceProviderProfile>[
-    ServiceProviderProfile(
-      id: '1',
-      name: 'Ahmed',
-      price: '\$24',
-      rating: '5',
-      reviews: '13.7K',
-      imagePath: 'assets/images/onboarding/pexels-bulat843-1243575272-28995187.jpg',
-      mainImageUrl:
-          'https://images.pexels.com/photos/6873132/pexels-photo-6873132.jpeg?auto=compress&cs=tinysrgb&w=1200',
-      galleryImageUrls: [
-        'https://images.pexels.com/photos/6873132/pexels-photo-6873132.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/4870700/pexels-photo-4870700.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/4876676/pexels-photo-4876676.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/4870671/pexels-photo-4870671.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/4870740/pexels-photo-4870740.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/7530997/pexels-photo-7530997.jpeg?auto=compress&cs=tinysrgb&w=900',
-      ],
-      description:
-          'Ahmed delivers a polished doorstep wash with rich foam coverage, wheel cleaning, and a smooth finishing shine that works great for daily cars and SUVs.',
-      searchTerms: ['ahmed', 'foam', 'wash', 'car washer', 'detail'],
-      location: 'Midtown, New York, USA',
-      availability: BusinessHours.label,
-      latitude: 40.7581,
-      longitude: -73.9856,
-    ),
-    ServiceProviderProfile(
-      id: '2',
-      name: 'Youssef',
-      price: '\$24',
-      rating: '5',
-      reviews: '13.7K',
-      imagePath: 'assets/images/onboarding/pexels-bulat843-1243575272-31154194.jpg',
-      mainImageUrl:
-          'https://images.pexels.com/photos/7530997/pexels-photo-7530997.jpeg?auto=compress&cs=tinysrgb&w=1200',
-      galleryImageUrls: [
-        'https://images.pexels.com/photos/7530997/pexels-photo-7530997.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/4870700/pexels-photo-4870700.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/4876676/pexels-photo-4876676.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/4870740/pexels-photo-4870740.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/10804350/pexels-photo-10804350.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/14231684/pexels-photo-14231684.jpeg?auto=compress&cs=tinysrgb&w=900',
-      ],
-      description:
-          'Youssef focuses on exterior shine packages, tire dressing, and quick response bookings for customers who want a clean car without long waiting times.',
-      searchTerms: ['youssef', 'exterior', 'shine', 'detail'],
-      location: 'Williamsburg, Brooklyn, USA',
-      availability: BusinessHours.label,
-      latitude: 40.7178,
-      longitude: -73.9560,
-    ),
-    ServiceProviderProfile(
-      id: '3',
-      name: 'Samir',
-      price: '\$22',
-      rating: '4.9',
-      reviews: '10.2K',
-      imagePath: 'assets/images/onboarding/pexels-karola-g-4870700.jpg',
-      mainImageUrl:
-          'https://images.pexels.com/photos/4870700/pexels-photo-4870700.jpeg?auto=compress&cs=tinysrgb&w=1200',
-      galleryImageUrls: [
-        'https://images.pexels.com/photos/4870700/pexels-photo-4870700.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/4876676/pexels-photo-4876676.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/10804350/pexels-photo-10804350.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/14231684/pexels-photo-14231684.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/4870671/pexels-photo-4870671.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/6873132/pexels-photo-6873132.jpeg?auto=compress&cs=tinysrgb&w=900',
-      ],
-      description:
-          'Samir is known for interior vacuuming, dashboard detailing, and tidy cabin finishing that leaves family cars feeling fresh, clean, and organized.',
-      searchTerms: ['samir', 'interior', 'vacuum', 'detail'],
-      location: 'Astoria, Queens, USA',
-      availability: BusinessHours.label,
-      latitude: 40.7644,
-      longitude: -73.9235,
-    ),
-    ServiceProviderProfile(
-      id: '4',
-      name: 'Omar',
-      price: '\$26',
-      rating: '5',
-      reviews: '12.1K',
-      imagePath: 'assets/images/onboarding/pexels-bulat843-1243575272-28995187.jpg',
-      mainImageUrl:
-          'https://images.pexels.com/photos/10804350/pexels-photo-10804350.jpeg?auto=compress&cs=tinysrgb&w=1200',
-      galleryImageUrls: [
-        'https://images.pexels.com/photos/10804350/pexels-photo-10804350.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/14231684/pexels-photo-14231684.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/7530997/pexels-photo-7530997.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/4870700/pexels-photo-4870700.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/4870740/pexels-photo-4870740.jpeg?auto=compress&cs=tinysrgb&w=900',
-        'https://images.pexels.com/photos/4876676/pexels-photo-4876676.jpeg?auto=compress&cs=tinysrgb&w=900',
-      ],
-      description:
-          'Omar handles premium deep-clean sessions with wax polish, careful exterior treatment, and a strong finish for customers who want showroom-style results.',
-      searchTerms: ['omar', 'engine', 'premium', 'detail'],
-      location: 'Lower Manhattan, New York, USA',
-      availability: BusinessHours.label,
-      latitude: 40.7075,
-      longitude: -74.0113,
-    ),
-  ];
+  static const _seedProviders = <ServiceProviderProfile>[];
 
   static List<ServiceProviderProfile> _storedProviders = const [];
   static bool _hasRestored = false;
@@ -406,5 +301,19 @@ class ProviderCatalog {
     } catch (_) {
       // Ignore local persistence failures and keep the in-memory provider list.
     }
+  }
+
+  /// Deletes the provider profile for [providerId] and clears all their data.
+  static Future<void> deleteProviderData(String providerId) async {
+    await _restoreSavedProvidersIfNeeded();
+
+    _storedProviders = List<ServiceProviderProfile>.unmodifiable(
+      _storedProviders.where((p) => p.id != providerId).toList(),
+    );
+    _providersNotifier.value = _allProviders;
+    await _persistSavedProviders();
+
+    // Also remove their orders from BookingOrdersStore
+    BookingOrdersStore.instance.deleteOrdersByProvider(providerId);
   }
 }

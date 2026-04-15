@@ -22,14 +22,14 @@ class BookingPaymentSuccessDetails {
   final double totalAmount;
 
   static final fallback = BookingPaymentSuccessDetails(
-    paymentDate: DateTime(2023, 9, 18, 10),
-    promoCode: 'FR2412357435WER',
-    expectedDeliveryTime: '12:00 pm',
-    amount: 150,
-    tipAmount: 10,
+    paymentDate: DateTime.now(),
+    promoCode: '',
+    expectedDeliveryTime: '',
+    amount: 0,
+    tipAmount: 0,
     deliveryCharge: 0,
     tax: 0,
-    discount: 35,
-    totalAmount: 125,
+    discount: 0,
+    totalAmount: 0,
   );
 }

@@ -21,9 +21,9 @@ class BookingLocationScreen extends StatefulWidget {
 
 class _BookingLocationScreenState extends State<BookingLocationScreen> {
   static const AppLocationDetails _fallbackLocation = AppLocationDetails(
-    latitude: 40.7581,
-    longitude: -73.9856,
-    label: 'Midtown, New York, USA',
+    latitude: 0,
+    longitude: 0,
+    label: '',
   );
 
   GoogleMapController? _mapController;

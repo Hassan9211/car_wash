@@ -1,12 +1,13 @@
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/services/google_auth_service.dart';
+import 'package:car_wash/core/services/otp_email_service.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
-import 'package:car_wash/features/authentication/data/mock_user_store.dart';
-import 'package:car_wash/features/authentication/model/mock_user.dart';
 import 'package:car_wash/features/authentication/presentation/widgets/auth_shared_widgets.dart';
 import 'package:car_wash/features/authentication/utils/auth_validators.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -29,69 +30,98 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscureRepeatPassword = true;
   bool _agreedToTerms = false;
   bool _showTermsError = false;
+  bool _isLoading = false;
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
-  @override
-  void initState() {
-    super.initState();
-    MockUserStore.instance.init();
-  }
+  void _goBack() => context.goToLogin();
+  void _goToLogin() => context.goToLogin();
 
-  void _goBack() {
-    context.goToLogin();
-  }
-
-  void _goToLogin() {
-    context.goToLogin();
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = await GoogleAuthService.signIn();
+      if (!mounted) return;
+      if (user != null) context.goToHome();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Google sign in failed. Please try again.'),
+          backgroundColor: AppColors.dangerSurface,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
     final isFormValid = _formKey.currentState?.validate() ?? false;
-    final hasAcceptedTerms = _agreedToTerms;
-
-    if (!isFormValid || !hasAcceptedTerms) {
+    if (!isFormValid || !_agreedToTerms) {
       setState(() {
         _autovalidateMode = AutovalidateMode.onUserInteraction;
-        _showTermsError = !hasAcceptedTerms;
+        _showTermsError = !_agreedToTerms;
       });
       return;
     }
 
+    setState(() => _isLoading = true);
+
     final email = _emailController.text.trim();
-    
-    // Check if email is already taken
-    if (MockUserStore.instance.isEmailTaken(email)) {
+    final password = _passwordController.text;
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+
+    try {
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
+
+      await credential.user?.updateDisplayName(name);
+
+      AuthSession.setCurrentUser(
+        email: email,
+        userId: credential.user?.uid,
+        name: name,
+        phoneNumber: phone,
+      );
+
       if (!mounted) return;
+
+      try {
+        await OtpEmailService.sendOtp(email);
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to send OTP. Please try again.'),
+            backgroundColor: AppColors.dangerSurface,
+          ),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      if (!mounted) return;
+      context.goToOtpVerification();
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      final message = switch (e.code) {
+        'email-already-in-use' => 'This email is already registered.',
+        'weak-password' => 'Password is too weak.',
+        'invalid-email' => 'Invalid email address.',
+        _ => 'Signup failed. Please try again.',
+      };
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This mail has already taken'),
+        SnackBar(
+          content: Text(message),
           backgroundColor: AppColors.dangerSurface,
         ),
       );
-      return;
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-
-    // Save new user
-    final newUser = MockUser(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: _nameController.text.trim(),
-      email: email,
-      phoneNumber: _phoneController.text.trim(),
-      password: _passwordController.text,
-    );
-
-    await MockUserStore.instance.saveUser(newUser);
-
-    AuthSession.setCurrentUser(
-      email: newUser.email,
-      name: newUser.name,
-      phoneNumber: newUser.phoneNumber,
-    );
-    
-    if (!mounted) return;
-    context.goToOtpVerification();
   }
 
   @override
@@ -106,15 +136,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
   String? _validatePhoneNumber(String? value) {
     final trimmedValue = value?.trim() ?? '';
-    if (trimmedValue.isEmpty) {
-      return 'Phone number is required';
-    }
-
+    if (trimmedValue.isEmpty) return 'Phone number is required';
     final digitsOnly = trimmedValue.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digitsOnly.length < 10) {
-      return 'Enter a valid phone number';
-    }
-
+    if (digitsOnly.length < 10) return 'Enter a valid phone number';
     return null;
   }
 
@@ -135,8 +159,8 @@ class _SignupScreenState extends State<SignupScreen> {
         children: [
           AppPrimaryButton(
             key: const Key('signup_submit_button'),
-            label: 'Signup',
-            onPressed: _submit,
+            label: _isLoading ? 'Creating account...' : 'Signup',
+            onPressed: _isLoading ? null : _submit,
             textStyle: const TextStyle(
               fontSize: 16.5,
               fontWeight: FontWeight.w600,
@@ -145,47 +169,23 @@ class _SignupScreenState extends State<SignupScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(
-                child: Divider(
-                  color: AppColors.border,
-                ),
-              ),
+              Expanded(child: Divider(color: AppColors.border)),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   'or continue with',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.textMuted,
-                  ),
+                  style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
                 ),
               ),
-              Expanded(
-                child: Divider(
-                  color: AppColors.border,
-                ),
-              ),
+              Expanded(child: Divider(color: AppColors.border)),
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            children: const [
-              Expanded(
-                child: AppSocialButton(
-                  height: 38,
-                  borderRadius: 5,
-                  child: AppGoogleLogo(),
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: AppSocialButton(
-                  height: 38,
-                  borderRadius: 5,
-                  child: AppGmailLogo(),
-                ),
-              ),
-            ],
+          AppSocialButton(
+            onTap: _signInWithGoogle,
+            height: 38,
+            borderRadius: 5,
+            child: const AppGoogleLogo(),
           ),
           const SizedBox(height: 18),
           AuthBottomPrompt(
@@ -223,11 +223,7 @@ class _SignupScreenState extends State<SignupScreen> {
               child: Text(
                 'Create your account to discover the app effortlessly',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14.5,
-                  height: 1.35,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 14.5, height: 1.35, color: AppColors.textSecondary),
               ),
             ),
             const SizedBox(height: 18),
@@ -265,17 +261,10 @@ class _SignupScreenState extends State<SignupScreen> {
               obscureText: _obscurePassword,
               validator: AuthValidators.validatePassword,
               suffix: IconButton(
-                onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                 icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  size: 20,
-                  color: AppColors.textMuted,
+                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  size: 20, color: AppColors.textMuted,
                 ),
               ),
             ),
@@ -286,22 +275,12 @@ class _SignupScreenState extends State<SignupScreen> {
               label: 'Repeat Password',
               hintText: 'Repeat Password',
               obscureText: _obscureRepeatPassword,
-              validator: (value) => AuthValidators.validateConfirmPassword(
-                value,
-                _passwordController.text,
-              ),
+              validator: (value) => AuthValidators.validateConfirmPassword(value, _passwordController.text),
               suffix: IconButton(
-                onPressed: () {
-                  setState(() {
-                    _obscureRepeatPassword = !_obscureRepeatPassword;
-                  });
-                },
+                onPressed: () => setState(() => _obscureRepeatPassword = !_obscureRepeatPassword),
                 icon: Icon(
-                  _obscureRepeatPassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  size: 20,
-                  color: AppColors.textMuted,
+                  _obscureRepeatPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  size: 20, color: AppColors.textMuted,
                 ),
               ),
             ),
@@ -311,9 +290,7 @@ class _SignupScreenState extends State<SignupScreen> {
               onTap: () {
                 setState(() {
                   _agreedToTerms = !_agreedToTerms;
-                  if (_agreedToTerms) {
-                    _showTermsError = false;
-                  }
+                  if (_agreedToTerms) _showTermsError = false;
                 });
               },
               borderRadius: BorderRadius.circular(4),
@@ -324,12 +301,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     children: [
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
-                        width: 14,
-                        height: 14,
+                        width: 14, height: 14,
                         decoration: BoxDecoration(
-                          color: _agreedToTerms
-                              ? AppButtonColors.primaryBackground
-                              : AppColors.inputFill,
+                          color: _agreedToTerms ? AppButtonColors.primaryBackground : AppColors.inputFill,
                           borderRadius: BorderRadius.circular(2),
                           border: Border.all(
                             color: _agreedToTerms
@@ -340,21 +314,14 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                         child: _agreedToTerms
-                            ? const Icon(
-                                Icons.check,
-                                size: 10,
-                                color: Colors.white,
-                              )
+                            ? const Icon(Icons.check, size: 10, color: Colors.white)
                             : null,
                       ),
                       const SizedBox(width: 8),
                       const Expanded(
                         child: Text(
                           'I agree to the Terms and Conditions.',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
                         ),
                       ),
                     ],
@@ -363,10 +330,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 6),
                     const Text(
                       'Please agree to the Terms and Conditions',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: AppButtonColors.destructiveForeground,
-                      ),
+                      style: TextStyle(fontSize: 11.5, color: AppButtonColors.destructiveForeground),
                     ),
                   ],
                 ],

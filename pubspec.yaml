@@ -47,6 +47,15 @@ dependencies:
   pdf: ^3.12.0
   printing: ^5.14.3
   path_provider: ^2.1.5
+  firebase_core: ^3.13.0
+  firebase_auth: ^5.5.2
+  cloud_firestore: ^5.6.5
+  firebase_storage: ^12.4.5
+  mailer: ^6.2.0
+  flutter_dotenv: ^5.2.1
+  google_sign_in: ^6.2.2
+  firebase_messaging: ^15.2.5
+  flutter_local_notifications: ^18.0.1
 
 dev_dependencies:
   flutter_test:
@@ -74,6 +83,7 @@ flutter:
     - assets/images/onboarding/
     - assets/icons/
     - assets/videos/
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

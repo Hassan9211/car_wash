@@ -7,6 +7,7 @@ class ServiceItem {
     required this.icon,
     required this.iconColor,
     required this.searchTerms,
+    this.description = '',
   });
 
   final String id;
@@ -14,6 +15,7 @@ class ServiceItem {
   final IconData icon;
   final Color iconColor;
   final List<String> searchTerms;
+  final String description;
 
   factory ServiceItem.fromJson(Map<String, dynamic> json) {
     final label = _readLabel(json);

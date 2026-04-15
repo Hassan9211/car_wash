@@ -1,11 +1,12 @@
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/services/google_auth_service.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
-import 'package:car_wash/features/authentication/data/mock_user_store.dart';
 import 'package:car_wash/features/authentication/presentation/widgets/auth_shared_widgets.dart';
 import 'package:car_wash/features/authentication/utils/auth_validators.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,93 +27,74 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _rememberMe = true;
   bool _obscurePassword = true;
+  bool _isLoading = false;
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   @override
   void initState() {
     super.initState();
-    MockUserStore.instance.init();
     _restoreRememberedCredentials();
   }
 
-  void _goBack() {
-    context.goToRoleSelection();
-  }
-
-  void _goToSignup() {
-    context.goToSignup();
-  }
-
-  void _goToForgotPassword() {
-    context.goToForgotPassword();
-  }
+  void _goBack() => context.goToRoleSelection();
+  void _goToSignup() => context.goToSignup();
+  void _goToForgotPassword() => context.goToForgotPassword();
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
     if (!(_formKey.currentState?.validate() ?? false)) {
-      setState(() {
-        _autovalidateMode = AutovalidateMode.onUserInteraction;
-      });
+      setState(() => _autovalidateMode = AutovalidateMode.onUserInteraction);
       return;
     }
+
+    setState(() => _isLoading = true);
 
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    // Find user in mock database
-    final user = MockUserStore.instance.findUser(email);
+    try {
+      final credential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
 
-    if (user == null) {
+      final user = credential.user;
+      AuthSession.setCurrentUser(
+        email: email,
+        userId: user?.uid,
+        name: user?.displayName,
+      );
+      AuthSession.setAuthenticated(true);
+
+      await _persistRememberedCredentials();
       if (!mounted) return;
+      context.goToHome();
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      final message = switch (e.code) {
+        'user-not-found' => 'No account found with this email.',
+        'wrong-password' || 'invalid-credential' => 'Incorrect password.',
+        'invalid-email' => 'Invalid email address.',
+        'user-disabled' => 'This account has been disabled.',
+        _ => 'Login failed. Please try again.',
+      };
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No account found with this email'),
+        SnackBar(
+          content: Text(message),
           backgroundColor: AppColors.dangerSurface,
         ),
       );
-      return;
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-
-    if (user.password != password) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Incorrect password'),
-          backgroundColor: AppColors.dangerSurface,
-        ),
-      );
-      return;
-    }
-
-    AuthSession.setCurrentUser(
-      email: user.email,
-      name: user.name,
-      phoneNumber: user.phoneNumber,
-    );
-    AuthSession.setAuthenticated(true);
-    await _persistRememberedCredentials();
-    if (!mounted) {
-      return;
-    }
-    context.goToHome();
   }
 
   Future<void> _restoreRememberedCredentials() async {
     final preferences = await SharedPreferences.getInstance();
     final rememberedEmail = preferences.getString(_rememberedEmailKey)?.trim();
-    final rememberedPassword = preferences
-        .getString(_rememberedPasswordKey)
-        ?.trim();
+    final rememberedPassword = preferences.getString(_rememberedPasswordKey)?.trim();
 
-    if (!mounted) {
-      return;
-    }
-
-    if ((rememberedEmail == null || rememberedEmail.isEmpty) &&
-        (rememberedPassword == null || rememberedPassword.isEmpty)) {
-      return;
-    }
+    if (!mounted) return;
+    if ((rememberedEmail?.isEmpty ?? true) && (rememberedPassword?.isEmpty ?? true)) return;
 
     setState(() {
       _rememberMe = true;
@@ -123,36 +105,42 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _persistRememberedCredentials() async {
     final preferences = await SharedPreferences.getInstance();
-
     if (!_rememberMe) {
       await preferences.remove(_rememberedEmailKey);
       await preferences.remove(_rememberedPasswordKey);
       return;
     }
+    await preferences.setString(_rememberedEmailKey, _emailController.text.trim());
+    await preferences.setString(_rememberedPasswordKey, _passwordController.text);
+  }
 
-    await preferences.setString(
-      _rememberedEmailKey,
-      _emailController.text.trim(),
-    );
-    await preferences.setString(
-      _rememberedPasswordKey,
-      _passwordController.text,
-    );
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = await GoogleAuthService.signIn();
+      if (!mounted) return;
+      if (user != null) context.goToHome();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Google sign in failed. Please try again.'),
+          backgroundColor: AppColors.dangerSurface,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _toggleRememberMe() async {
     final nextValue = !_rememberMe;
-    setState(() {
-      _rememberMe = nextValue;
-    });
-
-    if (nextValue) {
-      return;
+    setState(() => _rememberMe = nextValue);
+    if (!nextValue) {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.remove(_rememberedEmailKey);
+      await preferences.remove(_rememberedPasswordKey);
     }
-
-    final preferences = await SharedPreferences.getInstance();
-    await preferences.remove(_rememberedEmailKey);
-    await preferences.remove(_rememberedPasswordKey);
   }
 
   @override
@@ -178,12 +166,9 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           AppPrimaryButton(
             key: const Key('login_submit_button'),
-            label: 'Login',
-            onPressed: _submit,
-            textStyle: const TextStyle(
-              fontSize: 16.5,
-              fontWeight: FontWeight.w600,
-            ),
+            label: _isLoading ? 'Logging in...' : 'Login',
+            onPressed: _isLoading ? null : _submit,
+            textStyle: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 16),
           Row(
@@ -191,21 +176,15 @@ class _LoginScreenState extends State<LoginScreen> {
               Expanded(child: Divider(color: AppColors.border)),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  'or continue with',
-                  style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
-                ),
+                child: Text('or continue with', style: TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
               ),
               Expanded(child: Divider(color: AppColors.border)),
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            children: const [
-              Expanded(child: AppSocialButton(child: AppGoogleLogo())),
-              SizedBox(width: 10),
-              Expanded(child: AppSocialButton(child: AppGmailLogo())),
-            ],
+          AppSocialButton(
+            onTap: _signInWithGoogle,
+            child: const AppGoogleLogo(),
           ),
           const SizedBox(height: 18),
           AuthBottomPrompt(
@@ -230,11 +209,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 'Login',
                 key: Key('login_screen_title'),
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 23,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
+                style: TextStyle(fontSize: 23, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
               ),
             ),
             const SizedBox(height: 12),
@@ -243,11 +218,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Text(
                 'Login to your account to discover and book the best car wash effortlessly.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14.5,
-                  height: 1.35,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 14.5, height: 1.35, color: AppColors.textSecondary),
               ),
             ),
             const SizedBox(height: 52),
@@ -269,17 +240,10 @@ class _LoginScreenState extends State<LoginScreen> {
               obscureText: _obscurePassword,
               validator: AuthValidators.validatePassword,
               suffix: IconButton(
-                onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                 icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  size: 20,
-                  color: AppColors.textMuted,
+                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  size: 20, color: AppColors.textMuted,
                 ),
               ),
             ),
@@ -294,12 +258,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
-                        width: 16,
-                        height: 16,
+                        width: 16, height: 16,
                         decoration: BoxDecoration(
-                          color: _rememberMe
-                              ? AppButtonColors.primaryBackground
-                              : Colors.transparent,
+                          color: _rememberMe ? AppButtonColors.primaryBackground : Colors.transparent,
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
                             color: _rememberMe
@@ -308,21 +269,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         child: _rememberMe
-                            ? const Icon(
-                                Icons.check,
-                                size: 12,
-                                color: Colors.white,
-                              )
+                            ? const Icon(Icons.check, size: 12, color: Colors.white)
                             : null,
                       ),
                       const SizedBox(width: 8),
                       const Text(
                         'Remember me',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary,
-                        ),
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                       ),
                     ],
                   ),

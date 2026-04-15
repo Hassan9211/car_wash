@@ -5,6 +5,8 @@ import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/themed_google_map.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
+import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
+import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:car_wash/features/home/model/service_provider_profile.dart';
 import 'package:car_wash/features/services/data/service_catalog.dart';
 import 'package:car_wash/features/services/model/service_item.dart';
@@ -792,74 +794,111 @@ class _ProviderServiceChip extends StatelessWidget {
 }
 
 class _ReviewsTab extends StatelessWidget {
-  const _ReviewsTab({
-    required this.provider,
-  });
+  const _ReviewsTab({required this.provider});
 
   final ServiceProviderProfile provider;
 
   @override
   Widget build(BuildContext context) {
-    const reviews = [
-      ('Ali', 'Very professional wash and the car looked brand new.'),
-      ('Sara', 'On-time arrival and the detailing quality was excellent.'),
-      ('John', 'Good value for money and the interior was super clean.'),
-    ];
+    return ValueListenableBuilder<List<BookingOrderItem>>(
+      valueListenable: BookingOrdersStore.instance.listenable,
+      builder: (context, orders, _) {
+        final providerName = provider.name.trim().toLowerCase();
+        final reviews = orders
+            .where((o) =>
+                o.serviceProviderName.trim().toLowerCase() == providerName &&
+                o.hasReview)
+            .toList(growable: false)
+          ..sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
 
-    return Column(
-      children: reviews.map((review) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8F8F8),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: const Color(0xFFE5F2E8),
-                child: Text(
-                  review.$1.substring(0, 1),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0F7D32),
+        if (reviews.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Text(
+                'No reviews yet.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          children: reviews.map((order) {
+            final name = order.customerName.isNotEmpty
+                ? order.customerName
+                : 'Customer';
+            final initial = name.substring(0, 1).toUpperCase();
+            final rating = order.reviewRating ?? 0;
+            final comment = order.reviewText;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F8F8),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: const Color(0xFFE5F2E8),
+                    child: Text(
+                      initial,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0F7D32),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      review.$1,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                      ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: List.generate(5, (i) => Icon(
+                            i < rating.round()
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            size: 14,
+                            color: const Color(0xFF0F7D32),
+                          )),
+                        ),
+                        if (comment.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            comment,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              height: 1.4,
+                              color: Color(0xFF6E6E6E),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    _RatingStars(rating: provider.rating),
-                    const SizedBox(height: 6),
-                    Text(
-                      review.$2,
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        height: 1.4,
-                        color: Color(0xFF6E6E6E),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          }).toList(growable: false),
         );
-      }).toList(growable: false),
+      },
     );
   }
 }
