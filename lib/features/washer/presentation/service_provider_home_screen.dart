@@ -18,7 +18,14 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-
+  static const _weeklyChart = <_WeeklyOrderBar>[
+    _WeeklyOrderBar(label: 'SUN', value: 8),
+    _WeeklyOrderBar(label: 'MON', value: 8),
+    _WeeklyOrderBar(label: 'TUE', value: 8),
+    _WeeklyOrderBar(label: 'WED', value: 8),
+    _WeeklyOrderBar(label: 'THU', value: 10, isHighlighted: true),
+    _WeeklyOrderBar(label: 'FRI', value: 8),
+  ];
 
   @override
   void initState() {
@@ -68,43 +75,15 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
               animation: BookingOrdersStore.instance.listenable,
               builder: (context, _) {
                 final orders = BookingOrdersStore.instance.orders;
-                final providerName = AuthSession.displayName.trim().toLowerCase();
-                final currentUserEmail = AuthSession.displayEmail.trim().toLowerCase();
-
-                // Filter all orders for this provider, excluding bookings they created themselves as customers
-                final providerOrders = orders.where((o) {
-                  final isServiceProvider = o.serviceProviderName.trim().toLowerCase() == providerName;
-                  final isOwnBooking = o.customerName.trim().toLowerCase() == providerName || 
-                                     o.customerEmail.trim().toLowerCase() == currentUserEmail;
-                  return isServiceProvider && !isOwnBooking;
-                }).toList(growable: false);
-
-                final recentOrders = _filteredOrders(providerOrders);
-                final ordersCount = providerOrders.length;
-
-                // Revenue this week (last 7 days, paid status)
-                final now = DateTime.now();
-                final sevenDaysAgo = now.subtract(const Duration(days: 7));
-                final weeklyOrders = providerOrders.where((o) =>
-                  o.orderDate.isAfter(sevenDaysAgo)
-                ).toList(growable: false);
-
-                final revenueThisWeek = weeklyOrders
-                    .where((o) => o.status == BookingOrderStatus.completed)
-                    .fold<double>(0, (sum, o) => sum + _parsePaymentAmount(o.totalPayment));
-
-                final weeklyRevenueData = _buildWeeklyChartData(providerOrders);
-
+                final recentOrders = _filteredOrders(orders);
+                final ordersCount = orders.length;
+                final revenueThisWeek = _calculateRevenue(orders);
                 final monthlyRevenueHistory = _buildMonthlyRevenueHistory(
-                  providerOrders,
+                  orders,
                 );
-
-                final ordersTrend = providerOrders.isEmpty
-                    ? 'No orders yet'
-                    : 'Live provider stats';
-                final revenueTrend = weeklyOrders.isEmpty
-                    ? 'No weekly activity'
-                    : 'Last 7 days revenue';
+                final lastWeekRevenue = revenueThisWeek;
+                final ordersTrend = 'Showing local demo orders';
+                final revenueTrend = 'Showing local demo payments';
 
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
@@ -141,9 +120,8 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                       ),
                       const SizedBox(height: 14),
                       _OrdersOverviewCard(
-                        revenueLabel: _formatCurrency(revenueThisWeek),
+                        revenueLabel: _formatCurrency(lastWeekRevenue),
                         ordersLabel: ordersCount.toString(),
-                        weeklyChartData: weeklyRevenueData,
                         onRevenueHistoryTap: () =>
                             _showRevenueHistorySheet(monthlyRevenueHistory),
                       ),
@@ -191,38 +169,6 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
       rawAmount.replaceAll(RegExp(r'[^0-9.]'), ''),
     );
     return parsed ?? 0;
-  }
-
-  List<_WeeklyOrderBar> _buildWeeklyChartData(List<BookingOrderItem> orders) {
-    final now = DateTime.now();
-    final data = <_WeeklyOrderBar>[];
-
-    // Last 7 days including today
-    for (var i = 6; i >= 0; i--) {
-      final date = now.subtract(Duration(days: i));
-      final dayLabel = _dayOfWeekLabel(date.weekday);
-
-      final dayTotal = orders
-          .where((o) =>
-              o.status == BookingOrderStatus.completed &&
-              o.orderDate.year == date.year &&
-              o.orderDate.month == date.month &&
-              o.orderDate.day == date.day)
-          .fold<double>(0, (sum, o) => sum + _parsePaymentAmount(o.totalPayment));
-
-      data.add(_WeeklyOrderBar(
-        label: dayLabel,
-        value: dayTotal,
-        isHighlighted: i == 0,
-      ));
-    }
-
-    return data;
-  }
-
-  String _dayOfWeekLabel(int weekday) {
-    const days = <String>['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-    return days[weekday - 1];
   }
 
   List<_MonthlyRevenuePoint> _buildMonthlyRevenueHistory(
@@ -581,7 +527,7 @@ class _ProviderHomeHeader extends StatelessWidget {
             children: [
               ValueListenableBuilder<int>(
                 valueListenable: AuthSession.listenable,
-                builder: (context, _, __) {
+                builder: (context, _, _) {
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -602,7 +548,7 @@ class _ProviderHomeHeader extends StatelessWidget {
                             child: Image(
                               image: AuthSession.avatarImage,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
+                              errorBuilder: (_, _, _) => Container(
                                 color: Colors.white.withValues(alpha: 0.18),
                                 child: Center(
                                   child: Text(
@@ -842,13 +788,11 @@ class _OrdersOverviewCard extends StatelessWidget {
   const _OrdersOverviewCard({
     required this.revenueLabel,
     required this.ordersLabel,
-    required this.weeklyChartData,
     required this.onRevenueHistoryTap,
   });
 
   final String revenueLabel;
   final String ordersLabel;
-  final List<_WeeklyOrderBar> weeklyChartData;
   final VoidCallback onRevenueHistoryTap;
 
   @override
@@ -944,8 +888,8 @@ class _OrdersOverviewCard extends StatelessWidget {
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
+                  children: const [
+                    Row(
                       children: [
                         Expanded(
                           child: Text(
@@ -965,7 +909,7 @@ class _OrdersOverviewCard extends StatelessWidget {
                       ],
                     ),
                     SizedBox(height: 14),
-                    _WeeklyOrdersChart(data: weeklyChartData),
+                    _WeeklyOrdersChart(),
                     SizedBox(height: 10),
                     Row(
                       children: [
@@ -1014,7 +958,7 @@ class _OrdersOverviewCard extends StatelessWidget {
                   ),
                   SizedBox(width: 4),
                   Text(
-                    'Just updated',
+                    'updated 6 mins ago',
                     style: TextStyle(
                       fontSize: 10.5,
                       color: AppColors.textMuted,
@@ -1090,16 +1034,12 @@ class _ChangeChip extends StatelessWidget {
 }
 
 class _WeeklyOrdersChart extends StatelessWidget {
-  const _WeeklyOrdersChart({required this.data});
-
-  final List<_WeeklyOrderBar> data;
+  const _WeeklyOrdersChart();
 
   @override
   Widget build(BuildContext context) {
-    final maxValue = data.fold<double>(
-      10.0, // Base max to avoid empty chart looking weird
-      (highest, bar) => bar.value > highest ? bar.value : highest,
-    );
+    const bars = _ServiceProviderHomeScreenState._weeklyChart;
+    const maxValue = 10.0;
 
     return SizedBox(
       height: 180,
@@ -1109,11 +1049,11 @@ class _WeeklyOrdersChart extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                for (var index = 0; index < data.length; index++) ...[
+                for (var index = 0; index < bars.length; index++) ...[
                   Expanded(
-                    child: _ChartBar(data: data[index], maxValue: maxValue),
+                    child: _ChartBar(data: bars[index], maxValue: maxValue),
                   ),
-                  if (index != data.length - 1) const SizedBox(width: 10),
+                  if (index != bars.length - 1) const SizedBox(width: 10),
                 ],
               ],
             ),
@@ -1121,10 +1061,10 @@ class _WeeklyOrdersChart extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              for (var index = 0; index < data.length; index++) ...[
+              for (var index = 0; index < bars.length; index++) ...[
                 Expanded(
                   child: Text(
-                    data[index].label,
+                    bars[index].label,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 10,
@@ -1132,7 +1072,7 @@ class _WeeklyOrdersChart extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (index != data.length - 1) const SizedBox(width: 10),
+                if (index != bars.length - 1) const SizedBox(width: 10),
               ],
             ],
           ),

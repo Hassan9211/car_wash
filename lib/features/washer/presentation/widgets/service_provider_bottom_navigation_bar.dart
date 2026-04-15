@@ -39,9 +39,7 @@ class ServiceProviderBottomNavigationBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.navBar,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
-        border: const Border(
-          top: BorderSide(color: AppColors.border),
-        ),
+        border: const Border(top: BorderSide(color: AppColors.border)),
         boxShadow: [
           BoxShadow(
             color: Color(0x50000000),
@@ -112,10 +110,7 @@ class _BottomNavItem extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: isSelected
                   ? const LinearGradient(
-                      colors: [
-                        Color(0xFF28D877),
-                        AppColors.brandGreen,
-                      ],
+                      colors: [Color(0xFF28D877), AppColors.brandGreen],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     )
@@ -123,7 +118,9 @@ class _BottomNavItem extends StatelessWidget {
               color: isSelected ? null : Colors.transparent,
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected ? AppColors.brandGreenLight : AppColors.border,
+                color: isSelected
+                    ? AppColors.brandGreenLight
+                    : AppColors.border,
               ),
               boxShadow: isSelected
                   ? [

@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
 
     return ValueListenableBuilder<int>(
       valueListenable: AuthSession.listenable,
-      builder: (context, _, __) {
+      builder: (context, _, _) {
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
           title: 'Lavego',
@@ -35,10 +35,7 @@ class MyApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: const [
-            Locale('en'),
-            Locale('ar'),
-          ],
+          supportedLocales: const [Locale('en'), Locale('ar')],
           theme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.dark,
@@ -51,9 +48,9 @@ class MyApp extends StatelessWidget {
             splashColor: AppColors.brandGreenLight.withValues(alpha: 0.14),
             highlightColor: AppColors.brandGreen.withValues(alpha: 0.06),
             textTheme: ThemeData.dark().textTheme.apply(
-                  bodyColor: AppColors.textPrimary,
-                  displayColor: AppColors.textPrimary,
-                ),
+              bodyColor: AppColors.textPrimary,
+              displayColor: AppColors.textPrimary,
+            ),
             appBarTheme: const AppBarTheme(
               backgroundColor: AppColors.appBackground,
               foregroundColor: AppColors.textPrimary,

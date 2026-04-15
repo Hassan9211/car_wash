@@ -386,12 +386,7 @@ class _TrackingBottomPanel extends StatelessWidget {
   final String bookedLocationLabel;
   final LatLng? liveDeviceLocation;
 
-  static const _labels = [
-    'Confirmed',
-    'Arrived',
-    'In Progress',
-    'Completed',
-  ];
+  static const _labels = ['Confirmed', 'Arrived', 'In Progress', 'Completed'];
 
   @override
   Widget build(BuildContext context) {
@@ -569,10 +564,7 @@ class _TrackingBottomPanel extends StatelessWidget {
       onPressed: () => context.pop(),
       height: 46,
       borderRadius: 6,
-      textStyle: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-      ),
+      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
     );
   }
 
@@ -599,10 +591,7 @@ class _TrackingBottomPanel extends StatelessWidget {
 }
 
 class _ProviderProofUploadPanel extends StatefulWidget {
-  const _ProviderProofUploadPanel({
-    required this.order,
-    this.liveLocation,
-  });
+  const _ProviderProofUploadPanel({required this.order, this.liveLocation});
 
   final BookingOrderItem order;
   final LatLng? liveLocation;
@@ -620,7 +609,9 @@ class _ProviderProofUploadPanelState extends State<_ProviderProofUploadPanel> {
   Future<void> _verifyLocation() async {
     if (widget.liveLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not detect your current location.')),
+        const SnackBar(
+          content: Text('Could not detect your current location.'),
+        ),
       );
       return;
     }
@@ -663,7 +654,9 @@ class _ProviderProofUploadPanelState extends State<_ProviderProofUploadPanel> {
   void _mockPickPhoto() {
     if (_selectedPhotos.length >= 3) return;
     setState(() {
-      _selectedPhotos.add('https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=400');
+      _selectedPhotos.add(
+        'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=400',
+      );
     });
   }
 
@@ -775,16 +768,25 @@ class _ProviderProofUploadPanelState extends State<_ProviderProofUploadPanel> {
           ),
           const SizedBox(height: 8),
           AppPrimaryButton(
-            label: _isLocationVerified ? 'Location Verified ✓' : 'Verify My Location',
-            backgroundColor: _isLocationVerified ? AppColors.successSurface : AppColors.surfaceHighlight,
-            foregroundColor: _isLocationVerified ? AppColors.brandGreenLight : Colors.white,
+            label: _isLocationVerified
+                ? 'Location Verified ✓'
+                : 'Verify My Location',
+            backgroundColor: _isLocationVerified
+                ? AppColors.successSurface
+                : AppColors.surfaceHighlight,
+            foregroundColor: _isLocationVerified
+                ? AppColors.brandGreenLight
+                : Colors.white,
             onPressed: _isLocationVerified ? null : _verifyLocation,
             height: 44,
           ),
           const SizedBox(height: 32),
           AppPrimaryButton(
             label: _isSubmitting ? 'Submitting...' : 'Done & Notify Customer',
-            onPressed: (_isLocationVerified && _selectedPhotos.isNotEmpty && !_isSubmitting)
+            onPressed:
+                (_isLocationVerified &&
+                    _selectedPhotos.isNotEmpty &&
+                    !_isSubmitting)
                 ? _submit
                 : null,
             height: 50,
@@ -855,7 +857,10 @@ class _CustomerApprovalPanelState extends State<_CustomerApprovalPanel> {
           const SizedBox(height: 8),
           Text(
             '${widget.order.serviceProviderName} has finished the work. Please check the photos below.',
-            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
           ),
           const SizedBox(height: 24),
           if (widget.order.workPhotos.isNotEmpty)
@@ -864,7 +869,7 @@ class _CustomerApprovalPanelState extends State<_CustomerApprovalPanel> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: widget.order.workPhotos.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
                   return Container(
                     width: 120,
@@ -889,7 +894,9 @@ class _CustomerApprovalPanelState extends State<_CustomerApprovalPanel> {
             children: [
               Expanded(
                 child: AppPrimaryButton(
-                  label: _isApproving ? 'Approving...' : 'Approve & Release Payment',
+                  label: _isApproving
+                      ? 'Approving...'
+                      : 'Approve & Release Payment',
                   onPressed: _isApproving ? null : _approve,
                   height: 50,
                 ),

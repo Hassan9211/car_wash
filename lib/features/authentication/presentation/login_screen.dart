@@ -1,4 +1,3 @@
-import 'package:car_wash/core/localization/app_localizations.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
@@ -102,8 +101,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _restoreRememberedCredentials() async {
     final preferences = await SharedPreferences.getInstance();
     final rememberedEmail = preferences.getString(_rememberedEmailKey)?.trim();
-    final rememberedPassword =
-        preferences.getString(_rememberedPasswordKey)?.trim();
+    final rememberedPassword = preferences
+        .getString(_rememberedPasswordKey)
+        ?.trim();
 
     if (!mounted) {
       return;
@@ -188,26 +188,15 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(
-                child: Divider(
-                  color: AppColors.border,
-                ),
-              ),
+              Expanded(child: Divider(color: AppColors.border)),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   'or continue with',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.textMuted,
-                  ),
+                  style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
                 ),
               ),
-              Expanded(
-                child: Divider(
-                  color: AppColors.border,
-                ),
-              ),
+              Expanded(child: Divider(color: AppColors.border)),
             ],
           ),
           const SizedBox(height: 16),
