@@ -1,6 +1,7 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
+import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +18,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    BookingOrdersStore.instance.fetchCustomerOrders();
+    BookingOrdersStore.instance.fetchCustomerOrders(
+      customerEmail: AuthSession.displayEmail,
+    );
   }
 
   @override

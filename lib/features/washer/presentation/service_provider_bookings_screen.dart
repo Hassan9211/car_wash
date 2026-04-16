@@ -1,9 +1,11 @@
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/services/id_card_service.dart';
 import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
+import 'package:car_wash/features/home/data/provider_catalog.dart';
 import 'package:car_wash/features/washer/presentation/widgets/service_provider_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
 
@@ -22,7 +24,9 @@ class _ServiceProviderBookingsScreenState
   @override
   void initState() {
     super.initState();
-    BookingOrdersStore.instance.fetchProviderOrders();
+    BookingOrdersStore.instance.fetchProviderOrders(
+      providerId: ProviderCatalog.currentSessionProviderId,
+    );
   }
 
   List<_ProviderPendingBooking> _buildPendingBookings(
@@ -134,6 +138,22 @@ class _ServiceProviderBookingsScreenState
       return;
     }
 
+    // ID card expiry check
+    if (IdCardService.hasIdCard && IdCardService.isExpired) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Your ID card is expired. Please update it in Settings before accepting bookings.',
+            ),
+            backgroundColor: Color(0xFFD34A4A),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      return;
+    }
+
     try {
       await BookingOrdersStore.instance.updateStatus(
         booking.orderId,
@@ -238,11 +258,15 @@ class _ServiceProviderBookingsScreenState
                 builder: (context, orders, _) {
                   final providerName = AuthSession.displayName.trim().toLowerCase();
                   final currentUserEmail = AuthSession.displayEmail.trim().toLowerCase();
+                  final currentUserId = AuthSession.currentUserId?.trim() ?? '';
 
                   // Filter for this provider and exclude own bookings
                   final filteredOrders = orders.where((o) {
-                    final isServiceProvider =
+                    final nameMatch =
                         o.serviceProviderName.trim().toLowerCase() == providerName;
+                    final idMatch = currentUserId.isNotEmpty &&
+                        o.providerId.trim() == currentUserId;
+                    final isServiceProvider = nameMatch || idMatch;
                     final isOwnBooking =
                         o.customerName.trim().toLowerCase() == providerName ||
                         o.customerEmail.trim().toLowerCase() == currentUserEmail;

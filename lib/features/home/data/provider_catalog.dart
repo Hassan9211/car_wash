@@ -1,17 +1,15 @@
-import 'dart:convert';
-
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/core/scheduling/business_hours.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:car_wash/features/home/model/service_provider_profile.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ProviderCatalog {
   ProviderCatalog._();
 
-  static const _prefsSavedProvidersKey = 'provider_catalog.saved_providers';
+  static const _collection = 'providers';
 
   static const fallbackProvider = ServiceProviderProfile(
     id: 'fallback_provider',
@@ -19,7 +17,8 @@ class ProviderCatalog {
     price: '\$0',
     rating: '0',
     reviews: '0',
-    imagePath: 'assets/images/onboarding/pexels-bulat843-1243575272-28995187.jpg',
+    imagePath:
+        'assets/images/onboarding/pexels-bulat843-1243575272-28995187.jpg',
     mainImageUrl: '',
     galleryImageUrls: [],
     description: 'Car wash service provider.',
@@ -30,15 +29,11 @@ class ProviderCatalog {
     longitude: 0,
   );
 
-  static const _seedProviders = <ServiceProviderProfile>[];
-
   static List<ServiceProviderProfile> _storedProviders = const [];
   static bool _hasRestored = false;
 
   static final ValueNotifier<List<ServiceProviderProfile>> _providersNotifier =
-      ValueNotifier<List<ServiceProviderProfile>>(
-        List<ServiceProviderProfile>.from(_seedProviders),
-      );
+      ValueNotifier<List<ServiceProviderProfile>>(const []);
   static final ValueNotifier<bool> _loadingNotifier =
       ValueNotifier<bool>(false);
   static final ValueNotifier<String?> _errorNotifier =
@@ -49,9 +44,10 @@ class ProviderCatalog {
   static ValueListenable<bool> get loadingListenable => _loadingNotifier;
   static ValueListenable<String?> get errorListenable => _errorNotifier;
 
-  static List<ServiceProviderProfile> get providers {
-    return List.unmodifiable(_providersNotifier.value);
-  }
+  static List<ServiceProviderProfile> get providers =>
+      List.unmodifiable(_providersNotifier.value);
+
+  // ── Fetch ────────────────────────────────────────────────────────────────────
 
   static Future<void> fetchProviders({
     String search = '',
@@ -59,7 +55,7 @@ class ProviderCatalog {
   }) async {
     _loadingNotifier.value = true;
     _errorNotifier.value = null;
-    await _restoreSavedProvidersIfNeeded();
+    await _restoreIfNeeded();
 
     final normalizedSearch = search.trim().toLowerCase();
     final normalizedServiceType = serviceType.trim().toLowerCase();
@@ -72,12 +68,11 @@ class ProviderCatalog {
               provider.location.toLowerCase().contains(normalizedSearch);
       final matchesServiceType = normalizedServiceType.isEmpty
           ? true
-          : provider.searchTerms.any(
-              (term) => term.toLowerCase().contains(normalizedServiceType),
-            ) ||
-              provider.categoryLabel.toLowerCase().contains(
-                normalizedServiceType,
-              );
+          : provider.searchTerms
+                  .any((t) => t.toLowerCase().contains(normalizedServiceType)) ||
+              provider.categoryLabel
+                  .toLowerCase()
+                  .contains(normalizedServiceType);
       return matchesSearch && matchesServiceType;
     }).toList(growable: false);
 
@@ -85,51 +80,93 @@ class ProviderCatalog {
   }
 
   static Future<ServiceProviderProfile> fetchProviderById(String id) async {
-    await _restoreSavedProvidersIfNeeded();
-
-    return providers.firstWhere(
-      (item) => item.id == id,
-      orElse: () => fallbackProvider,
-    );
+    await _restoreIfNeeded();
+    return providers.firstWhere((p) => p.id == id, orElse: () => fallbackProvider);
   }
 
-  static String get currentSessionProviderId {
-    final rawValue =
-        AuthSession.currentUserId?.trim() ??
-        AuthSession.currentEmail?.trim() ??
-        AuthSession.currentName?.trim() ??
-        AuthSession.displayName;
-    final normalized = rawValue
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-        .replaceAll(RegExp(r'_+'), '_')
-        .replaceAll(RegExp(r'^_|_$'), '');
+  // ── Current provider ID ───────────────────────────────────────────────────
 
-    return normalized.isEmpty ? 'provider_current' : 'provider_$normalized';
+  static String get currentSessionProviderId {
+    // Prefer Firebase UID as the stable ID
+    final uid = AuthSession.currentUserId?.trim();
+    if (uid != null && uid.isNotEmpty) return uid;
+
+    final email = AuthSession.currentEmail?.trim();
+    if (email != null && email.isNotEmpty) {
+      return email.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    }
+
+    final name = AuthSession.displayName.trim();
+    return name.isEmpty
+        ? 'provider_current'
+        : 'provider_${name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_')}';
   }
 
   static ServiceProviderProfile currentProviderProfile() {
-    final providerId = currentSessionProviderId;
-    final match = providers.where((provider) => provider.id == providerId);
-    if (match.isNotEmpty) {
-      return match.first;
-    }
+    final id = currentSessionProviderId;
 
-    final currentName = AuthSession.displayName.trim().toLowerCase();
-    final byName = providers.where(
-      (provider) => provider.name.trim().toLowerCase() == currentName,
-    );
-    if (byName.isNotEmpty) {
-      return byName.first;
-    }
+    try {
+      return _storedProviders.firstWhere((p) => p.id == id);
+    } catch (_) {}
 
-    return providers.isNotEmpty
-        ? _enrichProvider(providers.first)
+    final name = AuthSession.displayName.trim().toLowerCase();
+    try {
+      return _storedProviders
+          .firstWhere((p) => p.name.trim().toLowerCase() == name);
+    } catch (_) {}
+
+    return _storedProviders.isNotEmpty
+        ? _enrichProvider(_storedProviders.first)
         : fallbackProvider;
   }
 
+  // ── Save / Update ─────────────────────────────────────────────────────────
+
+  static Future<void> saveOrUpdateProvider(
+      ServiceProviderProfile provider) async {
+    await _restoreIfNeeded();
+
+    // Update local list
+    final list = List<ServiceProviderProfile>.from(_storedProviders);
+    final idx = list.indexWhere((p) => p.id == provider.id);
+    if (idx == -1) {
+      list.insert(0, provider);
+    } else {
+      list[idx] = provider.copyWith(joinedAt: provider.joinedAt ?? list[idx].joinedAt);
+    }
+    _storedProviders = List.unmodifiable(list);
+    _providersNotifier.value = _allProviders;
+
+    // Persist to Firestore
+    try {
+      await FirebaseFirestore.instance
+          .collection(_collection)
+          .doc(provider.id)
+          .set(_toFirestore(provider), SetOptions(merge: true));
+    } catch (_) {}
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+
+  static Future<void> deleteProviderData(String providerId) async {
+    _storedProviders = List.unmodifiable(
+      _storedProviders.where((p) => p.id != providerId).toList(),
+    );
+    _providersNotifier.value = _allProviders;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection(_collection)
+          .doc(providerId)
+          .delete();
+    } catch (_) {}
+
+    BookingOrdersStore.instance.deleteOrdersByProvider(providerId);
+  }
+
+  // ── Initialize ────────────────────────────────────────────────────────────
+
   static void initialize() {
-    // Refresh providers whenever bookings or session updates
     BookingOrdersStore.instance.listenable.addListener(() {
       _providersNotifier.value = _allProviders;
     });
@@ -138,182 +175,106 @@ class ProviderCatalog {
     });
   }
 
-  static ServiceProviderProfile _enrichProvider(
-    ServiceProviderProfile provider,
-  ) {
-    final orders = BookingOrdersStore.instance.orders;
-    final providerName = provider.name.trim().toLowerCase();
+  // ── Internal ──────────────────────────────────────────────────────────────
 
-    final completedOrders =
-        orders
-            .where(
-              (o) =>
-                  o.serviceProviderName.trim().toLowerCase() == providerName &&
-                  o.status == BookingOrderStatus.completed,
-            )
-            .toList(growable: false);
-
-    final reviewedOrders =
-        completedOrders
-            .where((o) => o.reviewRating != null)
-            .toList(growable: false);
-    final reviewCount = reviewedOrders.length;
-
-    // Rating grows from 1.0 (seed) up to real average.
-    final avgRating =
-        reviewedOrders.isEmpty
-            ? 1.0
-            : reviewedOrders
-                    .map((o) => o.reviewRating!)
-                    .reduce((a, b) => a + b) /
-                reviewCount;
-
-    // Verified: 10+ jobs AND 4.5+ average rating
-    final isVerified = completedOrders.length >= 10 && avgRating >= 4.5;
-
-    // Dynamic sync for current logged-in SP
-    final isCurrentUser =
-        AuthSession.displayName.trim().toLowerCase() == providerName;
-
-    return provider.copyWith(
-      rating: avgRating.toStringAsFixed(1),
-      reviews: reviewCount == 0 ? 'New' : '$reviewCount',
-      isVerified: isVerified,
-      imagePath:
-          isCurrentUser
-              ? AuthSession.currentAvatarImagePath ?? provider.imagePath
-              : provider.imagePath,
-      location:
-          isCurrentUser ? AuthSession.displayLocationLabel : provider.location,
-    );
-  }
-
-  static Future<void> saveOrUpdateProvider(
-    ServiceProviderProfile provider,
-  ) async {
-    await _restoreSavedProvidersIfNeeded();
-
-    final nextProviders = List<ServiceProviderProfile>.from(_storedProviders);
-    final existingIndex = nextProviders.indexWhere(
-      (existingProvider) => existingProvider.id == provider.id,
-    );
-
-    if (existingIndex == -1) {
-      nextProviders.insert(0, provider);
-    } else {
-      final existingProvider = nextProviders[existingIndex];
-      nextProviders[existingIndex] = provider.copyWith(
-        joinedAt: provider.joinedAt ?? existingProvider.joinedAt,
-      );
-    }
-
-    _storedProviders = List<ServiceProviderProfile>.unmodifiable(nextProviders);
-    _providersNotifier.value = _allProviders;
-    await _persistSavedProviders();
-  }
-
-  static List<ServiceProviderProfile> get _allProviders {
-    final mergedProviders = <ServiceProviderProfile>[
-      ..._storedProviders.map(
-        (provider) =>
-            _enrichProvider(provider.copyWith(availability: BusinessHours.label)),
-      ),
-      ..._seedProviders
-          .where(
-            (seedProvider) =>
-                _storedProviders.every(
-                  (storedProvider) => storedProvider.id != seedProvider.id,
-                ),
-          )
-          .map(
-            (provider) => _enrichProvider(
-              provider.copyWith(availability: BusinessHours.label),
-            ),
-          ),
-    ];
-
-    mergedProviders.sort((first, second) {
-      if (first.showNewBadge != second.showNewBadge) {
-        return first.showNewBadge ? -1 : 1;
-      }
-
-      final secondJoinedAt = second.joinedAt;
-      final firstJoinedAt = first.joinedAt;
-      if (secondJoinedAt != null && firstJoinedAt != null) {
-        return secondJoinedAt.compareTo(firstJoinedAt);
-      }
-      if (secondJoinedAt != null) {
-        return 1;
-      }
-      if (firstJoinedAt != null) {
-        return -1;
-      }
-
-      return 0;
-    });
-
-    return List<ServiceProviderProfile>.unmodifiable(mergedProviders);
-  }
-
-  static Future<void> _restoreSavedProvidersIfNeeded() async {
-    if (_hasRestored) {
-      return;
-    }
-
+  static Future<void> _restoreIfNeeded() async {
+    if (_hasRestored) return;
     _hasRestored = true;
 
     try {
-      final preferences = await SharedPreferences.getInstance();
-      final savedProvidersJson = preferences.getString(_prefsSavedProvidersKey);
-      if (savedProvidersJson == null || savedProvidersJson.trim().isEmpty) {
-        _storedProviders = const [];
-        _providersNotifier.value = _allProviders;
-        return;
-      }
+      final snapshot = await FirebaseFirestore.instance
+          .collection(_collection)
+          .orderBy('joined_at', descending: true)
+          .get();
 
-      final decoded = jsonDecode(savedProvidersJson);
-      if (decoded is! List) {
-        _storedProviders = const [];
-        _providersNotifier.value = _allProviders;
-        return;
-      }
-
-      _storedProviders = decoded
-          .whereType<Map<String, dynamic>>()
-          .map(ServiceProviderProfile.fromJson)
+      _storedProviders = snapshot.docs
+          .map((doc) => ServiceProviderProfile.fromJson(
+              Map<String, dynamic>.from(doc.data())..['id'] = doc.id))
           .toList(growable: false);
-      _providersNotifier.value = _allProviders;
     } catch (_) {
       _storedProviders = const [];
-      _providersNotifier.value = List<ServiceProviderProfile>.from(
-        _seedProviders,
-      );
     }
-  }
 
-  static Future<void> _persistSavedProviders() async {
-    try {
-      final preferences = await SharedPreferences.getInstance();
-      final jsonString = jsonEncode(
-        _storedProviders.map((provider) => provider.toJson()).toList(),
-      );
-      await preferences.setString(_prefsSavedProvidersKey, jsonString);
-    } catch (_) {
-      // Ignore local persistence failures and keep the in-memory provider list.
-    }
-  }
-
-  /// Deletes the provider profile for [providerId] and clears all their data.
-  static Future<void> deleteProviderData(String providerId) async {
-    await _restoreSavedProvidersIfNeeded();
-
-    _storedProviders = List<ServiceProviderProfile>.unmodifiable(
-      _storedProviders.where((p) => p.id != providerId).toList(),
-    );
     _providersNotifier.value = _allProviders;
-    await _persistSavedProviders();
+  }
 
-    // Also remove their orders from BookingOrdersStore
-    BookingOrdersStore.instance.deleteOrdersByProvider(providerId);
+  static ServiceProviderProfile _enrichProvider(
+      ServiceProviderProfile provider) {
+    final orders = BookingOrdersStore.instance.orders;
+    final providerName = provider.name.trim().toLowerCase();
+
+    final completedOrders = orders
+        .where((o) =>
+            o.serviceProviderName.trim().toLowerCase() == providerName &&
+            o.status == BookingOrderStatus.completed)
+        .toList(growable: false);
+
+    final reviewedOrders =
+        completedOrders.where((o) => o.reviewRating != null).toList();
+    final reviewCount = reviewedOrders.length;
+
+    final avgRating = reviewedOrders.isEmpty
+        ? 1.0
+        : reviewedOrders.map((o) => o.reviewRating!).reduce((a, b) => a + b) /
+            reviewCount;
+
+    final isVerified = completedOrders.length >= 10 && avgRating >= 4.5;
+
+    final isCurrentUser = provider.id == currentSessionProviderId ||
+        AuthSession.displayName.trim().toLowerCase() == providerName;
+
+    return provider.copyWith(
+      name: isCurrentUser ? AuthSession.displayName : provider.name,
+      rating: avgRating.toStringAsFixed(1),
+      reviews: reviewCount == 0 ? 'New' : '$reviewCount',
+      isVerified: isVerified,
+      imagePath: isCurrentUser
+          ? AuthSession.currentAvatarImagePath ?? provider.imagePath
+          : provider.imagePath,
+      location: isCurrentUser && AuthSession.displayLocationLabel.isNotEmpty
+          ? AuthSession.displayLocationLabel
+          : provider.location,
+    );
+  }
+
+  static List<ServiceProviderProfile> get _allProviders {
+    final list = _storedProviders
+        .map((p) => _enrichProvider(p.copyWith(availability: BusinessHours.label)))
+        .toList();
+
+    list.sort((a, b) {
+      if (a.showNewBadge != b.showNewBadge) return a.showNewBadge ? -1 : 1;
+      final bj = b.joinedAt;
+      final aj = a.joinedAt;
+      if (bj != null && aj != null) return bj.compareTo(aj);
+      if (bj != null) return 1;
+      if (aj != null) return -1;
+      return 0;
+    });
+
+    return List.unmodifiable(list);
+  }
+
+  static Map<String, dynamic> _toFirestore(ServiceProviderProfile p) {
+    return {
+      'name': p.name,
+      'price': p.price,
+      'rating': p.rating,
+      'reviews': p.reviews,
+      'image_path': p.imagePath,
+      'main_image_url': p.mainImageUrl,
+      'gallery_image_urls': p.galleryImageUrls,
+      'description': p.description,
+      'search_terms': p.searchTerms,
+      'supported_services': p.supportedServices,
+      'location': p.location,
+      'availability': p.availability,
+      'category_label': p.categoryLabel,
+      'latitude': p.latitude,
+      'longitude': p.longitude,
+      'is_verified': p.isVerified,
+      'joined_at': p.joinedAt?.toIso8601String() ??
+          DateTime.now().toIso8601String(),
+    };
   }
 }

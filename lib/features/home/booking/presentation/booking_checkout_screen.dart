@@ -121,7 +121,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
         customerLongitude: bookingLocation?.longitude,
         providerLatitude: widget.details.provider.latitude,
         providerLongitude: widget.details.provider.longitude,
-        paymentStatus: BookingPaymentStatus.paid,
+        paymentStatus: BookingPaymentStatus.held,
         paymentMethod: _selectedPaymentMethod.id,
         bookingTime: bookingTime,
         showInWallet: true,

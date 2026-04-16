@@ -1,3 +1,4 @@
+import 'package:car_wash/core/services/user_profile_service.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -7,9 +8,12 @@ class GoogleAuthService {
 
   static final _googleSignIn = GoogleSignIn();
 
-  /// Signs in with Google and returns the Firebase [User] on success.
-  /// Returns null if the user cancelled or an error occurred.
+  /// Shows account picker every time and signs in with Google.
+  /// Returns the Firebase [User] on success, null if cancelled.
   static Future<User?> signIn() async {
+    // Sign out first so account chooser always appears
+    await _googleSignIn.signOut();
+
     final googleUser = await _googleSignIn.signIn();
     if (googleUser == null) return null; // user cancelled
 
@@ -31,6 +35,12 @@ class GoogleAuthService {
         name: user.displayName,
       );
       AuthSession.setAuthenticated(true);
+
+      // Restore any saved profile data from Firestore
+      await UserProfileService.restoreProfile(user.uid);
+
+      // Save/update profile in Firestore
+      await UserProfileService.saveProfile();
     }
 
     return user;

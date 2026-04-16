@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:car_wash/core/services/app_location_service.dart';
+import 'package:car_wash/core/services/user_profile_service.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -37,6 +40,8 @@ Future<bool> updateCurrentLocation(BuildContext context) async {
     );
 
     AuthSession.setCurrentLocationDetails(details);
+    // Save updated location to Firestore
+    unawaited(UserProfileService.saveProfile());
     return true;
   } catch (_) {
     if (context.mounted) {

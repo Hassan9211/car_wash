@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
@@ -7,11 +9,14 @@ import 'package:car_wash/core/widgets/themed_google_map.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
+import 'package:car_wash/features/home/booking/model/booking_flow_details.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
+import 'package:car_wash/features/home/booking/model/booking_payment_method.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 
 class BookingTrackingScreen extends StatefulWidget {
   const BookingTrackingScreen({super.key, required this.order});
@@ -605,6 +610,23 @@ class _ProviderProofUploadPanelState extends State<_ProviderProofUploadPanel> {
   bool _isLocationVerified = false;
   final List<String> _selectedPhotos = [];
   bool _isSubmitting = false;
+  final _picker = ImagePicker();
+
+  Future<void> _pickPhoto() async {
+    if (_selectedPhotos.length >= 3) return;
+
+    final picked = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+
+    if (picked == null) return;
+    setState(() => _selectedPhotos.add(picked.path));
+  }
+
+  void _removePhoto(int index) {
+    setState(() => _selectedPhotos.removeAt(index));
+  }
 
   Future<void> _verifyLocation() async {
     if (widget.liveLocation == null) {
@@ -649,15 +671,6 @@ class _ProviderProofUploadPanelState extends State<_ProviderProofUploadPanel> {
         ),
       );
     }
-  }
-
-  void _mockPickPhoto() {
-    if (_selectedPhotos.length >= 3) return;
-    setState(() {
-      _selectedPhotos.add(
-        'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=400',
-      );
-    });
   }
 
   Future<void> _submit() async {
@@ -725,22 +738,46 @@ class _ProviderProofUploadPanelState extends State<_ProviderProofUploadPanel> {
           const SizedBox(height: 12),
           Row(
             children: [
-              for (final photo in _selectedPhotos)
-                Container(
-                  width: 70,
-                  height: 70,
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    image: DecorationImage(
-                      image: NetworkImage(photo),
-                      fit: BoxFit.cover,
+              for (int i = 0; i < _selectedPhotos.length; i++)
+                Stack(
+                  children: [
+                    Container(
+                      width: 70,
+                      height: 70,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        image: DecorationImage(
+                          image: FileImage(File(_selectedPhotos[i])),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
-                  ),
+                    Positioned(
+                      top: 2,
+                      right: 10,
+                      child: GestureDetector(
+                        onTap: () => _removePhoto(i),
+                        child: Container(
+                          width: 18,
+                          height: 18,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            size: 12,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               if (_selectedPhotos.length < 3)
                 GestureDetector(
-                  onTap: _mockPickPhoto,
+                  onTap: _pickPhoto,
                   child: Container(
                     width: 70,
                     height: 70,
@@ -810,17 +847,75 @@ class _CustomerApprovalPanelState extends State<_CustomerApprovalPanel> {
   bool _isApproving = false;
 
   Future<void> _approve() async {
-    setState(() => _isApproving = true);
-    await BookingOrdersStore.instance.approveWork(widget.order.id);
-    if (mounted) {
-      Navigator.pop(context);
+    final order = widget.order;
+
+    // Rescheduled order — payment pending, show payment sheet first
+    if (order.paymentStatus == BookingPaymentStatus.pending) {
+      final selectedMethod = await showModalBottomSheet<BookingPaymentMethod>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (_) => _ReschedulePaymentSheet(order: order),
+      );
+
+      if (selectedMethod == null || !mounted) return;
+
+      setState(() => _isApproving = true);
+      await BookingOrdersStore.instance.markReschedulePaymentHeld(order.id);
+      await BookingOrdersStore.instance.approveWork(order.id);
+
+      // Create a NEW completed order so revenue + count increases
+      final newOrder = BookingOrderItem(
+        id: 'order_reschedule_${DateTime.now().microsecondsSinceEpoch}',
+        providerId: order.providerId,
+        status: BookingOrderStatus.completed,
+        orderDate: order.orderDate,
+        paymentDate: DateTime.now(),
+        statusUpdatedAt: DateTime.now(),
+        rating: order.rating,
+        reviews: order.reviews,
+        totalPayment: order.totalPayment,
+        serviceProviderName: order.serviceProviderName,
+        serviceType: order.serviceType,
+        customerName: order.customerName,
+        customerEmail: order.customerEmail,
+        address: order.address,
+        customerLatitude: order.customerLatitude,
+        customerLongitude: order.customerLongitude,
+        providerLatitude: order.providerLatitude,
+        providerLongitude: order.providerLongitude,
+        paymentStatus: BookingPaymentStatus.paid,
+        paymentMethod: selectedMethod.id,
+        bookingTime: order.bookingTime,
+        showInWallet: true,
+        workPhotos: order.workPhotos,
+      );
+      await BookingOrdersStore.instance.addOrUpdate(newOrder);
+
+      if (!mounted) return;
+      // goToBookings replaces entire stack — no manual pops needed
+      context.goToBookings();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Booking Completed! Payment released to provider.'),
+          content: Text('Payment done! Booking completed.'),
           backgroundColor: AppColors.brandGreen,
         ),
       );
+      return;
     }
+
+    // Normal flow — payment was held, release it
+    setState(() => _isApproving = true);
+    await BookingOrdersStore.instance.approveWork(order.id);
+    if (!mounted) return;
+
+    context.goToBookings();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Booking Completed! Payment released to provider.'),
+        backgroundColor: AppColors.brandGreen,
+      ),
+    );
   }
 
   @override
@@ -871,12 +966,16 @@ class _CustomerApprovalPanelState extends State<_CustomerApprovalPanel> {
                 itemCount: widget.order.workPhotos.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
+                  final path = widget.order.workPhotos[index];
+                  final isLocal = !path.startsWith('http');
                   return Container(
                     width: 120,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       image: DecorationImage(
-                        image: NetworkImage(widget.order.workPhotos[index]),
+                        image: isLocal
+                            ? FileImage(File(path)) as ImageProvider
+                            : NetworkImage(path),
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -935,5 +1034,178 @@ extension on BookingOrderItem {
       case BookingOrderStatus.cancelled:
         return 0;
     }
+  }
+}
+
+// ─── Reschedule Payment Sheet ─────────────────────────────────────────────────
+
+class _ReschedulePaymentSheet extends StatefulWidget {
+  const _ReschedulePaymentSheet({required this.order});
+  final BookingOrderItem order;
+
+  @override
+  State<_ReschedulePaymentSheet> createState() =>
+      _ReschedulePaymentSheetState();
+}
+
+class _ReschedulePaymentSheetState extends State<_ReschedulePaymentSheet> {
+  BookingPaymentMethod _selected = BookingPaymentMethod.creditCard;
+  bool _isPaying = false;
+
+  Future<void> _pay() async {
+    setState(() => _isPaying = true);
+    // Small delay to simulate payment processing
+    await Future<void>.delayed(const Duration(milliseconds: 800));
+    if (mounted) Navigator.of(context).pop(_selected);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final methods = [
+      BookingPaymentMethod.creditCard,
+      BookingPaymentMethod.cash,
+      BookingPaymentMethod.visa,
+      BookingPaymentMethod.paypal,
+    ];
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Pay for Rescheduled Booking',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Amount: ${widget.order.totalPayment}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.brandGreen,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ...methods.map((method) {
+                final isSelected = _selected.id == method.id;
+                return GestureDetector(
+                  onTap: () => setState(() => _selected = method),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.surfaceHighlight
+                          : AppColors.surfaceMuted,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.brandGreen
+                            : AppColors.border,
+                        width: isSelected ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _iconForMethod(method),
+                          size: 20,
+                          color: isSelected
+                              ? AppColors.brandGreen
+                              : AppColors.textMuted,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            method.title,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (isSelected)
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.brandGreen,
+                            size: 18,
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: FilledButton(
+                  onPressed: _isPaying ? null : _pay,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.brandGreen,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    _isPaying ? 'Processing...' : 'Confirm Payment',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _iconForMethod(BookingPaymentMethod method) {
+    if (method.kind == BookingPaymentMethodKind.cash) {
+      return Icons.payments_outlined;
+    } else if (method.kind == BookingPaymentMethodKind.visa) {
+      return Icons.credit_card_outlined;
+    } else if (method.kind == BookingPaymentMethodKind.paypal) {
+      return Icons.account_balance_wallet_outlined;
+    }
+    return Icons.credit_card_rounded;
   }
 }

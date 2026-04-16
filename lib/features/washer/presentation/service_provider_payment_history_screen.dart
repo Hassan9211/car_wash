@@ -2,6 +2,7 @@ import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
+import 'package:car_wash/features/home/data/provider_catalog.dart';
 import 'package:car_wash/features/washer/presentation/widgets/service_provider_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
 
@@ -18,7 +19,9 @@ class _ServiceProviderPaymentHistoryScreenState
   @override
   void initState() {
     super.initState();
-    BookingOrdersStore.instance.fetchProviderOrders();
+    BookingOrdersStore.instance.fetchProviderOrders(
+      providerId: ProviderCatalog.currentSessionProviderId,
+    );
   }
 
   @override
@@ -53,11 +56,15 @@ class _ServiceProviderPaymentHistoryScreenState
                   final orders = BookingOrdersStore.instance.orders;
                   final providerName = AuthSession.displayName.trim().toLowerCase();
                   final currentUserEmail = AuthSession.displayEmail.trim().toLowerCase();
+                  final currentUserId = AuthSession.currentUserId?.trim() ?? '';
 
                   final paymentOrders = orders.where((o) {
                     final isPaid = o.paymentStatus == BookingPaymentStatus.paid;
-                    final isServiceProvider =
+                    final nameMatch =
                         o.serviceProviderName.trim().toLowerCase() == providerName;
+                    final idMatch = currentUserId.isNotEmpty &&
+                        o.providerId.trim() == currentUserId;
+                    final isServiceProvider = nameMatch || idMatch;
                     final isOwnBooking =
                         o.customerName.trim().toLowerCase() == providerName ||
                         o.customerEmail.trim().toLowerCase() == currentUserEmail;

@@ -827,14 +827,23 @@ WasherProfile _buildCurrentProviderProfile(List<BookingOrderItem> orders) {
   final hasCustomLocation =
       currentLocation != null && currentLocation.isNotEmpty;
 
+  // Update description to reflect current name in real-time
+  final displayName = hasCustomName ? AuthSession.displayName : baseProfile.name;
+  final updatedDescription = baseProfile.description.isEmpty
+      ? '$displayName is a professional car wash service provider.'
+      : baseProfile.description.replaceFirst(
+          RegExp(r'^[\w\s]+?(?=\s+(is|delivers|focuses|handles|known))'),
+          displayName,
+        );
+
   return baseProfile.copyWith(
     name: hasCustomName ? AuthSession.displayName : baseProfile.name,
+    description: updatedDescription,
     location: hasCustomLocation
         ? AuthSession.displayLocationLabel
         : baseProfile.location,
     latitude: AuthSession.currentLatitude ?? baseProfile.latitude,
     longitude: AuthSession.currentLongitude ?? baseProfile.longitude,
-    // Dynamic rating: 1 star → grows with real reviews
     rating: avgRating.toStringAsFixed(1),
     reviews: reviewsLabel,
   );

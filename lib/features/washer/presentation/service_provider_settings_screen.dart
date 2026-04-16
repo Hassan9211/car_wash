@@ -1,14 +1,21 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:io';
+
 import 'package:car_wash/core/localization/app_localizations.dart';
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/services/id_card_service.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/authentication/model/app_user_role.dart';
+import 'package:car_wash/features/home/data/provider_catalog.dart';
+import 'package:car_wash/features/home/model/service_provider_profile.dart';
+import 'package:car_wash/features/services/data/service_catalog.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ServiceProviderSettingsScreen extends StatelessWidget {
@@ -22,6 +29,16 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <_SettingsActionItem>[
+      _SettingsActionItem(
+        title: 'Update ID Card',
+        icon: Icons.badge_outlined,
+        onTap: () => _showIdCardSheet(context),
+      ),
+      _SettingsActionItem(
+        title: 'Choose Services',
+        icon: Icons.miscellaneous_services_outlined,
+        onTap: () => _showServicesSheet(context),
+      ),
       _SettingsActionItem(
         title: context.translate('privacy_policy'),
         icon: Icons.privacy_tip_outlined,
@@ -188,6 +205,24 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => const _NotificationSettingsSheet(),
+    );
+  }
+
+  static Future<void> _showIdCardSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const _IdCardSheet(),
+    );
+  }
+
+  static Future<void> _showServicesSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const _ServicesSheet(),
     );
   }
 
@@ -555,7 +590,6 @@ class _SettingsActionItem {
   final VoidCallback onTap;
   final String? trailingText;
 }
-
 class _AccountActionDialog extends StatelessWidget {
   const _AccountActionDialog({
     required this.icon,
@@ -679,6 +713,449 @@ class _AccountActionDialog extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── ID Card Sheet ────────────────────────────────────────────────────────────
+
+class _IdCardSheet extends StatefulWidget {
+  const _IdCardSheet();
+
+  @override
+  State<_IdCardSheet> createState() => _IdCardSheetState();
+}
+
+class _IdCardSheetState extends State<_IdCardSheet> {
+  String? _imagePath;
+  DateTime? _expiryDate;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _imagePath = IdCardService.imagePath;
+    _expiryDate = IdCardService.expiryDate;
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) setState(() => _imagePath = picked.path);
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _expiryDate ?? now.add(const Duration(days: 365)),
+      firstDate: now,
+      lastDate: DateTime(now.year + 20),
+    );
+    if (picked != null) setState(() => _expiryDate = picked);
+  }
+
+  Future<void> _save() async {
+    if (_imagePath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an ID card image.')),
+      );
+      return;
+    }
+    if (_expiryDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select expiry date.')),
+      );
+      return;
+    }
+    setState(() => _isSaving = true);
+    await IdCardService.save(imagePath: _imagePath!, expiryDate: _expiryDate!);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('ID card updated successfully.'),
+        backgroundColor: AppColors.brandGreen,
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isExpired = _expiryDate != null &&
+        DateTime.now().isAfter(_expiryDate!);
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16, right: 16,
+          bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42, height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Update ID Card',
+                style: TextStyle(
+                  fontSize: 17, fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Image picker
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  width: double.infinity,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceMuted,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: _imagePath != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Image.file(
+                            File(_imagePath!),
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.upload_rounded,
+                                size: 36, color: AppColors.textMuted),
+                            SizedBox(height: 8),
+                            Text(
+                              'Tap to upload ID card image',
+                              style: TextStyle(
+                                fontSize: 13, color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Expiry date picker
+              GestureDetector(
+                onTap: _pickDate,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceMuted,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isExpired
+                          ? const Color(0xFFD34A4A)
+                          : AppColors.border,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 18,
+                        color: isExpired
+                            ? const Color(0xFFD34A4A)
+                            : AppColors.brandGreen,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _expiryDate != null
+                              ? 'Expiry: ${_formatDate(_expiryDate!)}'
+                              : 'Select expiry date',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: isExpired
+                                ? const Color(0xFFD34A4A)
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      if (isExpired)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFEEEE),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'EXPIRED',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFD34A4A),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+              if (isExpired) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'Your ID card is expired. You cannot accept new bookings until you update it.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFFD34A4A),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: FilledButton(
+                  onPressed: _isSaving ? null : _save,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.brandGreen,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    _isSaving ? 'Saving...' : 'Save ID Card',
+                    style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Services Sheet ───────────────────────────────────────────────────────────
+
+class _ServicesSheet extends StatefulWidget {
+  const _ServicesSheet();
+
+  @override
+  State<_ServicesSheet> createState() => _ServicesSheetState();
+}
+
+class _ServicesSheetState extends State<_ServicesSheet> {
+  late Set<String> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    final current = ProviderCatalog.currentProviderProfile().supportedServices;
+    _selected = Set<String>.from(current);
+  }
+
+  Future<void> _save() async {
+    await _restoreSavedProvidersIfNeeded();
+
+    // Find the actual stored provider — never use fallback
+    final providerId = ProviderCatalog.currentSessionProviderId;
+    final stored = ProviderCatalog.providers;
+
+    ServiceProviderProfile? existing;
+
+    // Match by ID first
+    try {
+      existing = stored.firstWhere((p) => p.id == providerId);
+    } catch (_) {}
+
+    // Match by name if ID not found
+    if (existing == null) {
+      final name = AuthSession.displayName.trim().toLowerCase();
+      try {
+        existing = stored.firstWhere(
+          (p) => p.name.trim().toLowerCase() == name,
+        );
+      } catch (_) {}
+    }
+
+    if (existing == null || existing.id == 'fallback_provider') {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please complete your profile setup first.'),
+          backgroundColor: AppColors.dangerSurface,
+        ),
+      );
+      return;
+    }
+
+    await ProviderCatalog.saveOrUpdateProvider(
+      existing.copyWith(supportedServices: _selected.toList()),
+    );
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Services updated.'),
+        backgroundColor: AppColors.brandGreen,
+      ),
+    );
+  }
+
+  Future<void> _restoreSavedProvidersIfNeeded() async {
+    await ProviderCatalog.fetchProviders();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final allServices = ServiceCatalog.allServices;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16, right: 16,
+          bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42, height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Choose Services',
+                style: TextStyle(
+                  fontSize: 17, fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: allServices.map((service) {
+                  final isSelected = _selected.contains(service.label);
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (isSelected) {
+                          _selected.remove(service.label);
+                        } else {
+                          _selected.add(service.label);
+                        }
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.brandGreen
+                            : AppColors.surfaceMuted,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.brandGreen
+                              : AppColors.border,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            service.icon,
+                            size: 14,
+                            color: isSelected
+                                ? Colors.white
+                                : service.iconColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            service.label,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: FilledButton(
+                  onPressed: _save,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.brandGreen,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text(
+                    'Save Services',
+                    style: TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

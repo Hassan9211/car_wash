@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/scheduling/business_hours.dart';
+import 'package:car_wash/core/services/app_notification_service.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
+import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:car_wash/features/home/presentation/widgets/home_bottom_navigation_bar.dart';
@@ -21,7 +25,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
   @override
   void initState() {
     super.initState();
-    BookingOrdersStore.instance.fetchCustomerOrders();
+    BookingOrdersStore.instance.fetchCustomerOrders(
+      customerEmail: AuthSession.displayEmail,
+    );
   }
 
   Future<void> _cancelOrder(String orderId) async {
@@ -100,7 +106,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
       ),
     );
 
-    if (!mounted || selectedTime == null) {
+    if (!mounted || selectedTime == null || selectedTime.isEmpty) {
       return;
     }
 
@@ -110,9 +116,19 @@ class _BookingsScreenState extends State<BookingsScreen> {
       bookingTime: selectedTime,
     );
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
+
+    // Notify provider about reschedule
+    unawaited(AppNotificationService.sendBookingNotification(
+      providerEmail: order.customerEmail.isNotEmpty
+          ? '${order.serviceProviderName.toLowerCase().replaceAll(' ', '')}@carwash.app'
+          : '${order.serviceProviderName.toLowerCase().replaceAll(' ', '')}@carwash.app',
+      providerName: order.serviceProviderName,
+      customerName: AuthSession.displayName,
+      serviceType: order.serviceType,
+      bookingTime:
+          '${_formatRescheduleDate(selectedDate)} at $selectedTime (Rescheduled)',
+    ));
 
     setState(() {
       _selectedTab = _BookingsFilterTab.active;
@@ -293,7 +309,10 @@ class _BusinessHoursSheetState extends State<_BusinessHoursSheet> {
   @override
   void initState() {
     super.initState();
-    _selectedTime = widget.selectedTime;
+    // Always start with a valid time slot
+    _selectedTime = BusinessHours.timeSlotLabels.contains(widget.selectedTime)
+        ? widget.selectedTime
+        : BusinessHours.timeSlotLabels.first;
   }
 
   @override

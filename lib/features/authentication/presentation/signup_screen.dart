@@ -1,6 +1,7 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/services/google_auth_service.dart';
 import 'package:car_wash/core/services/otp_email_service.dart';
+import 'package:car_wash/core/services/user_profile_service.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
@@ -86,6 +87,9 @@ class _SignupScreenState extends State<SignupScreen> {
         name: name,
         phoneNumber: phone,
       );
+
+      // Save profile to Firestore
+      await UserProfileService.saveProfile();
 
       if (!mounted) return;
 

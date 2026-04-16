@@ -235,7 +235,8 @@ class BookingOrderItem {
           ? null
           : int.tryParse(review['rating'].toString()),
       reviewText: (review['review_text'] ?? review['text'] ?? '').toString(),
-      showInWallet: (booking['payment_status'] ?? '').toString() == 'paid',
+      showInWallet: (booking['payment_status'] ?? '').toString() == 'paid' ||
+          (booking['payment_status'] ?? '').toString() == 'held',
       workPhotos: (booking['work_photos'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
@@ -289,7 +290,8 @@ enum BookingOrderStatus {
 
 enum BookingPaymentStatus {
   pending,
-  paid,
+  held,  // customer paid — held in escrow until work approved
+  paid,  // released to provider after customer approves work
 }
 
 extension BookingOrderStatusX on BookingOrderStatus {
@@ -339,6 +341,8 @@ extension BookingPaymentStatusX on BookingPaymentStatus {
     switch (value.trim().toLowerCase()) {
       case 'paid':
         return BookingPaymentStatus.paid;
+      case 'held':
+        return BookingPaymentStatus.held;
       case 'pending':
       default:
         return BookingPaymentStatus.pending;

@@ -4,6 +4,7 @@ import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
+import 'package:car_wash/features/home/data/provider_catalog.dart';
 import 'package:car_wash/features/washer/presentation/widgets/service_provider_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
 
@@ -19,19 +20,12 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  static const _weeklyChart = <_WeeklyOrderBar>[
-    _WeeklyOrderBar(label: 'SUN', value: 0),
-    _WeeklyOrderBar(label: 'MON', value: 0),
-    _WeeklyOrderBar(label: 'TUE', value: 0),
-    _WeeklyOrderBar(label: 'WED', value: 0),
-    _WeeklyOrderBar(label: 'THU', value: 0),
-    _WeeklyOrderBar(label: 'FRI', value: 0),
-  ];
-
   @override
   void initState() {
     super.initState();
-    BookingOrdersStore.instance.fetchProviderOrders();
+    BookingOrdersStore.instance.fetchProviderOrders(
+      providerId: ProviderCatalog.currentSessionProviderId,
+    );
   }
 
   @override
@@ -123,6 +117,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                       _OrdersOverviewCard(
                         revenueLabel: _formatCurrency(lastWeekRevenue),
                         ordersLabel: ordersCount.toString(),
+                        orders: orders,
                         onRevenueHistoryTap: () =>
                             _showRevenueHistorySheet(monthlyRevenueHistory),
                       ),
@@ -830,11 +825,13 @@ class _OrdersOverviewCard extends StatelessWidget {
     required this.revenueLabel,
     required this.ordersLabel,
     required this.onRevenueHistoryTap,
+    required this.orders,
   });
 
   final String revenueLabel;
   final String ordersLabel;
   final VoidCallback onRevenueHistoryTap;
+  final List<BookingOrderItem> orders;
 
   @override
   Widget build(BuildContext context) {
@@ -929,8 +926,8 @@ class _OrdersOverviewCard extends StatelessWidget {
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Row(
+                  children: [
+                    const Row(
                       children: [
                         Expanded(
                           child: Text(
@@ -949,8 +946,8 @@ class _OrdersOverviewCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    SizedBox(height: 14),
-                    _WeeklyOrdersChart(),
+                    const SizedBox(height: 14),
+                    _WeeklyOrdersChart(orders: orders),
                     SizedBox(height: 10),
                     Row(
                       children: [
@@ -1075,12 +1072,50 @@ class _ChangeChip extends StatelessWidget {
 }
 
 class _WeeklyOrdersChart extends StatelessWidget {
-  const _WeeklyOrdersChart();
+  const _WeeklyOrdersChart({required this.orders});
+
+  final List<BookingOrderItem> orders;
+
+  List<_WeeklyOrderBar> _buildWeeklyBars() {
+    final now = DateTime.now();
+    // Start of current week (Monday)
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final weekStart = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+
+    const dayLabels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    final revenues = List<double>.filled(7, 0);
+
+    for (final order in orders) {
+      if (order.paymentStatus != BookingPaymentStatus.paid) continue;
+      final orderDay = DateTime(
+        order.paymentDate.year,
+        order.paymentDate.month,
+        order.paymentDate.day,
+      );
+      final diff = orderDay.difference(weekStart).inDays;
+      if (diff >= 0 && diff < 7) {
+        final amount = double.tryParse(
+              order.totalPayment.replaceAll(RegExp(r'[^0-9.]'), ''),
+            ) ??
+            0;
+        revenues[diff] += amount;
+      }
+    }
+
+    final todayIndex = now.weekday - 1; // 0=Mon, 6=Sun
+
+    return List.generate(7, (i) => _WeeklyOrderBar(
+      label: dayLabels[i],
+      value: revenues[i],
+      isHighlighted: i == todayIndex,
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
-    const bars = _ServiceProviderHomeScreenState._weeklyChart;
-    const maxValue = 10.0;
+    final bars = _buildWeeklyBars();
+    final maxValue = bars.map((b) => b.value).fold(0.0, (a, b) => a > b ? a : b);
+    final effectiveMax = maxValue <= 0 ? 1.0 : maxValue;
 
     return SizedBox(
       height: 180,
@@ -1092,7 +1127,7 @@ class _WeeklyOrdersChart extends StatelessWidget {
               children: [
                 for (var index = 0; index < bars.length; index++) ...[
                   Expanded(
-                    child: _ChartBar(data: bars[index], maxValue: maxValue),
+                    child: _ChartBar(data: bars[index], maxValue: effectiveMax),
                   ),
                   if (index != bars.length - 1) const SizedBox(width: 10),
                 ],
@@ -1104,13 +1139,27 @@ class _WeeklyOrdersChart extends StatelessWidget {
             children: [
               for (var index = 0; index < bars.length; index++) ...[
                 Expanded(
-                  child: Text(
-                    bars[index].label,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textMuted,
-                    ),
+                  child: Column(
+                    children: [
+                      Text(
+                        bars[index].label,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                      if (bars[index].value > 0)
+                        Text(
+                          '\$${bars[index].value.toStringAsFixed(0)}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 8.5,
+                            color: AppColors.brandGreen,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 if (index != bars.length - 1) const SizedBox(width: 10),

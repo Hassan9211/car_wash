@@ -2,6 +2,7 @@ import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/services/app_permission_service.dart';
+import 'package:car_wash/core/services/user_profile_service.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/authentication/utils/auth_validators.dart';
@@ -107,10 +108,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         avatarImagePath: _selectedAvatarImagePath,
       );
 
-      if (!mounted) {
-        return;
-      }
+      // Save to Firestore
+      await UserProfileService.saveProfile();
 
+      if (!mounted) return;
       context.pop(true);
     } finally {
       if (mounted) {

@@ -1,5 +1,6 @@
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/services/google_auth_service.dart';
+import 'package:car_wash/core/services/user_profile_service.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
@@ -64,6 +65,11 @@ class _LoginScreenState extends State<LoginScreen> {
         name: user?.displayName,
       );
       AuthSession.setAuthenticated(true);
+
+      // Restore profile from Firestore
+      if (user?.uid != null) {
+        await UserProfileService.restoreProfile(user!.uid);
+      }
 
       await _persistRememberedCredentials();
       if (!mounted) return;
