@@ -2,6 +2,7 @@ import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_button_styles.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/services/app_permission_service.dart';
+import 'package:car_wash/core/services/firebase_storage_service.dart';
 import 'package:car_wash/core/services/user_profile_service.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
@@ -100,12 +101,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
+      // Upload avatar to Firebase Storage if it's a new local file
+      String? finalAvatarPath = _selectedAvatarImagePath;
+      final uid = AuthSession.currentUserId;
+      if (uid != null &&
+          finalAvatarPath != null &&
+          !finalAvatarPath.startsWith('http') &&
+          finalAvatarPath != AuthSession.currentAvatarImagePath) {
+        final url = await FirebaseStorageService.uploadAvatar(uid, finalAvatarPath);
+        if (url != null) finalAvatarPath = url;
+      }
+
       AuthSession.updateProfile(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         phoneNumber: _phoneController.text.trim(),
         dateOfBirth: _selectedDateOfBirth,
-        avatarImagePath: _selectedAvatarImagePath,
+        avatarImagePath: finalAvatarPath,
       );
 
       // Save to Firestore

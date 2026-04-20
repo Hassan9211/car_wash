@@ -1,10 +1,11 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
+
+import 'package:car_wash/features/authentication/data/auth_session.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class IdCardService {
   IdCardService._();
-
-  static const _prefsKey = 'id_card_service.data';
 
   static String? _imagePath;
   static DateTime? _expiryDate;
@@ -21,43 +22,80 @@ class IdCardService {
   static bool get hasIdCard =>
       _imagePath != null && _imagePath!.trim().isNotEmpty;
 
+  /// Restores ID card data from Firestore.
   static Future<void> restore() async {
+    final uid = AuthSession.currentUserId;
+    if (uid == null || uid.isEmpty) return;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_prefsKey);
-      if (raw == null) return;
-      final json = jsonDecode(raw) as Map<String, dynamic>;
-      _imagePath = json['image_path'] as String?;
-      final expiryMs = json['expiry_ms'] as int?;
-      _expiryDate =
-          expiryMs != null ? DateTime.fromMillisecondsSinceEpoch(expiryMs) : null;
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('id_card')
+          .doc('data')
+          .get();
+      if (!doc.exists) return;
+      final data = doc.data()!;
+      _imagePath = data['image_url'] as String?;
+      final expiryStr = data['expiry_date'] as String?;
+      _expiryDate = expiryStr != null ? DateTime.tryParse(expiryStr) : null;
     } catch (_) {}
   }
 
+  /// Uploads ID card image to Firebase Storage and saves metadata to Firestore.
   static Future<void> save({
     required String imagePath,
     required DateTime expiryDate,
   }) async {
-    _imagePath = imagePath;
     _expiryDate = expiryDate;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        _prefsKey,
-        jsonEncode({
-          'image_path': imagePath,
-          'expiry_ms': expiryDate.millisecondsSinceEpoch,
-        }),
-      );
-    } catch (_) {}
+
+    final uid = AuthSession.currentUserId;
+    String imageUrl = imagePath;
+
+    // Upload to Firebase Storage if it's a local file
+    if (uid != null && uid.isNotEmpty && !imagePath.startsWith('http')) {
+      try {
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('id_cards/$uid/id_card.jpg');
+        await ref.putFile(File(imagePath));
+        imageUrl = await ref.getDownloadURL();
+      } catch (_) {
+        imageUrl = imagePath; // fallback to local path
+      }
+    }
+
+    _imagePath = imageUrl;
+
+    // Save to Firestore
+    if (uid != null && uid.isNotEmpty) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('id_card')
+            .doc('data')
+            .set({
+          'image_url': imageUrl,
+          'expiry_date': expiryDate.toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+      } catch (_) {}
+    }
   }
 
   static Future<void> clear() async {
     _imagePath = null;
     _expiryDate = null;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_prefsKey);
-    } catch (_) {}
+    final uid = AuthSession.currentUserId;
+    if (uid != null && uid.isNotEmpty) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('id_card')
+            .doc('data')
+            .delete();
+      } catch (_) {}
+    }
   }
 }

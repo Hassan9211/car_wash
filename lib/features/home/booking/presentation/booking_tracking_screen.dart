@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:car_wash/core/router/app_navigation.dart';
+import 'package:car_wash/core/services/firebase_storage_service.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
@@ -678,9 +679,21 @@ class _ProviderProofUploadPanelState extends State<_ProviderProofUploadPanel> {
     if (_selectedPhotos.isEmpty) return;
 
     setState(() => _isSubmitting = true);
+
+    // Upload photos to Firebase Storage
+    List<String> photoUrls = _selectedPhotos;
+    try {
+      photoUrls = await FirebaseStorageService.uploadWorkPhotos(
+        widget.order.id,
+        _selectedPhotos,
+      );
+    } catch (_) {
+      photoUrls = _selectedPhotos; // fallback to local paths
+    }
+
     await BookingOrdersStore.instance.submitForApproval(
       widget.order.id,
-      _selectedPhotos,
+      photoUrls,
     );
     if (mounted) {
       Navigator.pop(context);

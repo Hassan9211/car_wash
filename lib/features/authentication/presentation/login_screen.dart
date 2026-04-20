@@ -20,7 +20,6 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   static const _rememberedEmailKey = 'login_screen.remembered_email';
-  static const _rememberedPasswordKey = 'login_screen.remembered_password';
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
@@ -97,15 +96,14 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _restoreRememberedCredentials() async {
     final preferences = await SharedPreferences.getInstance();
     final rememberedEmail = preferences.getString(_rememberedEmailKey)?.trim();
-    final rememberedPassword = preferences.getString(_rememberedPasswordKey)?.trim();
 
     if (!mounted) return;
-    if ((rememberedEmail?.isEmpty ?? true) && (rememberedPassword?.isEmpty ?? true)) return;
+    if (rememberedEmail?.isEmpty ?? true) return;
 
     setState(() {
       _rememberMe = true;
       _emailController.text = rememberedEmail ?? '';
-      _passwordController.text = rememberedPassword ?? '';
+      // Password not stored for security
     });
   }
 
@@ -113,11 +111,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final preferences = await SharedPreferences.getInstance();
     if (!_rememberMe) {
       await preferences.remove(_rememberedEmailKey);
-      await preferences.remove(_rememberedPasswordKey);
       return;
     }
+    // Only save email, never password
     await preferences.setString(_rememberedEmailKey, _emailController.text.trim());
-    await preferences.setString(_rememberedPasswordKey, _passwordController.text);
   }
 
   Future<void> _signInWithGoogle() async {
@@ -145,7 +142,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!nextValue) {
       final preferences = await SharedPreferences.getInstance();
       await preferences.remove(_rememberedEmailKey);
-      await preferences.remove(_rememberedPasswordKey);
     }
   }
 
