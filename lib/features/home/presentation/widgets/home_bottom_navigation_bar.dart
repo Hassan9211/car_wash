@@ -26,22 +26,20 @@ class HomeBottomNavigationBar extends StatelessWidget {
 
     if (AuthSession.isGuest &&
         (tab == HomeBottomTab.bookings || tab == HomeBottomTab.wallet)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.translate('signin_to_access', params: {
-            'tab': context.translate(tab.name),
-          })),
-          action: SnackBarAction(
-            label: context.translate('login'),
-            textColor: AppColors.brandGreenLight,
-            onPressed: () => context.goToLogin(),
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(context.translate('signin_to_access', params: {
+              'tab': context.translate(tab.name),
+            })),
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+        );
       return;
     }
 

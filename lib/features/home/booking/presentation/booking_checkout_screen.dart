@@ -146,7 +146,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
       await context.pushToBookingPaymentSuccess(
         BookingPaymentSuccessDetails(
           paymentDate: DateTime.now(),
-          promoCode: 'FR2412357435WER',
+          promoCode: '',
           expectedDeliveryTime: bookingTime,
           amount: amount,
           tipAmount: _selectedTip.toDouble(),
@@ -170,15 +170,15 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     final details = widget.details;
     final customerName = details.customerName.trim().isNotEmpty
         ? details.customerName.trim()
-        : 'JohnSmith';
-    final customerEmail = AuthSession.currentEmail ?? 'smith@gmail.com';
+        : AuthSession.displayName;
+    final customerEmail = AuthSession.currentEmail ?? AuthSession.displayEmail;
     final serviceType = details.serviceType.trim().isNotEmpty
         ? details.serviceType.trim()
-        : 'Basic Car Wash';
+        : 'Car Wash';
     final bookingLocation =
         details.bookingLocation?.displayLabel ?? AuthSession.displayLocationLabel;
     final bookingDateTime = _formatBookingDateTime(
-      details.bookingDate ?? DateTime(2021, 1, 18),
+      details.bookingDate ?? DateTime.now(),
       details.bookingTime ?? '11:30 AM',
     );
     final baseAmount = _parseAmount(details.provider.price);

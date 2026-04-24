@@ -28,11 +28,15 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _goToHome() {
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     if (AuthSession.isAuthenticated) {
+      // Service provider who hasn't completed setup
+      if (AuthSession.effectiveRole == AppUserRole.serviceProvider &&
+          !AuthSession.isProviderSetupCompleted) {
+        context.goToServiceProviderSetup();
+        return;
+      }
       context.goToHome();
       return;
     }
@@ -242,6 +246,7 @@ class _SplashBrandPanel extends StatelessWidget {
               letterSpacing: 0.2,
             ),
           ),
+          const SizedBox(height: 85),
         ],
       ),
     );
@@ -451,7 +456,7 @@ class _LoadingBarState extends State<_LoadingBar>
   Widget build(BuildContext context) {
     return Container(
       key: const Key('splash_progress'),
-      width: 128,
+      width: 280,
       height: 6,
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.18),

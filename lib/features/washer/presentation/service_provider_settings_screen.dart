@@ -190,7 +190,7 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
               Navigator.of(dialogContext).pop();
               AuthSession.clear();
               if (context.mounted) {
-                context.goToLogin();
+                context.goToRoleSelection();
               }
             },
           ),
@@ -249,7 +249,7 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
               Navigator.of(dialogContext).pop();
               AuthSession.clear();
               if (context.mounted) {
-                context.goToLogin();
+                context.goToRoleSelection();
               }
             },
           ),

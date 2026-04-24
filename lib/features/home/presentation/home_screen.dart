@@ -105,8 +105,59 @@ class _HomeScreenState extends State<HomeScreen> {
                         actionLabel: 'See all',
                         titleKey: Key('home_popular_providers_title'),
                       ),
-                      const SizedBox(height: 0),
-                      if (filteredProviders.isEmpty)
+                      const SizedBox(height: 12),
+                      if (AuthSession.isGuest)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 24),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Column(
+                            children: [
+                              const Icon(Icons.lock_outline_rounded,
+                                  size: 32, color: AppColors.textMuted),
+                              const SizedBox(height: 10),
+                              const Text(
+                                'Sign in to see service providers',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Create an account or log in to browse and book car wash providers.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  height: 1.4,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: FilledButton(
+                                  onPressed: () => context.goToRoleSelection(),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.brandGreen,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Text('Sign In / Sign Up'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (filteredProviders.isEmpty)
                         _EmptyResults(
                           message: hasQuery
                               ? 'No providers match "$_searchQuery".'
@@ -282,13 +333,6 @@ class _HomeHeaderState extends State<_HomeHeader> {
                           border: Border.all(
                             color: AppColors.border,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.24),
-                              blurRadius: 8,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
                         ),
                         child: Stack(
                           alignment: Alignment.center,
@@ -447,6 +491,7 @@ class _ProviderCard extends StatelessWidget {
                 color: Colors.black.withValues(alpha: 0.14),
                 blurRadius: 14,
                 offset: const Offset(0, 8),
+                spreadRadius: -4,
               ),
             ],
           ),

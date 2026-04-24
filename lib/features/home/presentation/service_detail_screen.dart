@@ -242,20 +242,23 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                 label: 'Book Service Provider',
                 onPressed: () {
                   if (AuthSession.isGuest) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Please sign in to book a service.'),
-                        action: SnackBarAction(
-                          label: 'Sign In',
-                          textColor: AppColors.brandGreenLight,
-                          onPressed: () => context.goToLogin(),
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(
+                        SnackBar(
+                          content: const Text('Please sign in to book a service.'),
+                          duration: const Duration(seconds: 1),
+                          action: SnackBarAction(
+                            label: 'Sign In',
+                            textColor: AppColors.brandGreenLight,
+                            onPressed: () => context.goToRoleSelection(),
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    );
+                      );
                     return;
                   }
                   context.pushToBooking(provider);

@@ -189,44 +189,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                               onTap: () => _selectRole(AppUserRole.guest),
                             ),
                             const Spacer(),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceElevated,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.border),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 34,
-                                    height: 34,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.warningSurface,
-                                      borderRadius: BorderRadius.circular(11),
-                                    ),
-                                    child: const Icon(
-                                      Icons.info_outline_rounded,
-                                      color: Color(0xFFF0C56A),
-                                      size: 18,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      '${context.translate('select_role')}: ${_selectedRole.label}',
-                                      style: const TextStyle(
-                                        fontSize: 12.8,
-                                        height: 1.45,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                             const SizedBox(height: 16),
                             AppPrimaryButton(
                               key: const Key('role_selection_continue_button'),

@@ -5,6 +5,7 @@ import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
+import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:car_wash/features/authentication/presentation/widgets/auth_shared_widgets.dart';
 import 'package:car_wash/features/authentication/utils/auth_validators.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -70,6 +71,12 @@ class _LoginScreenState extends State<LoginScreen> {
         await UserProfileService.restoreProfile(user!.uid);
       }
 
+      // Ensure role is set
+      if (AuthSession.currentRole == null ||
+          AuthSession.currentRole == AppUserRole.guest) {
+        AuthSession.setCurrentRole(AppUserRole.customer);
+      }
+
       await _persistRememberedCredentials();
       if (!mounted) return;
       context.goToHome();
@@ -122,7 +129,14 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final user = await GoogleAuthService.signIn();
       if (!mounted) return;
-      if (user != null) context.goToHome();
+      if (user != null) {
+        // Ensure role is set before navigating
+        if (AuthSession.currentRole == null ||
+            AuthSession.currentRole == AppUserRole.guest) {
+          AuthSession.setCurrentRole(AppUserRole.customer);
+        }
+        context.goToHome();
+      }
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

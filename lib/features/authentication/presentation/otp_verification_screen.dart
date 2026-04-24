@@ -7,6 +7,7 @@ import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
+import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:car_wash/features/authentication/presentation/widgets/auth_shared_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -85,6 +86,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     setState(() {
       _showInvalidCode = false;
     });
+
+    // Mark user as authenticated after successful OTP verification
+    AuthSession.setAuthenticated(true);
+    if (AuthSession.currentRole == null ||
+        AuthSession.currentRole == AppUserRole.guest) {
+      AuthSession.setCurrentRole(AppUserRole.customer);
+    }
 
     context.goToVerificationComplete();
   }

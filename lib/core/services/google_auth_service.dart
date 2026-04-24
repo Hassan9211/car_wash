@@ -1,5 +1,6 @@
 import 'package:car_wash/core/services/user_profile_service.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
+import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -38,6 +39,12 @@ class GoogleAuthService {
 
       // Restore any saved profile data from Firestore
       await UserProfileService.restoreProfile(user.uid);
+
+      // If role not set, default to customer
+      if (AuthSession.currentRole == null ||
+          AuthSession.currentRole == AppUserRole.guest) {
+        AuthSession.setCurrentRole(AppUserRole.customer);
+      }
 
       // Save/update profile in Firestore
       await UserProfileService.saveProfile();

@@ -151,7 +151,7 @@ class ProfileScreen extends StatelessWidget {
                         const SizedBox(height: 32),
                         AppPrimaryButton(
                           label: context.translate('signin_signup'),
-                          onPressed: () => context.goToLogin(),
+                          onPressed: () => context.goToRoleSelection(),
                         ),
                       ] else
                         for (final section in items) ...[
@@ -259,7 +259,7 @@ class ProfileScreen extends StatelessWidget {
               Navigator.of(dialogContext).pop();
               await AuthSession.deleteAccount();
               if (context.mounted) {
-                context.goToLogin();
+                context.goToRoleSelection();
               }
             },
           ),
@@ -301,7 +301,7 @@ class ProfileScreen extends StatelessWidget {
               Navigator.of(dialogContext).pop();
               AuthSession.clear();
               if (context.mounted) {
-                context.goToLogin();
+                context.goToRoleSelection();
               }
             },
           ),
