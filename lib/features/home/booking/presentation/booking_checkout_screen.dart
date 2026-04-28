@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/services/app_notification_service.dart';
+import 'package:car_wash/core/services/stripe_service.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
@@ -12,6 +13,7 @@ import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:car_wash/features/home/booking/model/booking_payment_method.dart';
 import 'package:car_wash/features/home/booking/model/booking_payment_success_details.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:go_router/go_router.dart';
 
 class BookingCheckoutScreen extends StatefulWidget {
@@ -78,13 +80,9 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
 
   Future<void> _openPaymentSuccess() async {
     final isPaymentMethodReady = await _ensurePaymentMethodReady();
-    if (!mounted || !isPaymentMethodReady) {
-      return;
-    }
+    if (!mounted || !isPaymentMethodReady) return;
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    setState(() => _isSubmitting = true);
 
     try {
       final amount = _parseAmount(widget.details.provider.price);
@@ -99,6 +97,42 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
           : 'Car Wash';
       final bookingLocation =
           widget.details.bookingLocation ?? AuthSession.currentLocationDetails;
+
+      // Process Stripe payment
+      if (_selectedPaymentMethod.kind != BookingPaymentMethodKind.cash) {
+        try {
+          await StripeService.processPayment(
+            amount: totalAmount,
+            currency: 'usd',
+            customerEmail: AuthSession.displayEmail,
+            description: '$serviceType - ${widget.details.provider.name}',
+          );
+        } on StripeException catch (e) {
+          if (!mounted) return;
+          if (e.error.code == FailureCode.Canceled) {
+            setState(() => _isSubmitting = false);
+            return;
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Payment failed: ${e.error.localizedMessage ?? 'Please try again.'}'),
+              backgroundColor: AppColors.dangerSurface,
+            ),
+          );
+          setState(() => _isSubmitting = false);
+          return;
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Payment error: ${e.toString()}'),
+              backgroundColor: AppColors.dangerSurface,
+            ),
+          );
+          setState(() => _isSubmitting = false);
+          return;
+        }
+      }
 
       final paidOrder = BookingOrderItem(
         id: 'order_${DateTime.now().microsecondsSinceEpoch}',

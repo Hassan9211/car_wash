@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
+import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
