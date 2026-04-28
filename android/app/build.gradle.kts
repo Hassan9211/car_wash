@@ -27,7 +27,7 @@ val googleMapsApiKey = (
     ?: "YOUR_GOOGLE_MAPS_API_KEY"
 
 android {
-    namespace = "com.example.car_wash"
+    namespace = "com.lavego.carwash"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -41,23 +41,29 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("lavego-release.jks")
+            storePassword = "lavego123"
+            keyAlias = "lavego"
+            keyPassword = "lavego123"
+        }
+    }
+
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.car_wash"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.lavego.carwash"
         minSdk = 24
         targetSdk = 36
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = 1
+        versionName = "1.0.0"
         manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = googleMapsApiKey
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
