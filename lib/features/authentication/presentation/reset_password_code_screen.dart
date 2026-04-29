@@ -19,10 +19,11 @@ class ResetPasswordCodeScreen extends StatefulWidget {
 }
 
 class _ResetPasswordCodeScreenState extends State<ResetPasswordCodeScreen> {
-  late final List<TextEditingController> _controllers =
-      List.generate(6, (_) => TextEditingController());
-  late final List<FocusNode> _focusNodes =
-      List.generate(6, (_) => FocusNode());
+  late final List<TextEditingController> _controllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
+  late final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   Timer? _resendTimer;
   int _secondsRemaining = 58;
@@ -37,8 +38,14 @@ class _ResetPasswordCodeScreenState extends State<ResetPasswordCodeScreen> {
   void _startTimer() {
     _resendTimer?.cancel();
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) { timer.cancel(); return; }
-      if (_secondsRemaining == 0) { timer.cancel(); return; }
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_secondsRemaining == 0) {
+        timer.cancel();
+        return;
+      }
       setState(() => _secondsRemaining--);
     });
   }
@@ -68,7 +75,9 @@ class _ResetPasswordCodeScreenState extends State<ResetPasswordCodeScreen> {
     setState(() {
       _secondsRemaining = 58;
       _showInvalidCode = false;
-      for (final c in _controllers) c.clear();
+      for (final c in _controllers) {
+        c.clear();
+      }
     });
     _focusNodes.first.requestFocus();
     _startTimer();
@@ -83,13 +92,19 @@ class _ResetPasswordCodeScreenState extends State<ResetPasswordCodeScreen> {
     final hasValue = _controllers[index].text.trim().isNotEmpty;
     final borderColor = _showInvalidCode
         ? AppButtonColors.destructiveForeground
-        : hasValue ? AppColors.brandGreen : AppColors.border;
+        : hasValue
+        ? AppColors.brandGreen
+        : AppColors.border;
     final fillColor = _showInvalidCode
         ? const Color(0xFFFFF4F4)
-        : hasValue ? AppColors.brandGreen : Colors.white;
+        : hasValue
+        ? AppColors.brandGreen
+        : Colors.white;
     final textColor = _showInvalidCode
         ? AppButtonColors.destructiveForeground
-        : hasValue ? Colors.white : AppColors.deepInk;
+        : hasValue
+        ? Colors.white
+        : AppColors.deepInk;
 
     return SizedBox(
       width: boxWidth,
@@ -133,8 +148,12 @@ class _ResetPasswordCodeScreenState extends State<ResetPasswordCodeScreen> {
   @override
   void dispose() {
     _resendTimer?.cancel();
-    for (final c in _controllers) c.dispose();
-    for (final f in _focusNodes) f.dispose();
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -185,9 +204,11 @@ class _ResetPasswordCodeScreenState extends State<ResetPasswordCodeScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline_rounded,
-                      size: 14,
-                      color: AppButtonColors.destructiveForeground),
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    size: 14,
+                    color: AppButtonColors.destructiveForeground,
+                  ),
                   const SizedBox(width: 4),
                   const Text(
                     'Invalid code. Please try again.',
@@ -209,7 +230,9 @@ class _ResetPasswordCodeScreenState extends State<ResetPasswordCodeScreen> {
                 Text(
                   '00:${_secondsRemaining.toString().padLeft(2, '0')} ',
                   style: const TextStyle(
-                      fontSize: 14, color: AppColors.textSecondary),
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 GestureDetector(
                   onTap: _resendCode,
@@ -230,7 +253,9 @@ class _ResetPasswordCodeScreenState extends State<ResetPasswordCodeScreen> {
             label: 'Verify Code',
             onPressed: _confirm,
             textStyle: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w600),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

@@ -43,9 +43,6 @@ class AuthSession {
 
   static final ValueNotifier<int> _listenable = ValueNotifier<int>(0);
 
-  static const String _defaultEmail = '';
-  static const String _defaultPhoneNumber = '';
-  static const String _defaultLocationLabel = '';
   static const String _defaultAvatarAssetPath =
       'assets/images/onboarding/pexels-karola-g-4870700.jpg';
   static const String _prefsEmailKey = 'auth_session.email';
@@ -62,7 +59,8 @@ class AuthSession {
   static const String _prefsTokenKey = 'auth_session.token';
   static const String _prefsUserIdKey = 'auth_session.user_id';
   static const String _prefsLocaleKey = 'auth_session.locale';
-  static const String _prefsProviderSetupCompletedKey = 'auth_session.provider_setup_completed';
+  static const String _prefsProviderSetupCompletedKey =
+      'auth_session.provider_setup_completed';
   static final DateTime _defaultDateOfBirth = DateTime(2000, 9, 20);
 
   static String? _currentToken;
@@ -259,7 +257,8 @@ class AuthSession {
   }) {
     _currentLatitude = latitude;
     _currentLongitude = longitude;
-    _currentLocationLabel = _normalize(label) ??
+    _currentLocationLabel =
+        _normalize(label) ??
         'Lat ${latitude.toStringAsFixed(4)}, Lng ${longitude.toStringAsFixed(4)}';
     _persistSessionAsync();
     _notifyListeners();
@@ -341,7 +340,8 @@ class AuthSession {
       _currentLatitude = preferences.getDouble(_prefsLatitudeKey);
       _currentLongitude = preferences.getDouble(_prefsLongitudeKey);
       _isAuthenticated = preferences.getBool(_prefsIsAuthenticatedKey) ?? false;
-      _isProviderSetupCompleted = preferences.getBool(_prefsProviderSetupCompletedKey) ?? false;
+      _isProviderSetupCompleted =
+          preferences.getBool(_prefsProviderSetupCompletedKey) ?? false;
       _currentLocale = preferences.getString(_prefsLocaleKey) ?? 'en';
 
       final savedDateOfBirth = preferences.getInt(_prefsDateOfBirthKey);
@@ -469,7 +469,10 @@ class AuthSession {
       );
       await _setOrRemoveString(preferences, _prefsRoleKey, _currentRole?.name);
       await preferences.setBool(_prefsIsAuthenticatedKey, _isAuthenticated);
-      await preferences.setBool(_prefsProviderSetupCompletedKey, _isProviderSetupCompleted);
+      await preferences.setBool(
+        _prefsProviderSetupCompletedKey,
+        _isProviderSetupCompleted,
+      );
       await _setOrRemoveString(preferences, _prefsLocaleKey, _currentLocale);
     } catch (_) {
       // Ignore local persistence failures and keep the in-memory session active.

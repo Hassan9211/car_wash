@@ -10,7 +10,6 @@ import 'package:car_wash/core/widgets/themed_google_map.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
-import 'package:car_wash/features/home/booking/model/booking_flow_details.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:car_wash/features/home/booking/model/booking_payment_method.dart';
 import 'package:flutter/material.dart';
@@ -1137,7 +1136,9 @@ class _ReschedulePaymentSheetState extends State<_ReschedulePaymentSheet> {
                     duration: const Duration(milliseconds: 150),
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.surfaceHighlight
