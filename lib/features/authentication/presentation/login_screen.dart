@@ -55,8 +55,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text;
 
     try {
-      final credential = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(email: email, password: password);
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
       final user = credential.user;
       AuthSession.setCurrentUser(
@@ -121,7 +123,10 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
     // Only save email, never password
-    await preferences.setString(_rememberedEmailKey, _emailController.text.trim());
+    await preferences.setString(
+      _rememberedEmailKey,
+      _emailController.text.trim(),
+    );
   }
 
   Future<void> _signInWithGoogle() async {
@@ -137,7 +142,9 @@ class _LoginScreenState extends State<LoginScreen> {
         }
         context.goToHome();
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('LoginScreen._signInWithGoogle error: $error');
+      debugPrint('$stackTrace');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -184,7 +191,10 @@ class _LoginScreenState extends State<LoginScreen> {
             key: const Key('login_submit_button'),
             label: _isLoading ? 'Logging in...' : 'Login',
             onPressed: _isLoading ? null : _submit,
-            textStyle: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w600),
+            textStyle: const TextStyle(
+              fontSize: 16.5,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
@@ -192,7 +202,10 @@ class _LoginScreenState extends State<LoginScreen> {
               Expanded(child: Divider(color: AppColors.border)),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Text('or continue with', style: TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
+                child: Text(
+                  'or continue with',
+                  style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+                ),
               ),
               Expanded(child: Divider(color: AppColors.border)),
             ],
@@ -225,7 +238,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 'Login',
                 key: Key('login_screen_title'),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 23, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                style: TextStyle(
+                  fontSize: 23,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -234,7 +251,11 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Text(
                 'Login to your account to discover and book the best car wash effortlessly.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14.5, height: 1.35, color: AppColors.textSecondary),
+                style: TextStyle(
+                  fontSize: 14.5,
+                  height: 1.35,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
             const SizedBox(height: 52),
@@ -256,10 +277,14 @@ class _LoginScreenState extends State<LoginScreen> {
               obscureText: _obscurePassword,
               validator: AuthValidators.validatePassword,
               suffix: IconButton(
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
                 icon: Icon(
-                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  size: 20, color: AppColors.textMuted,
+                  _obscurePassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  size: 20,
+                  color: AppColors.textMuted,
                 ),
               ),
             ),
@@ -274,9 +299,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
-                        width: 16, height: 16,
+                        width: 16,
+                        height: 16,
                         decoration: BoxDecoration(
-                          color: _rememberMe ? AppButtonColors.primaryBackground : Colors.transparent,
+                          color: _rememberMe
+                              ? AppButtonColors.primaryBackground
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
                             color: _rememberMe
@@ -285,13 +313,21 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         child: _rememberMe
-                            ? const Icon(Icons.check, size: 12, color: Colors.white)
+                            ? const Icon(
+                                Icons.check,
+                                size: 12,
+                                color: Colors.white,
+                              )
                             : null,
                       ),
                       const SizedBox(width: 8),
                       const Text(
                         'Remember me',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),

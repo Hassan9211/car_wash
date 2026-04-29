@@ -2,6 +2,7 @@ import 'package:car_wash/core/services/user_profile_service.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class GoogleAuthService {
@@ -12,45 +13,52 @@ class GoogleAuthService {
   /// Shows account picker every time and signs in with Google.
   /// Returns the Firebase [User] on success, null if cancelled.
   static Future<User?> signIn() async {
-    // Sign out first so account chooser always appears
-    await _googleSignIn.signOut();
+    try {
+      // Sign out first so account chooser always appears
+      await _googleSignIn.signOut();
 
-    final googleUser = await _googleSignIn.signIn();
-    if (googleUser == null) return null; // user cancelled
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return null; // user cancelled
 
-    final googleAuth = await googleUser.authentication;
+      final googleAuth = await googleUser.authentication;
 
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-
-    final userCredential =
-        await FirebaseAuth.instance.signInWithCredential(credential);
-
-    final user = userCredential.user;
-    if (user != null) {
-      AuthSession.setCurrentUser(
-        email: user.email ?? '',
-        userId: user.uid,
-        name: user.displayName,
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
-      AuthSession.setAuthenticated(true);
 
-      // Restore any saved profile data from Firestore
-      await UserProfileService.restoreProfile(user.uid);
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
 
-      // If role not set, default to customer
-      if (AuthSession.currentRole == null ||
-          AuthSession.currentRole == AppUserRole.guest) {
-        AuthSession.setCurrentRole(AppUserRole.customer);
+      final user = userCredential.user;
+      if (user != null) {
+        AuthSession.setCurrentUser(
+          email: user.email ?? '',
+          userId: user.uid,
+          name: user.displayName,
+        );
+        AuthSession.setAuthenticated(true);
+
+        // Restore any saved profile data from Firestore
+        await UserProfileService.restoreProfile(user.uid);
+
+        // If role not set, default to customer
+        if (AuthSession.currentRole == null ||
+            AuthSession.currentRole == AppUserRole.guest) {
+          AuthSession.setCurrentRole(AppUserRole.customer);
+        }
+
+        // Save/update profile in Firestore
+        await UserProfileService.saveProfile();
       }
 
-      // Save/update profile in Firestore
-      await UserProfileService.saveProfile();
+      return user;
+    } catch (error, stackTrace) {
+      debugPrint('GoogleAuthService.signIn failure: $error');
+      debugPrint('$stackTrace');
+      rethrow;
     }
-
-    return user;
   }
 
   static Future<void> signOut() async {

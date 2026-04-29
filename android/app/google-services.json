@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "880531573834",
-    "project_id": "carwash-5e1a5",
-    "storage_bucket": "carwash-5e1a5.firebasestorage.app"
+    "project_number": "574658684246",
+    "project_id": "lavego-716e7",
+    "storage_bucket": "lavego-716e7.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:880531573834:android:e497cb65effa4a88156ab3",
+        "mobilesdk_app_id": "1:574658684246:android:6a84d12780ed569b38e2f7",
         "android_client_info": {
           "package_name": "com.lavego.carwash"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "574658684246-v1iqpgd0vdeduihrhoil7ja87p6uk9vf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lavego.carwash",
+            "certificate_hash": "9c4dbe232a28317a7354561787325fdeb3ded2e7"
+          }
+        },
+        {
+          "client_id": "574658684246-b2h61j0be9rsqodbpl5etoljqbueqlac.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyBRFSMnl8V_7_Y4Lpp_SGGmuslUpfjPhlQ"
+          "current_key": "AIzaSyDgS4bsErzAeOjAE8Rf7A9cipYGMOW7-I8"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "574658684246-b2h61j0be9rsqodbpl5etoljqbueqlac.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
