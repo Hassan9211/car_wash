@@ -71,13 +71,14 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
               builder: (context, _) {
                 final orders = BookingOrdersStore.instance.orders;
                 final recentOrders = _filteredOrders(orders);
-                final ordersCount = orders.length;
+                final paidOrders = orders
+                    .where((o) => o.paymentStatus == BookingPaymentStatus.paid)
+                    .toList();
+                final ordersCount = paidOrders.length;
                 final revenueThisWeek = _calculateRevenue(orders);
-                final monthlyRevenueHistory = _buildMonthlyRevenueHistory(
-                  orders,
-                );
+                final monthlyRevenueHistory = _buildMonthlyRevenueHistory(orders);
                 final lastWeekRevenue = revenueThisWeek;
-                final ordersTrend = orders.isEmpty ? 'No orders yet' : '${orders.length} total';
+                final ordersTrend = paidOrders.isEmpty ? 'No orders yet' : '${paidOrders.length} completed';
                 final revenueTrend = revenueThisWeek <= 0 ? 'No revenue yet' : 'This week';
 
                 return SingleChildScrollView(
@@ -151,7 +152,9 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
   }
 
   double _calculateRevenue(List<BookingOrderItem> orders) {
-    return orders.fold<double>(0, (sum, order) {
+    return orders
+        .where((o) => o.paymentStatus == BookingPaymentStatus.paid)
+        .fold<double>(0, (sum, order) {
       return sum + _parsePaymentAmount(order.totalPayment);
     });
   }

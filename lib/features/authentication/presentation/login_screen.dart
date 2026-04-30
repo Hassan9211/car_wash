@@ -139,9 +139,14 @@ class _LoginScreenState extends State<LoginScreen> {
             AuthSession.currentRole == AppUserRole.guest) {
           AuthSession.setCurrentRole(AppUserRole.customer);
         }
-        context.goToHome();
+        // Service provider without setup → go to setup
+        if (AuthSession.currentRole == AppUserRole.serviceProvider &&
+            !AuthSession.isProviderSetupCompleted) {
+          context.goToServiceProviderSetup();
+        } else {
+          context.goToHome();
+        }
       } else {
-        // User cancelled
         setState(() => _isLoading = false);
       }
     } catch (error) {

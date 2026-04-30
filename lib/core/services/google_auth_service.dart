@@ -1,6 +1,7 @@
 import 'package:car_wash/core/services/user_profile_service.dart';
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/features/authentication/model/app_user_role.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -50,6 +51,21 @@ class GoogleAuthService {
         if (AuthSession.currentRole == null ||
             AuthSession.currentRole == AppUserRole.guest) {
           AuthSession.setCurrentRole(AppUserRole.customer);
+        }
+
+        // Check if provider setup is already done in Firestore
+        if (AuthSession.currentRole == AppUserRole.serviceProvider &&
+            !AuthSession.isProviderSetupCompleted) {
+          try {
+            final doc = await FirebaseFirestore.instance
+                .collection('providers')
+                .doc(user.uid)
+                .get()
+                .timeout(const Duration(seconds: 5));
+            if (doc.exists) {
+              AuthSession.setProviderSetupCompleted(true);
+            }
+          } catch (_) {}
         }
 
         // Save/update profile in Firestore (with timeout)

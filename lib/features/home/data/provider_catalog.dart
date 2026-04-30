@@ -1,5 +1,6 @@
 import 'package:car_wash/features/authentication/data/auth_session.dart';
 import 'package:car_wash/core/scheduling/business_hours.dart';
+import 'package:car_wash/core/services/firebase_storage_service.dart';
 import 'package:car_wash/features/home/booking/data/booking_orders_store.dart';
 import 'package:car_wash/features/home/booking/model/booking_order_item.dart';
 import 'package:car_wash/features/home/model/service_provider_profile.dart';
@@ -126,13 +127,29 @@ class ProviderCatalog {
       ServiceProviderProfile provider) async {
     await _restoreIfNeeded();
 
+    // Upload avatar to Firebase Storage if it's a local file
+    String imagePath = provider.imagePath;
+    final uid = AuthSession.currentUserId;
+    if (uid != null &&
+        imagePath.isNotEmpty &&
+        !imagePath.startsWith('http') &&
+        !imagePath.startsWith('assets/')) {
+      try {
+        final url = await FirebaseStorageService.uploadAvatar(uid, imagePath);
+        if (url != null) imagePath = url;
+      } catch (_) {}
+    }
+
+    final updatedProvider = provider.copyWith(imagePath: imagePath);
+
     // Update local list
     final list = List<ServiceProviderProfile>.from(_storedProviders);
-    final idx = list.indexWhere((p) => p.id == provider.id);
+    final idx = list.indexWhere((p) => p.id == updatedProvider.id);
     if (idx == -1) {
-      list.insert(0, provider);
+      list.insert(0, updatedProvider);
     } else {
-      list[idx] = provider.copyWith(joinedAt: provider.joinedAt ?? list[idx].joinedAt);
+      list[idx] = updatedProvider.copyWith(
+          joinedAt: updatedProvider.joinedAt ?? list[idx].joinedAt);
     }
     _storedProviders = List.unmodifiable(list);
     _providersNotifier.value = _allProviders;
@@ -141,8 +158,8 @@ class ProviderCatalog {
     try {
       await FirebaseFirestore.instance
           .collection(_collection)
-          .doc(provider.id)
-          .set(_toFirestore(provider), SetOptions(merge: true));
+          .doc(updatedProvider.id)
+          .set(_toFirestore(updatedProvider), SetOptions(merge: true));
     } catch (_) {}
   }
 

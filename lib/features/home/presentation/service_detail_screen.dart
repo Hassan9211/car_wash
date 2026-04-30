@@ -367,29 +367,6 @@ class _DetailHero extends StatelessWidget {
                     ),
                   ),
                 const Spacer(),
-                Row(
-                  children: [
-                    for (var i = 0; i < thumbnails.length; i++) ...[
-                      Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                            right: i == thumbnails.length - 1 ? 0 : 4,
-                          ),
-                          child: _GalleryThumb(
-                            imageUrl: thumbnails[i],
-                            fallbackAssetPath: provider.imagePath,
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(width: 4),
-                    const Expanded(
-                      child: _GalleryCountThumb(
-                        countLabel: '+10',
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),

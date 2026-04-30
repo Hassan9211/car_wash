@@ -2,6 +2,7 @@ import 'package:car_wash/core/router/app_navigation.dart';
 import 'package:car_wash/core/services/google_auth_service.dart';
 import 'package:car_wash/core/services/otp_email_service.dart';
 import 'package:car_wash/core/services/user_profile_service.dart';
+import 'package:car_wash/features/authentication/model/app_user_role.dart';
 import 'package:car_wash/core/theme/app_button_colors.dart';
 import 'package:car_wash/core/theme/app_colors.dart';
 import 'package:car_wash/core/widgets/app_buttons.dart';
@@ -42,7 +43,19 @@ class _SignupScreenState extends State<SignupScreen> {
     try {
       final user = await GoogleAuthService.signIn();
       if (!mounted) return;
-      if (user != null) context.goToHome();
+      if (user != null) {
+        if (AuthSession.currentRole == null ||
+            AuthSession.currentRole == AppUserRole.guest) {
+          AuthSession.setCurrentRole(AppUserRole.customer);
+        }
+        // Service provider without setup → go to setup
+        if (AuthSession.currentRole == AppUserRole.serviceProvider &&
+            !AuthSession.isProviderSetupCompleted) {
+          context.goToServiceProviderSetup();
+        } else {
+          context.goToHome();
+        }
+      }
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
