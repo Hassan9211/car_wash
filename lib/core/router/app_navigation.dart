@@ -17,6 +17,8 @@ extension AppNavigation on BuildContext {
 
   void goToLanguage() => go(AppRoutes.language);
 
+  Future<void> pushToLanguage() => push(AppRoutes.language);
+
   void goToRoleSelection() => go(AppRoutes.roleSelection);
 
   void goToLogin() => go(AppRoutes.login);

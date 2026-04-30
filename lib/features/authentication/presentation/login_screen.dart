@@ -135,25 +135,24 @@ class _LoginScreenState extends State<LoginScreen> {
       final user = await GoogleAuthService.signIn();
       if (!mounted) return;
       if (user != null) {
-        // Ensure role is set before navigating
         if (AuthSession.currentRole == null ||
             AuthSession.currentRole == AppUserRole.guest) {
           AuthSession.setCurrentRole(AppUserRole.customer);
         }
         context.goToHome();
+      } else {
+        // User cancelled
+        setState(() => _isLoading = false);
       }
-    } catch (error, stackTrace) {
-      debugPrint('LoginScreen._signInWithGoogle error: $error');
-      debugPrint('$stackTrace');
+    } catch (error) {
       if (!mounted) return;
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Google sign in failed. Please try again.'),
+        SnackBar(
+          content: Text('Google sign in failed: $error'),
           backgroundColor: AppColors.dangerSurface,
         ),
       );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 

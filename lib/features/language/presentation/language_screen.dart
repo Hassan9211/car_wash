@@ -29,7 +29,13 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
   void _continue() {
     AuthSession.setCurrentLocale(_selectedLanguageCode);
-    context.goToRoleSelection();
+    // If we can go back (came from settings), just pop
+    // Otherwise go to role selection (onboarding flow)
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      context.goToRoleSelection();
+    }
   }
 
   @override

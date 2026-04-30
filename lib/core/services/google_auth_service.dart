@@ -40,8 +40,11 @@ class GoogleAuthService {
         );
         AuthSession.setAuthenticated(true);
 
-        // Restore any saved profile data from Firestore
-        await UserProfileService.restoreProfile(user.uid);
+        // Restore any saved profile data from Firestore (with timeout)
+        try {
+          await UserProfileService.restoreProfile(user.uid)
+              .timeout(const Duration(seconds: 5));
+        } catch (_) {}
 
         // If role not set, default to customer
         if (AuthSession.currentRole == null ||
@@ -49,8 +52,11 @@ class GoogleAuthService {
           AuthSession.setCurrentRole(AppUserRole.customer);
         }
 
-        // Save/update profile in Firestore
-        await UserProfileService.saveProfile();
+        // Save/update profile in Firestore (with timeout)
+        try {
+          await UserProfileService.saveProfile()
+              .timeout(const Duration(seconds: 5));
+        } catch (_) {}
       }
 
       return user;

@@ -79,11 +79,11 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBRFSMnl8V_7_Y4Lpp_SGGmuslUpfjPhlQ',
-    appId: '1:880531573834:android:e497cb65effa4a88156ab3',
-    messagingSenderId: '880531573834',
-    projectId: 'carwash-5e1a5',
-    storageBucket: 'carwash-5e1a5.firebasestorage.app',
+    apiKey: 'AIzaSyDgS4bsErzAeOjAE8Rf7A9cipYGMOW7-I8',
+    appId: '1:574658684246:android:6a84d12780ed569b38e2f7',
+    messagingSenderId: '574658684246',
+    projectId: 'lavego-716e7',
+    storageBucket: 'lavego-716e7.firebasestorage.app',
   );
 
 }

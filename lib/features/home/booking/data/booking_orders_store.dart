@@ -41,12 +41,39 @@ class BookingOrdersStore {
           (snapshot) {
             _ordersNotifier.value = snapshot.docs
                 .map((doc) => BookingOrderItem.fromJson(
-                    doc.data()..['id'] = doc.id))
+                    Map<String, dynamic>.from(doc.data())..['id'] = doc.id))
                 .toList(growable: false);
             _loadingNotifier.value = false;
           },
-          onError: (_) => _loadingNotifier.value = false,
+          onError: (e) {
+            // ignore: avoid_print
+            print('fetchCustomerOrders error: $e');
+            _fetchCustomerOrdersWithoutIndex(customerEmail);
+          },
         );
+  }
+
+  Future<void> _fetchCustomerOrdersWithoutIndex(String customerEmail) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection(_collection)
+          .where('customer_email',
+              isEqualTo: customerEmail.trim().toLowerCase())
+          .get();
+
+      final orders = snapshot.docs
+          .map((doc) => BookingOrderItem.fromJson(
+              Map<String, dynamic>.from(doc.data())..['id'] = doc.id))
+          .toList(growable: false);
+
+      orders.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
+      _ordersNotifier.value = orders;
+    } catch (e) {
+      // ignore: avoid_print
+      print('fetchCustomerOrdersWithoutIndex error: $e');
+    } finally {
+      _loadingNotifier.value = false;
+    }
   }
 
   /// Listens to all bookings where providerId matches.
@@ -63,12 +90,39 @@ class BookingOrdersStore {
           (snapshot) {
             _ordersNotifier.value = snapshot.docs
                 .map((doc) => BookingOrderItem.fromJson(
-                    doc.data()..['id'] = doc.id))
+                    Map<String, dynamic>.from(doc.data())..['id'] = doc.id))
                 .toList(growable: false);
             _loadingNotifier.value = false;
           },
-          onError: (_) => _loadingNotifier.value = false,
+          onError: (e) {
+            // ignore: avoid_print
+            print('fetchProviderOrders error: $e');
+            // Fallback: try without orderBy (index might be missing)
+            _fetchProviderOrdersWithoutIndex(providerId);
+          },
         );
+  }
+
+  Future<void> _fetchProviderOrdersWithoutIndex(String providerId) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection(_collection)
+          .where('provider_id', isEqualTo: providerId.trim())
+          .get();
+
+      final orders = snapshot.docs
+          .map((doc) => BookingOrderItem.fromJson(
+              Map<String, dynamic>.from(doc.data())..['id'] = doc.id))
+          .toList(growable: false);
+
+      orders.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
+      _ordersNotifier.value = orders;
+    } catch (e) {
+      // ignore: avoid_print
+      print('fetchProviderOrdersWithoutIndex error: $e');
+    } finally {
+      _loadingNotifier.value = false;
+    }
   }
 
   void _cancelSubscription() {

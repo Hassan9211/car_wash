@@ -36,10 +36,12 @@ class _AppInitializerState extends State<AppInitializer> {
       await dotenv.load(fileName: '.env');
       StripeService.initialize();
 
-      if (Firebase.apps.isEmpty) {
+      try {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
+      } catch (e) {
+        // Already initialized — ignore
       }
 
       FirebaseFirestore.instance.settings = const Settings(
@@ -52,8 +54,10 @@ class _AppInitializerState extends State<AppInitializer> {
 
       if (!mounted) return;
       setState(() => _initialized = true);
-    } catch (_) {
+    } catch (e, stack) {
       if (!mounted) return;
+      // ignore: avoid_print
+      print('App initialization error: $e\n$stack');
       setState(() => _hasError = true);
     }
   }
@@ -61,7 +65,8 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   Widget build(BuildContext context) {
     if (_hasError) {
-      return const MaterialApp(
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
         home: Scaffold(
           body: Center(
             child: Text('Failed to start app. Restart and try again.'),
@@ -70,11 +75,11 @@ class _AppInitializerState extends State<AppInitializer> {
       );
     }
 
-    if (!_initialized) {
-      return const MaterialApp(
-        home: Scaffold(
+    if (!_initialized && !_hasError) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: const Scaffold(
           backgroundColor: Color(0xFF031008),
-          body: Center(child: CircularProgressIndicator(color: Colors.white)),
         ),
       );
     }

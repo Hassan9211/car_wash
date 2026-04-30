@@ -88,13 +88,18 @@ class _SignupScreenState extends State<SignupScreen> {
         phoneNumber: phone,
       );
 
-      // Save profile to Firestore
-      await UserProfileService.saveProfile();
+      // Save profile to Firestore with timeout
+      try {
+        await UserProfileService.saveProfile()
+            .timeout(const Duration(seconds: 5));
+      } catch (_) {}
 
       if (!mounted) return;
 
+      // Send OTP with timeout
       try {
-        await OtpEmailService.sendOtp(email);
+        await OtpEmailService.sendOtp(email)
+            .timeout(const Duration(seconds: 10));
       } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

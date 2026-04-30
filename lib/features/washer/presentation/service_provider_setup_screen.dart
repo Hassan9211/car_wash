@@ -135,18 +135,22 @@ class _ServiceProviderSetupScreenState
         } else {
           AuthSession.setCurrentLocationLabel(_addressController.text.trim());
         }
-        await ProviderCatalog.saveOrUpdateProvider(_buildProviderProfile());
+
+        // Save with timeout — don't hang UI
+        try {
+          await ProviderCatalog.saveOrUpdateProvider(_buildProviderProfile())
+              .timeout(const Duration(seconds: 8));
+        } catch (_) {
+          // Timeout or network error — continue anyway
+        }
+
         AuthSession.setAuthenticated(true);
         AuthSession.setProviderSetupCompleted(true);
 
-        if (!mounted) {
-          return;
-        }
+        if (!mounted) return;
 
         await _showCompletionDialog();
-        if (!mounted) {
-          return;
-        }
+        if (!mounted) return;
         context.goToHome();
       } finally {
         if (mounted) {

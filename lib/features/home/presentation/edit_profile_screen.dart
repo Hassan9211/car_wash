@@ -120,8 +120,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         avatarImagePath: finalAvatarPath,
       );
 
-      // Save to Firestore
-      await UserProfileService.saveProfile();
+      // Save to Firestore with timeout — don't block UI
+      try {
+        await UserProfileService.saveProfile()
+            .timeout(const Duration(seconds: 5));
+      } catch (_) {
+        // Timeout or network error — local update already done
+      }
 
       if (!mounted) return;
       context.pop(true);

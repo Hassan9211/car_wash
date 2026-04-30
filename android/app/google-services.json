@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "574658684246-v1iqpgd0vdeduihrhoil7ja87p6uk9vf.apps.googleusercontent.com",
+          "client_id": "574658684246-jlsgcs71j6g6k37bsjees9rn6ssi2rkt.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.lavego.carwash",
-            "certificate_hash": "9c4dbe232a28317a7354561787325fdeb3ded2e7"
+            "certificate_hash": "a6a2faa77f9e4225abf82c74e541ce4306a9114c"
           }
         },
         {

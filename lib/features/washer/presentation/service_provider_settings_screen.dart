@@ -99,7 +99,7 @@ class ServiceProviderSettingsScreen extends StatelessWidget {
                         title: context.translate('language'),
                         trailingText: AuthSession.currentLocale == 'en' ? 'English' : 'العربية',
                         icon: Icons.language_rounded,
-                        onTap: () => context.goToLanguage(),
+                        onTap: () => context.pushToLanguage(),
                       ),
                     ),
                     const SizedBox(height: 12),

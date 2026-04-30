@@ -29,7 +29,7 @@ class ProfileScreen extends StatelessWidget {
             title: context.translate('language'),
             trailingText: AuthSession.currentLocale == 'en' ? 'English' : 'العربية',
             icon: Icons.language_rounded,
-            onTap: () => context.goToLanguage(),
+            onTap: () => context.pushToLanguage(),
           ),
           _ProfileActionItem(
             title: context.translate('switch_to_provider'),
